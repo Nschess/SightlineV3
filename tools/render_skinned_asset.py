@@ -1,0 +1,5 @@
+import bpy,sys
+from mathutils import Vector
+src=sys.argv[sys.argv.index('--')+1];bpy.ops.wm.open_mainfile(filepath=src,load_ui=False);s=bpy.context.scene;s.render.engine='BLENDER_EEVEE';s.render.resolution_x=800;s.render.resolution_y=700;s.render.image_settings.file_format='PNG';s.display.shading.light='STUDIO';s.display.shading.color_type='MATERIAL';s.display.shading.show_shadows=True;s.display.shading.show_cavity=True;s.display.shading.cavity_type='BOTH';s.render.filepath=r''
+cdata=bpy.data.cameras.new('View');cam=bpy.data.objects.new('View',cdata);s.collection.objects.link(cam);cam.location=(0,-2,.04);tar=Vector((0,-.07,0));cam.rotation_euler=(tar-Vector(cam.location)).to_track_quat('-Z','Y').to_euler();cdata.type='ORTHO';cdata.ortho_scale=.75;s.camera=cam;ld=bpy.data.lights.new('Key','AREA');lo=bpy.data.objects.new('Key',ld);s.collection.objects.link(lo);lo.location=(-1,-2,2);ld.energy=900;ld.size=2;ld2=bpy.data.lights.new('Fill','AREA');lo2=bpy.data.objects.new('Fill',ld2);s.collection.objects.link(lo2);lo2.location=(1,-1,-.3);ld2.energy=300;ld2.size=1.5;bpy.ops.render.render(write_still=True)
+

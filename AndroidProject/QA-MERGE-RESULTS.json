@@ -1,0 +1,73 @@
+{
+  "source_baseline_sha256": "66294822b3ea8943e51871f6f903cd555cd5e9fd13317581b144973ef6576ece",
+  "checkpoint_sha256": "8db702c51ad9718c63777ca755a50dd3a4056bcbcb845dad9774024e36ff6749",
+  "package_id": "com.sightline.v3",
+  "candidate_version_code": 3,
+  "candidate_version_provisional": true,
+  "java_fix": "PASS: broken WebViewClientCompat.onReceivedError overload removed",
+  "game_assets_byte_identical_to_user_baseline": true,
+  "signing_identity_in_source_archive": "NOT PRESENT (owner PC unknown)",
+  "official_https_feed_configured": false,
+  "gradle_813_wrapper_properties_present": true,
+  "gradle_wrapper_jar_present": false,
+  "gradle_available_in_runner": false,
+  "android_sdk_available_in_runner": false,
+  "android_apk_compiled": false,
+  "android_apk_signed": false,
+  "physical_samsung_verified": false,
+  "release_signed_v2_to_v3_upgrade_tested": false,
+  "legacy_mainactivity_bak_shipped": false,
+  "static_checks": {
+    "branding": 45,
+    "merged_source": 44,
+    "policy_tests": {
+      "HostPolicy": 25,
+      "UpdatePolicy": 24
+    }
+  },
+  "executed_commands": [
+    {
+      "name": "game assets/static project QA",
+      "exit_code": 0,
+      "stdout": "{\n  \"result\": \"STATIC_PASS\",\n  \"source_scripts\": 12,\n  \"unique_scripts\": 11,\n  \"xml_checked\": 8,\n  \"game_modes\": [\n    \"Tactical\",\n    \"Deathmatch\",\n    \"Infection\",\n    \"Outbreak\"\n  ],\n  \"issues\": [],\n  \"apk_built\": false,\n  \"android_device_tested\": false\n}",
+      "stderr": ""
+    },
+    {
+      "name": "branding static QA",
+      "exit_code": 0,
+      "stdout": "\"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher hdpi 72px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher_round hdpi 72px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher xhdpi 96px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher_round xhdpi 96px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher xxhdpi 144px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher_round xxhdpi 144px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher xxxhdpi 192px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_launcher_round xxxhdpi 192px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_sightline_foreground 432px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"ic_sightline_monochrome 432px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"splash_mark 432px\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"monochrome has transparent background\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"monochrome foreground visible\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"art evidence THREE-CONCEPTS-COMPARISON.png\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"art evidence ADAPTIVE-MASK-PREVIEW.png\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"art evidence selected-chevron.svg\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"native launcher header asset\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"11 game JS modules included\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"offline HTML retained\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"no private signing material packaged\",\n      \"pass\": true\n    }\n  ]\n}",
+      "stderr": ""
+    },
+    {
+      "name": "merged Android source QA",
+      "exit_code": 0,
+      "stdout": "\"PASS\"\n    },\n    {\n      \"name\": \"resource XML styles.xml\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"resource XML styles.xml\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"resource XML colors.xml\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"resource XML network_security_config.xml\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"resource XML update_paths.xml\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"resource XML ic_launcher_round.xml\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"resource XML ic_launcher.xml\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon mdpi ic_launcher\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon mdpi ic_launcher_round\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon hdpi ic_launcher\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon hdpi ic_launcher_round\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon xhdpi ic_launcher\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon xhdpi ic_launcher_round\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon xxhdpi ic_launcher\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon xxhdpi ic_launcher_round\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon xxxhdpi ic_launcher\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"icon xxxhdpi ic_launcher_round\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"monochrome launcher icon present\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"splash art present\",\n      \"status\": \"PASS\"\n    }\n  ],\n  \"apk_compiled\": false,\n  \"device_verified\": false\n}",
+      "stderr": ""
+    },
+    {
+      "name": "compile pure policy tests",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "HostPolicy (25 inputs)",
+      "exit_code": 0,
+      "stdout": "HostPolicy: 6 allowed and 19 rejected inputs passed",
+      "stderr": ""
+    },
+    {
+      "name": "UpdatePolicy (24 assertions)",
+      "exit_code": 0,
+      "stdout": "PASS 24 UpdatePolicy assertions",
+      "stderr": ""
+    },
+    {
+      "name": "walker HP across waves",
+      "exit_code": 0,
+      "stdout": "PASS Outbreak walker 100 HP for six waves; Infection 1560 HP",
+      "stderr": ""
+    }
+  ],
+  "release_verdict": "BLOCKED_BUILD_DEVICE_SIGNING"
+}

@@ -1,0 +1,6 @@
+Artifact class: PRIVATE WIP SOURCE CHECKPOINT
+Runtime/gameplay acceptance: UNVERIFIED by this packaging operation.
+Production release status: NOT RELEASE READY.
+Source manifest fingerprint: 2247963ee7920221c48cd22b36579db984c75f9f884bb2124636c56ece33f213
+Created UTC: 2026-11-14T11:17:05.7896537Z
+This archive is a reversible development/test package. It does not claim rendered, gameplay, device, multiplayer, or release acceptance.

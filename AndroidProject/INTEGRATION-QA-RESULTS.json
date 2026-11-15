@@ -1,0 +1,50 @@
+{
+  "as_of_utc": "2026-10-16T23:14:42.588994+00:00",
+  "source_only": true,
+  "apk_built": false,
+  "apk_signed": false,
+  "physical_android_tested": false,
+  "latest_local_android_project_available": false,
+  "release_keystore_available": false,
+  "update_https_manifest_configured": false,
+  "source_archives": {
+    "SightlineV3-ANDROID-FOUNDATION-SOURCE-ONLY.zip": "0a630b1f411b9b3a285354f5420eb89e2c82dcd129f5b4ab5d18c8f6449e8d8f",
+    "SightlineV3-ANDROID-OPTIONAL-UPDATE-SOURCE-ONLY.zip": "f0a198c5f3b87022de548d9191786dd3b2e7540fcce342c05885cbd48fe05e2f"
+  },
+  "optional_update_source_file_count": 45,
+  "unchanged_game_asset_files": 12,
+  "unchanged_security_critical_files": [
+    "app/src/main/java/com/sightline/v3/HostPolicy.java",
+    "app/src/main/java/com/sightline/v3/UpdateManager.java",
+    "app/src/main/java/com/sightline/v3/UpdatePolicy.java",
+    "app/src/main/res/xml/network_security_config.xml",
+    "app/src/main/res/xml/update_paths.xml"
+  ],
+  "files_modified_vs_optional_update_source": [
+    "README.md",
+    "UPDATE-RELEASE-STATUS.md",
+    "UPDATE-SYSTEM.md",
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/java/com/sightline/v3/MainActivity.java",
+    "app/version.properties",
+    "tools/build-release.ps1"
+  ],
+  "historical_sha_manifest_renames": [
+    "SOURCE-FILES-SHA256.txt",
+    "UPDATE-SOURCE-FILES-SHA256.txt"
+  ],
+  "branding_static": {
+    "passed": 45,
+    "assertions": 45,
+    "result": "STATIC_PASS"
+  },
+  "source_asset": {
+    "result": "STATIC_PASS",
+    "scripts": 12,
+    "unique_scripts": 11
+  },
+  "update_policy_java_assertions": 24,
+  "host_policy_java_cases": 25,
+  "project_versionCode": 3,
+  "release_verdict": "BLOCKED \u2014 Source-only integration checkpoint; actual local merge, Android SDK build, signing and device acceptance missing"
+}

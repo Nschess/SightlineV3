@@ -1,0 +1,99 @@
+{
+  "title": "Sightline V3 — Signal Ready",
+  "originalComposition": true,
+  "bpm": 122,
+  "key": "D minor",
+  "timeSignature": "4/4",
+  "bars": 48,
+  "durationSeconds": 94.42622916666667,
+  "sampleRate": 48000,
+  "channels": 2,
+  "peakLinear": 0.8899999856948853,
+  "peakDbfs": -1.0122000067114623,
+  "rmsLinear": 0.1343389366120614,
+  "rmsDbfs": -17.435961875449767,
+  "loopCrossfadeMs": 75,
+  "mastering": {
+    "busCompressorRatio": 2.1,
+    "thresholdDbfs": -13,
+    "attackMs": 8,
+    "releaseMs": 115,
+    "peakCeilingDbfs": -1.012199867101744
+  },
+  "arrangement": [
+    {
+      "name": "Signal",
+      "bars": 8,
+      "harmony": "Dm – Bb – F – C – Dm – Bb – Gm – A7"
+    },
+    {
+      "name": "Advance",
+      "bars": 8,
+      "harmony": "Gm – Dm – F – C – Gm – Bb – Asus – A7"
+    },
+    {
+      "name": "Ready",
+      "bars": 8,
+      "harmony": "Dm – Bb – F – C – Dm – Bb – Gm – A7"
+    },
+    {
+      "name": "Hold",
+      "bars": 8,
+      "harmony": "Gm – Bb – Dm – C – Gm – Bb – Asus – A7"
+    },
+    {
+      "name": "Deploy",
+      "bars": 8,
+      "harmony": "Dm – Bb – F – C – Dm – Bb – Gm – A7"
+    },
+    {
+      "name": "Return",
+      "bars": 8,
+      "harmony": "Dm – Bb – F – C – Gm – Bb – A7 – Dm"
+    }
+  ],
+  "parts": [
+    {
+      "name": "Signal motif — Surge bass/lead",
+      "channel": 0,
+      "bankOffset": 2,
+      "soundBank": "SynthBassLead-SF2-20200522/SynthBassLead SF2-20200522/SynthBassLead 20200522.sf2"
+    },
+    {
+      "name": "Pulse bass — Lately Bass",
+      "channel": 1,
+      "bankOffset": 1,
+      "soundBank": "LatelyBass-SF2-20240409/LatelyBass SF2-20240409/LatelyBass 20240409.sf2"
+    },
+    {
+      "name": "Sustained harmony — Synth Strings 1",
+      "channel": 2,
+      "bankOffset": 3,
+      "soundBank": "SynthStrings1-SF2-20200528/SynthStrings1 SF2-20200528/SynthStrings1 20200528.sf2"
+    },
+    {
+      "name": "Air and tension — Sweep Pad",
+      "channel": 3,
+      "bankOffset": 4,
+      "soundBank": "SweepPad-SF2-20190813/SweepPad SF2-20190813/SweepPad 20190813.sf2"
+    },
+    {
+      "name": "Impact accents — Synth Brass 1",
+      "channel": 4,
+      "bankOffset": 5,
+      "soundBank": "SynthBrass1-SF2-20210426/SynthBrass1 SF2-20210426/SynthBrass1 20210426.sf2"
+    },
+    {
+      "name": "Electronic drum kit — FreePats synth percussion",
+      "channel": 5,
+      "bankOffset": 6,
+      "soundBank": "SynthesizerPercussion-SF2-20220718/SynthesizerPercussion-SF2-20220718/SynthesizerPercussion-20220718.sf2"
+    }
+  ],
+  "midiFile": "SIGHTLINE-SIGNATURE-THEME.mid",
+  "wavFile": "SIGHTLINE-SIGNATURE-THEME.wav",
+  "midiSha256": "A6E815A126435BB1927E23A1B74D7061473A1E6007F833366BE558B70B1171D0",
+  "wavSha256": "44D5F5C52652125B561AD71B049F0FA8BF14C3B1A75FD5F5346B46BF19A6771C",
+  "wavBytes": 18130000,
+  "licenseRecord": "audio-production/LICENSES.md"
+}

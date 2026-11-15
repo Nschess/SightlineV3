@@ -1,0 +1,4 @@
+681e474a2cf2b5edf9278f371eed81dcf2c4755c21a761b10b62a82ccad6c82d  tools\generate-signature-theme-previews.cjs
+5420edfccab0be2f5b3c0914946beae3dc49c48334ef2696e1f5dcc87bd4c471  audio-previews\TACTICAL-GROOVE.wav
+10d6795d8b2c013cc9b8e0fc11e1fdba94448ab2eb5c3aa57d4027cd98427a4a  audio-previews\OPERATOR-ANTHEM.wav
+394f6da5654f7d6e6d92f1e5de8d040a21c16bdbae0ecb122f78de5694b9bd62  audio-previews\SIGNATURE-PREVIEW-METADATA.json

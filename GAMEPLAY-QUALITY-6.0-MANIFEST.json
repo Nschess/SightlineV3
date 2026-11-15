@@ -1,0 +1,3170 @@
+{
+  "schemaVersion": 1,
+  "candidate": "Sightline V3 Gameplay Quality 6.0 Experimental DEV",
+  "generatedUtc": "2026-11-05T10:18:27.779Z",
+  "parent": {
+    "candidate": "Sightline V3 Android 5.1 DEV / LAN Zombies 4.2",
+    "androidProjectFilesCompared": 190,
+    "androidProjectChanged": 0,
+    "verifiedDebugApkSha256": "1a673656e95671264e2401f165d4e09ba722db4f1e2736fe9cfbfb16aee9a8ba"
+  },
+  "runtimeFingerprints": {
+    "phoneHostServer": {
+      "path": "AndroidProject/app/src/main/assets/phone-host/server.js",
+      "size": 180457,
+      "sha256": "6f9ad2be2e1cd51cec6e4d3ee1c5acf62223096bd537e0cf06fac3feb729f508"
+    },
+    "phoneHostPage": {
+      "path": "AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 957657,
+      "sha256": "c460e97269bca4ed1fb9c5743dc434a96c7f741c0f169bc3d6d4a3ec66c2d8ae"
+    },
+    "offlinePage": {
+      "path": "AndroidProject/app/src/main/assets/www/index.html",
+      "size": 957657,
+      "sha256": "c460e97269bca4ed1fb9c5743dc434a96c7f741c0f169bc3d6d4a3ec66c2d8ae"
+    },
+    "projectInstructions": {
+      "path": "AGENTS.md",
+      "size": 3178,
+      "sha256": "df2b6d279699d465d7807dab9affce7e3428723e138e6870e5ffc7750ae765b2"
+    }
+  },
+  "gameplayRuntimeChanges": 0,
+  "testHarnessCorrection": "tests/settings-accuracy.mjs adds units: [] to the mocked performanceInfo context; no production runtime change.",
+  "excludedGeneratedDirectories": [
+    "AndroidProject/.gradle",
+    "AndroidProject/build",
+    "AndroidProject/app/build"
+  ],
+  "manifestSelfHash": "excluded by design; verify the archive hash via the external SHA-256 sidecar.",
+  "fileCount": 625,
+  "totalBytes": 41899419,
+  "files": [
+    {
+      "path": "acceptance/4.2-loopback-two-client-16bot-outbreak.json",
+      "size": 1640,
+      "sha256": "60476ff738420befcae198d06773dee8bce554dfb9c5f628c201f9916106687c"
+    },
+    {
+      "path": "acceptance/accurate-legendary-focused-verification-2026-11-03.log",
+      "size": 4714,
+      "sha256": "182fa5cdeb312f5769576faf69a77cd245e781c84e485e667b915ae5c08b7963"
+    },
+    {
+      "path": "acceptance/ACCURATE-LEGENDARY-MODEL-RESTORE-2026-11-03.md",
+      "size": 6769,
+      "sha256": "a516598e835cbdc213314f6a89885881cb653cd1f9319a3085b9e29d5bcba869"
+    },
+    {
+      "path": "acceptance/accurate-legendary-regressions-2026-11-03.log",
+      "size": 26234,
+      "sha256": "ac1edb19e2572adea8bb7140a98169914324f92433008a4878d424abdc8eab48"
+    },
+    {
+      "path": "acceptance/accurate-legendary-regressions-rerun-2026-11-03.log",
+      "size": 25387,
+      "sha256": "97dcb6a3b747b6e3bae0747964e03ee3fba3e37bc1454349a1101d54a2dae37b"
+    },
+    {
+      "path": "acceptance/android-performance-5.0-build-attempt.log",
+      "size": 77,
+      "sha256": "99b5b9e0b1cbab2b3d42fbdddddc30e9eede8d13b923692cedda0e913c19337e"
+    },
+    {
+      "path": "acceptance/android-performance-5.0-regressions-final.log",
+      "size": 26428,
+      "sha256": "b8c01eb91e5e3a6db84eb5e572edfcfea813779e1daf8c9dd0a5cb610baeba76"
+    },
+    {
+      "path": "acceptance/android-performance-5.0-regressions.log",
+      "size": 26438,
+      "sha256": "235c0e8c081b59ee605ce625b00aa6a4377dacda13be9aa77664ba20c7668123"
+    },
+    {
+      "path": "acceptance/ANDROID-PERFORMANCE-AND-BUILD-RELIABILITY-5.0.md",
+      "size": 6232,
+      "sha256": "a7cd930476a465880ba9ebf063cc1588099bf9c9431f2d91bb3f55e988e3ddbd"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-after-outbreak-16.json",
+      "size": 2569,
+      "sha256": "cec7020a9eb5d023fba05acf4939205c007c616808ae6e8c7b1408906b014169"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-after-outbreak-32.json",
+      "size": 2573,
+      "sha256": "106b989d3e87f77a5992806c76dcd57c704ec076cb2a2b19cd4152678fedee25"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-after-outbreak-64.json",
+      "size": 2572,
+      "sha256": "78e5d319fef5a13c0a8dace29caddb115596a0ed17ae4b0eb89ce9722ddfc834"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-baseline-motion-presentation.json",
+      "size": 2708,
+      "sha256": "6c3ebbafc66eeb6af2a31c7e5d88cab5cc0687e43cdb790fff8a77e6261d1d9a"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-baseline-outbreak-16.json",
+      "size": 2573,
+      "sha256": "1b8485ffa1eb06f7ee7c680fb97a9f80dd4f51800cec72d4acb339cb502605e8"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-baseline-outbreak-32.json",
+      "size": 2575,
+      "sha256": "5896d43ca1fde062bd2df0bc897f99e257fb933c8ee544c69c2796f1eefa68ad"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-baseline-outbreak-64.json",
+      "size": 2571,
+      "sha256": "0b23339cd0b7b1fc2775e10057b2babe396e7c735a2f83f276a7221fcd660f14"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-pre-fix-zombie-jitter-regression.log",
+      "size": 2178,
+      "sha256": "75a2f54432947adf576efde6088f2fd1d74d68c1637f30708ea6ea02b0ffb7fd"
+    },
+    {
+      "path": "acceptance/benchmarks/4.1-zombie-pose-recovery-comparison.json",
+      "size": 2298,
+      "sha256": "22a7eca0a724f1e3847faf97c3b108ce182906595184e4ce234b5ab286d7e37b"
+    },
+    {
+      "path": "acceptance/benchmarks/4.2-client-presentation-4.1-baseline-diagnostics-absent-trial-1.json",
+      "size": 2844,
+      "sha256": "4fe3a061ebccbeb5f90c3629e8d972c5c0d4f76b4be28137b3dd5aafcfc0e821"
+    },
+    {
+      "path": "acceptance/benchmarks/4.2-client-presentation-4.1-baseline-diagnostics-absent-trial-2.json",
+      "size": 2844,
+      "sha256": "8e8ae68622712d75a4727f2af78cb7294199396dc1a9f676e5ee32069281ce9c"
+    },
+    {
+      "path": "acceptance/benchmarks/4.2-client-presentation-4.1-baseline-diagnostics-absent-trial-3.json",
+      "size": 2846,
+      "sha256": "163307dd7d89ee540cde3a11b85a9384211789b09a96453eef63ecdb414d7e77"
+    },
+    {
+      "path": "acceptance/benchmarks/4.2-client-presentation-4.2-candidate-diagnostics-disabled-trial-1.json",
+      "size": 2791,
+      "sha256": "0497a94f39e05c9453fe5543d1f1790dd9f8f56c38d6b45045e37d14b5e95c8d"
+    },
+    {
+      "path": "acceptance/benchmarks/4.2-client-presentation-4.2-candidate-diagnostics-disabled-trial-2.json",
+      "size": 2790,
+      "sha256": "e802d6c2303842d0ea60b8f09bb3ef295cae82153e8d3e081942cf03df3b3064"
+    },
+    {
+      "path": "acceptance/benchmarks/4.2-client-presentation-4.2-candidate-diagnostics-disabled-trial-3.json",
+      "size": 2790,
+      "sha256": "46ad52814c8364775d6bb1200435050946ffbb827d1b1343d4c2fa4a8350cfba"
+    },
+    {
+      "path": "acceptance/benchmarks/4.2-client-presentation-comparison.json",
+      "size": 21240,
+      "sha256": "68c5a426610195bde64d06f3fdba08ef9c1ee21790b4919efa2064008cd3788b"
+    },
+    {
+      "path": "acceptance/benchmarks/after-infection-16.json",
+      "size": 2566,
+      "sha256": "6294a844ea9e54f23d679a77938058a84ef5103cb63c88697d323d63649fd4ef"
+    },
+    {
+      "path": "acceptance/benchmarks/after-infection-32.json",
+      "size": 2564,
+      "sha256": "2d187cac804e09ff77be1af085959fb47b1d682cfa5f7ce9fe2269813cc015df"
+    },
+    {
+      "path": "acceptance/benchmarks/after-infection-64.json",
+      "size": 2575,
+      "sha256": "ccaeb62fd87f01635823233dedba05f1e605f2c9ac9c8382d6cd9a9f6d28d907"
+    },
+    {
+      "path": "acceptance/benchmarks/after-outbreak-16.json",
+      "size": 2569,
+      "sha256": "d83a42650286940198faf09fce857b6d2910d83aa3f8f0946c71210304a63733"
+    },
+    {
+      "path": "acceptance/benchmarks/after-outbreak-32.json",
+      "size": 2571,
+      "sha256": "1f570dc404451c8525bb1055ad6e3c457320942174d98039f0a25fb094728fdd"
+    },
+    {
+      "path": "acceptance/benchmarks/after-outbreak-64-requested.json",
+      "size": 2574,
+      "sha256": "76d41e666e01bcfae1e64f4685dfc418f90483eac369d69b58237a36471e72a2"
+    },
+    {
+      "path": "acceptance/benchmarks/after-outbreak-horde-56.json",
+      "size": 2555,
+      "sha256": "be513ed91af6987df0240e61fc37b567262ecf39efd1f6040be354ee422e910c"
+    },
+    {
+      "path": "acceptance/benchmarks/after-outbreak-target-acquisition.json",
+      "size": 2164,
+      "sha256": "0def0defd235a1fa31af571e94afbf5e043c176a04097d23b722408c5e4c375a"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-ai-perception.json",
+      "size": 6718,
+      "sha256": "1005e5e9cd3f1fb8830e96e12c7d98640c621e39fb78302bfb423707e846e3d9"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-infection-16.json",
+      "size": 2562,
+      "sha256": "470e38acfc4f468113264627ae625859a85a5324c9670d2f27511feff49cf6dc"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-infection-32.json",
+      "size": 2565,
+      "sha256": "d01cc19af9b7aa8bf69d035242e4ad45c2b4834877ffc513dacb776b56c546f0"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-infection-64.json",
+      "size": 2569,
+      "sha256": "ecc92fd9f7550d7d5493d34bedc52a7176c002bfdbc972047a757fa6d22dec6d"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-outbreak-16.json",
+      "size": 2563,
+      "sha256": "88ffbc1675230613e6dd0818833d9933bd7df578831fbc97c087c198a546d9e1"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-outbreak-32.json",
+      "size": 2572,
+      "sha256": "e704271bc081b19ec726e9860ad2f2f3dc2b801ed8603835543b643e28f3deeb"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-outbreak-64-requested.json",
+      "size": 2567,
+      "sha256": "0fd28013d27c298d01fd52866529ecdf1bd01f97c5a214073b3b50bf5a65b0b4"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-outbreak-horde-56.json",
+      "size": 2557,
+      "sha256": "c666a311e9982f646d064df148077c53faa281ecb9e9a34e1cf014abcc23c5b0"
+    },
+    {
+      "path": "acceptance/benchmarks/baseline-outbreak-target-acquisition-corrected.json",
+      "size": 2165,
+      "sha256": "9ebace33c2b24691871c170d824c7a9afbe62a8cae3a2af55302e587d4a4579d"
+    },
+    {
+      "path": "acceptance/benchmarks/gq6-lan-motion-presentation.json",
+      "size": 2708,
+      "sha256": "bd84b01ab7f67b52179b9a346b34a90c63715e91a58b5a20cf55ec3b5a943a58"
+    },
+    {
+      "path": "acceptance/benchmarks/gq6-outbreak-target-acquisition.json",
+      "size": 2164,
+      "sha256": "0def0defd235a1fa31af571e94afbf5e043c176a04097d23b722408c5e4c375a"
+    },
+    {
+      "path": "acceptance/benchmarks/gq6-zombie-pose-recovery.json",
+      "size": 2298,
+      "sha256": "ef9b47ee7705bc0e8cbab393d3f21bb637124c70d82263c33ff4012e0463e19e"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-cadence-change/files/AndroidProject/app/src/main/assets/phone-host/server.js",
+      "size": 180109,
+      "sha256": "32f4545b5e55b54db41ffba20446b507ceaeda27f4b3888e61e739e5430cbdb4"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-cadence-change/files/AndroidProject/app/src/main/assets/phone-host/SHA256SUMS",
+      "size": 4382,
+      "sha256": "4e15bd104ebd168f4cf894960ee775cc53573be3aaa865b9d2c7ba74184bf937"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-cadence-change/files/AndroidProject/CURRENT-SOURCE-SHA256.txt",
+      "size": 11535,
+      "sha256": "843562a2222054a20730ed9b9f72c141e4d868116fa7d481dcf2f3430acc5b10"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-cadence-change/files/tests/mp-audit-optimizations.test.cjs",
+      "size": 7472,
+      "sha256": "fce1368f4bd5a281163e5d541101e04bfa95a1d392c279fc5fc00b5b9ab76940"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-cadence-change/files/tools/capture-lan-host-status.cjs",
+      "size": 16771,
+      "sha256": "77862bcf30647bd4266b16528ad6979c9a29460f4233a30babb5e5a5aef8119a"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-cadence-change/ROLLBACK-MANIFEST.json",
+      "size": 1131,
+      "sha256": "f489904c5fcd653995957d5168be10bcd1d56bbf5199b9a52e330b0bc6db95df"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-zombie-pose-recovery/AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 948938,
+      "sha256": "872236cbbd5bc87bb37ad3a609744b8d1b3bb0161ab9af97f0bd527c8026bc2b"
+    },
+    {
+      "path": "acceptance/checkpoints/2026-11-05-pre-zombie-pose-recovery/AndroidProject/app/src/main/assets/www/index.html",
+      "size": 948938,
+      "sha256": "872236cbbd5bc87bb37ad3a609744b8d1b3bb0161ab9af97f0bd527c8026bc2b"
+    },
+    {
+      "path": "acceptance/GAMEPLAY-LAN-ZOMBIES-4.0-2026-11-05.md",
+      "size": 6854,
+      "sha256": "1be1af98562998861ae332103d87c9b508777507e1f2a431bd5c29a60766d275"
+    },
+    {
+      "path": "acceptance/gameplay-lan-zombies-4.0-baseline-regressions.log",
+      "size": 25066,
+      "sha256": "9fe829586526be113807d9aaddd701ed79060f768a6eba7bcec70757250d1f42"
+    },
+    {
+      "path": "acceptance/gameplay-lan-zombies-4.0-regressions.log",
+      "size": 25556,
+      "sha256": "f9aea7e5ea8915a14d9e816daf6f771344116e153178157ef32654304b529e83"
+    },
+    {
+      "path": "acceptance/GAMEPLAY-LAN-ZOMBIES-4.1-2026-11-05.md",
+      "size": 10007,
+      "sha256": "fcf60ffa2c7928722155ad91f6b8fd0d3af6e99f2cccff85f30a3db6da6d68c5"
+    },
+    {
+      "path": "acceptance/gameplay-lan-zombies-4.1-regressions.log",
+      "size": 25947,
+      "sha256": "b13f873f9dd7c8c53accaa33793edd9a76d6a53f9cd5ac91d20d5df55f6186b3"
+    },
+    {
+      "path": "acceptance/GAMEPLAY-LAN-ZOMBIES-4.2-2026-11-05.md",
+      "size": 8552,
+      "sha256": "46e0d5e32a85435d78723eb5d9f1103ac0d56a3838ee485df818cdfeb74d3d03"
+    },
+    {
+      "path": "acceptance/gameplay-lan-zombies-4.2-regressions.log",
+      "size": 26124,
+      "sha256": "f5535fac530e49bae9682b6ff40d87ba1a6b0556d5440b3a9e096b46d09b7b93"
+    },
+    {
+      "path": "acceptance/gameplay-quality-6.0-baseline-regressions.log",
+      "size": 26417,
+      "sha256": "0daf36cecb00f819074041481baa6cb7b60a530ed0f3f89715adcbb014c12d7e"
+    },
+    {
+      "path": "acceptance/gameplay-quality-6.0-final-regressions.log",
+      "size": 26418,
+      "sha256": "1a49d015d8f07ad0f0efa11abd99a58d14d381b8aa8808a5055e9d37d1ba10de"
+    },
+    {
+      "path": "acceptance/gameplay-quality-6.0-focused-baseline.log",
+      "size": 2477,
+      "sha256": "15bb939406e3700fc18d6ef53344a1c499dc5d9adfb513bc2332af42337ae293"
+    },
+    {
+      "path": "acceptance/gameplay-quality-6.0-parent-diff.json",
+      "size": 3170,
+      "sha256": "813f123c84e5a2d776b18e4e47a6ba0add2787e841a7a1eab771cf344c8eec1f"
+    },
+    {
+      "path": "acceptance/INHERITED-PACKAGE-INVENTORY-AUDIT-2026-11-02.json",
+      "size": 81849,
+      "sha256": "3fea5c2719f94787d32ef7505f3a5f00469e32931d6ad6facd7ec99157ae851c"
+    },
+    {
+      "path": "acceptance/integrated-android-asset-url-test-2026-11-01.log",
+      "size": 213,
+      "sha256": "bc53ed5b89d20b71d1c1b8bcf0f3c7a7e7af0c0f6ee265b87526fc4ea3157da7"
+    },
+    {
+      "path": "acceptance/integrated-android-parity-2026-11-01.log",
+      "size": 404,
+      "sha256": "001b485da87cb96bb3702275729b9fefc128bbf1e80a35d26c5696fbbc9a0cbb"
+    },
+    {
+      "path": "acceptance/integrated-authoritative-combat-2026-11-01.log",
+      "size": 555,
+      "sha256": "764acf56792d518bbf93a80bf1b66d51f49ce92d5a1cea91ea2de408cdc0aaac"
+    },
+    {
+      "path": "acceptance/integrated-capture-fingerprint-tests-2026-11-01.log",
+      "size": 959,
+      "sha256": "bd564983d37f93a10421e449716c17ef34eeb422dafae6627e473404a651f39a"
+    },
+    {
+      "path": "acceptance/integrated-focused-network-acceptance-2026-11-01.log",
+      "size": 5269,
+      "sha256": "b5256e7a946bdee0a2c1f2c1ef1090060947d50ef5a96b7241d53b6735c2d6a1"
+    },
+    {
+      "path": "acceptance/integrated-full-node-regression-2026-11-01.log",
+      "size": 19620,
+      "sha256": "5f0c0feded26d1b103c9c058257a8c9c3bf8e72f6dec2d70ace0a16b25eef838"
+    },
+    {
+      "path": "acceptance/integrated-navigation-audit-2026-11-01.log",
+      "size": 26715,
+      "sha256": "dbd97d0eec9b3d08530bb1cdc52a4b8e12262ead5c85a4f9a3b9fca0ad2ce888"
+    },
+    {
+      "path": "acceptance/integrated-rfc6455-handshake-tests-2026-11-01.log",
+      "size": 287,
+      "sha256": "93e46cda65b8abbbdc3617dd7b900f1888511e1cc1c3df402acae26d3f938abe"
+    },
+    {
+      "path": "acceptance/integrated-source-manifest-2026-11-01.log",
+      "size": 117,
+      "sha256": "f1489004be1127ce2367afcae0a4621442aba20e90bb3b314ac278af9dad80c7"
+    },
+    {
+      "path": "acceptance/integrated-source-parity-2026-11-01.json",
+      "size": 3980,
+      "sha256": "fd337a7693fa8dda70c585ff4f2f55d7e98ae32d9f50a43e06edfd50be88ec62"
+    },
+    {
+      "path": "acceptance/LAN-BOT-SMOOTHNESS-2026-11-02.md",
+      "size": 5708,
+      "sha256": "8cf23daa6d1ca53951cf6741f9db2f94857a8b6e20f3e81bcc2dc0578c9f3756"
+    },
+    {
+      "path": "acceptance/lan-motion-presentation-2026-11-02.json",
+      "size": 2708,
+      "sha256": "e2befa79d9416976b9748eefb3c3f11d7d76decdd4524aed1266177e4e1bc176"
+    },
+    {
+      "path": "acceptance/lan-smoothness-20261102-client-baseline.json",
+      "size": 2780,
+      "sha256": "2dee4c746a5fad1a8d88fc5f397a579e43267bac7c1665187f7d0d771b1cdf3d"
+    },
+    {
+      "path": "acceptance/lan-smoothness-candidate-manifest.json",
+      "size": 7282,
+      "sha256": "b587ea93e43f9f8148124e60f3ac55146d91e63287407d6b201c770ceaf76bee"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-android-parity.log",
+      "size": 404,
+      "sha256": "f28c038beea02c9251c7c1058bd8659121834c030f4729d0680c306bece92e5c"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-candidate-manifest.json",
+      "size": 4612,
+      "sha256": "9844e484fb85c96fa6af803d5ad39e2671d3f05b01ba091d5876225db10ce0ba"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-combat.log",
+      "size": 555,
+      "sha256": "637cb5ae3f2abed99e4d6b15c8667a9bfb40960fd4114022933a216144a6ec35"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-full-regressions.log",
+      "size": 25321,
+      "sha256": "5bbbff57ebbab6bd577dc33c2b277f2f24b512618caf12bc08cf072586ac0138"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-navigation.log",
+      "size": 26715,
+      "sha256": "dbd97d0eec9b3d08530bb1cdc52a4b8e12262ead5c85a4f9a3b9fca0ad2ce888"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-p12-geometry.log",
+      "size": 3715,
+      "sha256": "6302d3ebabde2708f55b17182f8511f991dea342b7faa6cfc103216601cf810c"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-p13-audio.log",
+      "size": 172,
+      "sha256": "6708e619aa613378ba2652ae457656a85d2cf34ee026b267656d49c4ad7f5dc8"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-p15-rook.log",
+      "size": 357,
+      "sha256": "8dd99e7990f6706ac59b527e582716d2b1870987507060d882d178b4d588fbbe"
+    },
+    {
+      "path": "acceptance/legendary-guns-2.0-source-manifest.log",
+      "size": 117,
+      "sha256": "fc14e8b70236b028196fdb1a7fd6703b3c4ec5297a0faea2c3648c0ffb02759b"
+    },
+    {
+      "path": "acceptance/LEGENDARY-INTEGRATION-2026-11-03.md",
+      "size": 6328,
+      "sha256": "cae50d12198e9497867e388f96095522de30ba32c6796f0520038c891101fa26"
+    },
+    {
+      "path": "acceptance/legendary-restore-package-regressions.log",
+      "size": 25362,
+      "sha256": "07956214878797161a40f7644cd179a55d544249c547fb1795d9a105734bb293"
+    },
+    {
+      "path": "acceptance/legendary-restore-regressions-final.log",
+      "size": 26438,
+      "sha256": "29c83d9a4addb6f2700e1ca7954cc66f57c34783a4b26b4b32e76d0aea82305a"
+    },
+    {
+      "path": "acceptance/legendary-restore-regressions-serial.log",
+      "size": 25377,
+      "sha256": "4b2bb592412b9a0e0ef94a9bf126c0484240fd569fb5bd7dc00cb0b5082100e9"
+    },
+    {
+      "path": "acceptance/legendary-restore-regressions.log",
+      "size": 28419,
+      "sha256": "1214a4bf7aa47634d9c7c893351ac3647d500fec3ab764cf8130e5f7ca18e33f"
+    },
+    {
+      "path": "acceptance/OFFLINE-LAN-FEATURE-PARITY-2026-11-02.md",
+      "size": 9397,
+      "sha256": "c3e9809aae19a8809164ac037f5f97faf0867f4e3201c9f590cc89e15b8f521b"
+    },
+    {
+      "path": "acceptance/offline-lan-parity-2026-11-02.json",
+      "size": 2737,
+      "sha256": "ccb9b51023473631b8ee4bc3452840e47f844bbce7e15bea0834d5c81627c025"
+    },
+    {
+      "path": "acceptance/OFFLINE-LAN-PARITY-FILES-SHA256.txt",
+      "size": 1339,
+      "sha256": "ed6b738386f92884acf575065c219785806fef6c3c6fa8f8084c115eae61834b"
+    },
+    {
+      "path": "acceptance/RELEASE-CANDIDATE-ACCEPTANCE-PROCEDURE-2026-10-30.md",
+      "size": 7544,
+      "sha256": "8d6847800b3fed84f9207ef3f20ce074ed67bb781d3a9fde2c43552c78916695"
+    },
+    {
+      "path": "acceptance/RELEASE-OWNER-HANDOFF.md",
+      "size": 4856,
+      "sha256": "5cda3b40468249a163fed87c249df88f5883d29f47db77dec182d1230f48384c"
+    },
+    {
+      "path": "acceptance/REVAMPED-LEGENDARY-RESTORE-2026-11-03.md",
+      "size": 8490,
+      "sha256": "df723c3af1682949d91cb8752d0e89e362337da8b2828fa85309998f28071017"
+    },
+    {
+      "path": "acceptance/SAFE-FINAL-INTEGRATION-2026-11-02.md",
+      "size": 5877,
+      "sha256": "7f804d949216fdfefea7d90591f85d6cc38f2435920858a3454b615a6c65e16a"
+    },
+    {
+      "path": "acceptance/SAFE-FINAL-INTEGRATION-RESULTS-2026-11-02.json",
+      "size": 3655,
+      "sha256": "6220a7b6aea70661a935845a6217658e18f5daaa55ddc0baa0c28073ee3d1d79"
+    },
+    {
+      "path": "acceptance/SECURE-TRANSPORT-DEPLOYMENT-2026-11-01.md",
+      "size": 4547,
+      "sha256": "794818c7da3ed8d1d708735a8fc66a83f5ecf6f89c96a2b8a6e4bcb790cc55bc"
+    },
+    {
+      "path": "acceptance/SIGHTLINE-V3-LEGENDARY-GUNS-2.0-2026-11-04-REPORT.md",
+      "size": 7893,
+      "sha256": "dff6918c806e2634b22837f54d3c2c9e89247ef2658537c0ead7a6208eca1095"
+    },
+    {
+      "path": "acceptance/source-provenance.json",
+      "size": 1535,
+      "sha256": "b5fbf6e3e8b3e205c70362119398c0bac97c0d6b43ecb1ebf6e4359461c2b662"
+    },
+    {
+      "path": "AGENTS.md",
+      "size": 3178,
+      "sha256": "df2b6d279699d465d7807dab9affce7e3428723e138e6870e5ffc7750ae765b2"
+    },
+    {
+      "path": "ANDROID-PERFORMANCE-AND-BUILD-RELIABILITY-5.0-MANIFEST.json",
+      "size": 118746,
+      "sha256": "268756698a2467b8b112574d64495b8a998abf26d565f6314506cadd72c5c851"
+    },
+    {
+      "path": "ANDROID-PERFORMANCE-AND-BUILD-RELIABILITY-5.0-QUICKSTART.md",
+      "size": 1895,
+      "sha256": "883c83d7b1057cb81013e667f971301eefc93a06486d150fbba15d661eea896d"
+    },
+    {
+      "path": "AndroidProject/ANDROID-DEVICE-QA.md",
+      "size": 2648,
+      "sha256": "4f546d4c6e060f93ca5a7cd15fcb675248db5778772ea82e150c70684f576da7"
+    },
+    {
+      "path": "AndroidProject/ANDROID-SECURITY-REVIEW.md",
+      "size": 2482,
+      "sha256": "f5f0c4fd7fbb46156930016017390da715ab2743a9906be21799ebf07f6ba64b"
+    },
+    {
+      "path": "AndroidProject/app/build.gradle",
+      "size": 8278,
+      "sha256": "1ef823248b2fa0f7971b6fb8a98210a09dd526b49512e9ab15c74299d3bcfa29"
+    },
+    {
+      "path": "AndroidProject/app/src/debug/AndroidManifest.xml",
+      "size": 319,
+      "sha256": "5019df75db61481896131eb3b968380b076cbb29aa3e0e053fa17f86205e1606"
+    },
+    {
+      "path": "AndroidProject/app/src/debug/res/xml/network_security_config.xml",
+      "size": 219,
+      "sha256": "183ccd89a26d41a967aa77f207603b0c0ca5d5ec75a78bd1eb6733602b773ef6"
+    },
+    {
+      "path": "AndroidProject/app/src/main/AndroidManifest.xml",
+      "size": 2109,
+      "sha256": "81d4c05918f71367ab6c0300b24646d3a6363a26cefdb9b215a95ef5d7f2106c"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/bot-tactics.js",
+      "size": 12123,
+      "sha256": "19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/character-poses.js",
+      "size": 2613,
+      "sha256": "322ff2d84dca709a148b29d92c02961536792bfb8a2d5c7cf11daf0bf3887dce"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/character-prototypes.js",
+      "size": 35267,
+      "sha256": "65729dfd6250893cf511a3e87b78563c139d78880551042b6e32c32f670ca9ee"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/character-realism-v12.js",
+      "size": 131673,
+      "sha256": "fd5e40dce67e2ad401eeb22ca5c676ac15c82f4cdbb0af1abe06d060df7c7725"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/character-realism.js",
+      "size": 47498,
+      "sha256": "47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/character-skins.js",
+      "size": 2948,
+      "sha256": "545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/data.json",
+      "size": 106512,
+      "sha256": "bd06e35c6042a5274e381bd55812109d105d57667a70e410fa4ba299e7f1586b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/deathmatch-rules.js",
+      "size": 2174,
+      "sha256": "ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/fps-lab.html",
+      "size": 8528,
+      "sha256": "4cb6dc325fbc66308c9ff267a066f4e0854e79b285e77ab7d3bd203d110269d2"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/host-transport-config.js",
+      "size": 9013,
+      "sha256": "1a300a4d309dc1d194066f24eb691ee0232d5710d3bd7055dc3af6f45eb58f63"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 957657,
+      "sha256": "c460e97269bca4ed1fb9c5743dc434a96c7f741c0f169bc3d6d4a3ec66c2d8ae"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/infection-evasion.js",
+      "size": 2937,
+      "sha256": "73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/legend-overlay.js",
+      "size": 48142,
+      "sha256": "d0d8c2a9dcb5c2d58031d498979cab5b4de6b33e893d57504577db358e3a626f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/legendary-packs.js",
+      "size": 220564,
+      "sha256": "cd7b7d549894f50ead9c4a5e0a7366d56655fc51236ffbe1a158c91e2eba7563"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/mp-transport-policy.js",
+      "size": 2551,
+      "sha256": "239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/navigation.js",
+      "size": 20777,
+      "sha256": "3603b9bdbbc15f17e5c04c3c15cee97e95524836456a26d7ca343cfe40261c4e"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/optics-v1.js",
+      "size": 8975,
+      "sha256": "7b18105a84b03b2bc17f1e634852128e1e3399bad043063ddee8e4cdbc266d51"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_coated_gunmetal_albedo.png",
+      "size": 52509,
+      "sha256": "1f020cd8614df61afd829674713927d3d43b76b4f58aba80e69a7753bafecfcb"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_coated_gunmetal_normal.png",
+      "size": 144141,
+      "sha256": "e14732148515c3a2ffd890189277eecb7b5beed77b9c514d1d14406b11df399b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_coated_gunmetal_roughness.png",
+      "size": 74958,
+      "sha256": "32f282e9a22b6663f5f382f06c8f66d4625355a63fdf4cdabf7212f9ebd6482d"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_graphite_polymer_albedo.png",
+      "size": 59382,
+      "sha256": "5bd64030e31c0fb60f92761615434285175baefe619095a72a47d3150931211e"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_graphite_polymer_normal.png",
+      "size": 181966,
+      "sha256": "fc31f9e7213675a457613a02c34985ab9b673cbf24aa57a89520153c94b9e0c7"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_graphite_polymer_roughness.png",
+      "size": 71444,
+      "sha256": "0e6b6b9c62c655e2a982989802b4cd6b084761d6cd609a5c8dcd0387901b105b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_parkerized_steel_albedo.png",
+      "size": 52478,
+      "sha256": "740bcd1bb9c3948e9b272f2ba92f55b1e4e3b30e7606f069f739be0a298fcd84"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_parkerized_steel_normal.png",
+      "size": 143815,
+      "sha256": "28c599e3f4820f9c216ce9d415b8b76841f7d000141aaa0ab5681c5ceaf7e711"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_parkerized_steel_roughness.png",
+      "size": 74996,
+      "sha256": "924bdd5bd50776c162d17cec96a3d6cf17ac7ac546d50ba290d64aad580344fb"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recess_albedo.png",
+      "size": 59720,
+      "sha256": "017132d95c6171074c083a748ae362715ba257922ff42986fbd51326f31f2eba"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recess_normal.png",
+      "size": 181876,
+      "sha256": "e3c6f9405fe7186fe49402aa802b15c7138d51eea21036b8fc63d08507604330"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recess_roughness.png",
+      "size": 71453,
+      "sha256": "7a43522212650bcd009ecc96a458c4a5f497639a112e57f112a4536a8031b0a5"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recoil_rubber_albedo.png",
+      "size": 59768,
+      "sha256": "a47f0f3839e995e2117e32b40df5922d0aa1149fdd72a9154a93650ad7edb474"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recoil_rubber_normal.png",
+      "size": 181767,
+      "sha256": "8856a11534519dfda32a6a147107a76aeaf79dca5072e241824aebe11597b607"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recoil_rubber_roughness.png",
+      "size": 71303,
+      "sha256": "7e6a623be03024f3b0707eec47687c06cdb767590a109a013dd55fe80316a7f4"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_sight_steel_albedo.png",
+      "size": 52606,
+      "sha256": "e9a1f7060435afd9626903865d953976c95fe1c46f969e793ec8a879642dbe5e"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_sight_steel_normal.png",
+      "size": 144119,
+      "sha256": "d191e9488a9784c10142aaa63b66f423392faf2143c3568fe887b50ab85d42f9"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_sight_steel_roughness.png",
+      "size": 74947,
+      "sha256": "610a397247442cd7f49cd6ce2b616698baf3795c659aed010938bd08326badce"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117-model.js",
+      "size": 3211107,
+      "sha256": "6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/server.js",
+      "size": 180457,
+      "sha256": "6f9ad2be2e1cd51cec6e4d3ee1c5acf62223096bd537e0cf06fac3feb729f508"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/SHA256SUMS",
+      "size": 4382,
+      "sha256": "23f15d99f0ca539fd51595d1a6cf26f601a972eff73c8edfffd82bccc6d166cc"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/squad-loadout.js",
+      "size": 4809,
+      "sha256": "8936f0875708df045563db447d1f73dc13565a42bb3cef91e541b21f067a2043"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/squad-tactics.js",
+      "size": 2061,
+      "sha256": "63e013e63134787f08ab656b94f16eacfe42cedf158cd4e04176a9af5cb8c533"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/thirdperson-hands.js",
+      "size": 12575,
+      "sha256": "632c693dd3834fcbeea8036b2df8d9fb336d5774c276b7fc79b2dbdbf91cdde7"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/three.min.js",
+      "size": 603445,
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/threejs-license.txt",
+      "size": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/THREEJS-MIT-LICENSE.txt",
+      "size": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/vr18-v31.js",
+      "size": 28947,
+      "sha256": "c71af92d3225b6cbffd94e4626aab39104ef9bd2695c9dee7049d13366068e12"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/weapon-realism.js",
+      "size": 58105,
+      "sha256": "964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/weapon-skins.js",
+      "size": 70247,
+      "sha256": "30fb099aed15d7dec88eec7d751685e0de9317c90ee605770672505a5603e13d"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/zombie-counterplay.js",
+      "size": 785,
+      "sha256": "f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/phone-host/zombie-hunt.js",
+      "size": 10186,
+      "sha256": "d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/bot-tactics.js",
+      "size": 12123,
+      "sha256": "19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/character-poses.js",
+      "size": 2613,
+      "sha256": "322ff2d84dca709a148b29d92c02961536792bfb8a2d5c7cf11daf0bf3887dce"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/character-prototypes.js",
+      "size": 35267,
+      "sha256": "65729dfd6250893cf511a3e87b78563c139d78880551042b6e32c32f670ca9ee"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/character-realism-v12.js",
+      "size": 131673,
+      "sha256": "fd5e40dce67e2ad401eeb22ca5c676ac15c82f4cdbb0af1abe06d060df7c7725"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/character-realism.js",
+      "size": 47498,
+      "sha256": "47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/character-skins.js",
+      "size": 2948,
+      "sha256": "545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/combat-foundation.js",
+      "size": 873,
+      "sha256": "e49ec0b3d6d8d87e14626c833686996793232bb82bc3d42c00341bcee5b4894a"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/deathmatch-rules.js",
+      "size": 2174,
+      "sha256": "ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/fps-lab.html",
+      "size": 8528,
+      "sha256": "4cb6dc325fbc66308c9ff267a066f4e0854e79b285e77ab7d3bd203d110269d2"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/index.html",
+      "size": 957657,
+      "sha256": "c460e97269bca4ed1fb9c5743dc434a96c7f741c0f169bc3d6d4a3ec66c2d8ae"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/infection-evasion.js",
+      "size": 2937,
+      "sha256": "73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/legend-overlay.js",
+      "size": 48142,
+      "sha256": "d0d8c2a9dcb5c2d58031d498979cab5b4de6b33e893d57504577db358e3a626f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/legendary-packs.js",
+      "size": 220564,
+      "sha256": "cd7b7d549894f50ead9c4a5e0a7366d56655fc51236ffbe1a158c91e2eba7563"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/mp-transport-policy.js",
+      "size": 2551,
+      "sha256": "239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/navigation.js",
+      "size": 20777,
+      "sha256": "3603b9bdbbc15f17e5c04c3c15cee97e95524836456a26d7ca343cfe40261c4e"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/optics-v1.js",
+      "size": 8975,
+      "sha256": "7b18105a84b03b2bc17f1e634852128e1e3399bad043063ddee8e4cdbc266d51"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_coated_gunmetal_albedo.png",
+      "size": 52509,
+      "sha256": "1f020cd8614df61afd829674713927d3d43b76b4f58aba80e69a7753bafecfcb"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_coated_gunmetal_normal.png",
+      "size": 144141,
+      "sha256": "e14732148515c3a2ffd890189277eecb7b5beed77b9c514d1d14406b11df399b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_coated_gunmetal_roughness.png",
+      "size": 74958,
+      "sha256": "32f282e9a22b6663f5f382f06c8f66d4625355a63fdf4cdabf7212f9ebd6482d"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_graphite_polymer_albedo.png",
+      "size": 59382,
+      "sha256": "5bd64030e31c0fb60f92761615434285175baefe619095a72a47d3150931211e"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_graphite_polymer_normal.png",
+      "size": 181966,
+      "sha256": "fc31f9e7213675a457613a02c34985ab9b673cbf24aa57a89520153c94b9e0c7"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_graphite_polymer_roughness.png",
+      "size": 71444,
+      "sha256": "0e6b6b9c62c655e2a982989802b4cd6b084761d6cd609a5c8dcd0387901b105b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_parkerized_steel_albedo.png",
+      "size": 52478,
+      "sha256": "740bcd1bb9c3948e9b272f2ba92f55b1e4e3b30e7606f069f739be0a298fcd84"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_parkerized_steel_normal.png",
+      "size": 143815,
+      "sha256": "28c599e3f4820f9c216ce9d415b8b76841f7d000141aaa0ab5681c5ceaf7e711"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_parkerized_steel_roughness.png",
+      "size": 74996,
+      "sha256": "924bdd5bd50776c162d17cec96a3d6cf17ac7ac546d50ba290d64aad580344fb"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_recess_albedo.png",
+      "size": 59720,
+      "sha256": "017132d95c6171074c083a748ae362715ba257922ff42986fbd51326f31f2eba"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_recess_normal.png",
+      "size": 181876,
+      "sha256": "e3c6f9405fe7186fe49402aa802b15c7138d51eea21036b8fc63d08507604330"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_recess_roughness.png",
+      "size": 71453,
+      "sha256": "7a43522212650bcd009ecc96a458c4a5f497639a112e57f112a4536a8031b0a5"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_recoil_rubber_albedo.png",
+      "size": 59768,
+      "sha256": "a47f0f3839e995e2117e32b40df5922d0aa1149fdd72a9154a93650ad7edb474"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_recoil_rubber_normal.png",
+      "size": 181767,
+      "sha256": "8856a11534519dfda32a6a147107a76aeaf79dca5072e241824aebe11597b607"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_recoil_rubber_roughness.png",
+      "size": 71303,
+      "sha256": "7e6a623be03024f3b0707eec47687c06cdb767590a109a013dd55fe80316a7f4"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_sight_steel_albedo.png",
+      "size": 52606,
+      "sha256": "e9a1f7060435afd9626903865d953976c95fe1c46f969e793ec8a879642dbe5e"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_sight_steel_normal.png",
+      "size": 144119,
+      "sha256": "d191e9488a9784c10142aaa63b66f423392faf2143c3568fe887b50ab85d42f9"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117_sight_steel_roughness.png",
+      "size": 74947,
+      "sha256": "610a397247442cd7f49cd6ce2b616698baf3795c659aed010938bd08326badce"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/rook117/rook117-model.js",
+      "size": 3211107,
+      "sha256": "6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/squad-loadout.js",
+      "size": 4809,
+      "sha256": "8936f0875708df045563db447d1f73dc13565a42bb3cef91e541b21f067a2043"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/squad-tactics.js",
+      "size": 2061,
+      "sha256": "63e013e63134787f08ab656b94f16eacfe42cedf158cd4e04176a9af5cb8c533"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/survivor-evasion.js",
+      "size": 2747,
+      "sha256": "e295d8386da013cdecb83b99892684aca350e72220c1ebeec0b0fe4cbde04c5e"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/thirdperson-hands.js",
+      "size": 12575,
+      "sha256": "632c693dd3834fcbeea8036b2df8d9fb336d5774c276b7fc79b2dbdbf91cdde7"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/three.min.js",
+      "size": 603445,
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/threejs-license.txt",
+      "size": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/threejs-mit-license.txt",
+      "size": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/vr18-v31.js",
+      "size": 28947,
+      "sha256": "c71af92d3225b6cbffd94e4626aab39104ef9bd2695c9dee7049d13366068e12"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/weapon-qa.html",
+      "size": 915,
+      "sha256": "af6a3253f1fb068abc6e1e135f084cd1f38bd0f1151c22d9342ac7abe8de0b56"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/weapon-realism.js",
+      "size": 58105,
+      "sha256": "964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/weapon-skins.js",
+      "size": 70247,
+      "sha256": "30fb099aed15d7dec88eec7d751685e0de9317c90ee605770672505a5603e13d"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/zombie-balance.js",
+      "size": 1082,
+      "sha256": "5196acceff0c4e4fd440371671660bce1c46a43e94305f22bc72532538937227"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/zombie-counterplay.js",
+      "size": 785,
+      "sha256": "f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493"
+    },
+    {
+      "path": "AndroidProject/app/src/main/assets/www/zombie-hunt.js",
+      "size": 10186,
+      "sha256": "d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c"
+    },
+    {
+      "path": "AndroidProject/app/src/main/cpp/CMakeLists.txt",
+      "size": 508,
+      "sha256": "e6f9dfc6abff64d4addb5a0f808e4c86da63cbb39d241263bf9b30643285bf18"
+    },
+    {
+      "path": "AndroidProject/app/src/main/cpp/lan_host.cpp",
+      "size": 1649,
+      "sha256": "741546ac94e9cec323c761d4dabf9f6641755b007b95fe27d030fbfdccae994c"
+    },
+    {
+      "path": "AndroidProject/app/src/main/java/com/sightline/v3/HostPolicy.java",
+      "size": 1318,
+      "sha256": "8812d43f52b0017fbca984e644d22ea9fb2848cc131d650c7767f6f4478b54b2"
+    },
+    {
+      "path": "AndroidProject/app/src/main/java/com/sightline/v3/LanHostService.java",
+      "size": 9478,
+      "sha256": "6af9f41440723d488976d983f6cf68d308e47287dceb2c781554ab4e7dd670eb"
+    },
+    {
+      "path": "AndroidProject/app/src/main/java/com/sightline/v3/MainActivity.java",
+      "size": 28302,
+      "sha256": "b1f547fb20ecb7ba2a3d4985c2ea9556cff5752b717b7e24b7d5861e514d3dcb"
+    },
+    {
+      "path": "AndroidProject/app/src/main/java/com/sightline/v3/UpdateManager.java",
+      "size": 10135,
+      "sha256": "8f010cdfea8ff723672eb33c22ea2a5d86f0892600a4ab390b27c48767d2b914"
+    },
+    {
+      "path": "AndroidProject/app/src/main/java/com/sightline/v3/UpdatePolicy.java",
+      "size": 3074,
+      "sha256": "bdcf6b4a260bf2517d77b83e967e8abaa48171f11e0de305daff2585cc642028"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/drawable-nodpi/ic_sightline_foreground.png",
+      "size": 8882,
+      "sha256": "ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/drawable-nodpi/ic_sightline_monochrome.png",
+      "size": 5153,
+      "sha256": "c28e92d92a39574bde713f811aadca1a140a64d3570e26b1b286e24e0ccd7802"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/drawable-nodpi/sightline_launcher_brand.png",
+      "size": 12660,
+      "sha256": "154674a6c81a8a480bc759be4147ed7665cc899e8cc83909a5b7488dcfda6510"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/drawable-nodpi/splash_mark.png",
+      "size": 8882,
+      "sha256": "ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+      "size": 319,
+      "sha256": "bca9392748fe81be49ccb075afc899fc6921f6ec97d678267b515732b45dcde8"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "size": 319,
+      "sha256": "bca9392748fe81be49ccb075afc899fc6921f6ec97d678267b515732b45dcde8"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "size": 1946,
+      "sha256": "d9b04473870efc3a266a06a95ef32ad0f34a1c9fdc5e453b4f6a1ed48e381532"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "size": 1758,
+      "sha256": "95e8039db80071930a37be86859fb238ff5aaedaf0d7b0baac98d5800366e02b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "size": 1366,
+      "sha256": "f6f9135f070d52e0a82db888234b632202951e0de3012b2f0621a871bb151349"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "size": 1250,
+      "sha256": "3c19d2f315d03888a6341df14df7702eb259bbff1b98e2aaaf00bddecd5eefa1"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "size": 2646,
+      "sha256": "df9ef69ca4507875968af504075d9bc717a51dfe5553808176cad1fb4f97c8a8"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "size": 2380,
+      "sha256": "272eeeca2fc977d4a36699aa349c52a84b6ee709457777ab89e00de5b46c2bdd"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "size": 3767,
+      "sha256": "c49c87566ee11990510e7179bf05371fbb9d6621dacf90193b5745dff2be8e68"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "size": 3390,
+      "sha256": "f0013fee2e376420cb9dc1ff42d3f23e3eed19ada8625d323e0e98409cfdb009"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "size": 4999,
+      "sha256": "074e6b15c6804a21642c448f32c91643ca9eb820d4d985c6bce8b6ff8a4c1932"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "size": 4421,
+      "sha256": "ec8a542f96e8c0642e2320264998f42527756a3c96643573d065179006ecee7b"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/values/colors.xml",
+      "size": 190,
+      "sha256": "66f5381217fb69f3faa705545ee7ae87e828ef2da2cb5db1fc1f2781d49a1c65"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/values/styles.xml",
+      "size": 535,
+      "sha256": "ac6d5c19061bdc46df004989ad2fe78388c3774fd982d31a47899b54a836f6a4"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/values-v31/styles.xml",
+      "size": 389,
+      "sha256": "9bd6e676529b43d45e1e123ab5056cab477b3fbb87962a780b4cb45a52781558"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/xml/network_security_config.xml",
+      "size": 236,
+      "sha256": "72bd425fe4fa23a272bbe09a2f4221bf4c5eb7315040dcb4a6c867660d3ec1e7"
+    },
+    {
+      "path": "AndroidProject/app/src/main/res/xml/update_paths.xml",
+      "size": 182,
+      "sha256": "31ff491444106aec00dd080ecb94557287f8a5ffc2ce142a3e6affd96086931b"
+    },
+    {
+      "path": "AndroidProject/app/version.properties",
+      "size": 58,
+      "sha256": "baa57b2ca523bb7bda86bfe5b6a6ba07582dc667ea07053ba2e2ea26f7058597"
+    },
+    {
+      "path": "AndroidProject/ARCHITECTURE-AND-GAME-ASSET-AUDIT.md",
+      "size": 1865,
+      "sha256": "0726309451c26b0d43f8a2ddf4e3bd5c98e246a37e150b22d65c9f6fa881fbfe"
+    },
+    {
+      "path": "AndroidProject/BRAND-REVIEW.md",
+      "size": 2295,
+      "sha256": "efc5cf573897512bf4a7cf88de5b2ffe05b979812c3311b5f4deaf092ec91fe8"
+    },
+    {
+      "path": "AndroidProject/branding/ADAPTIVE-MASK-PREVIEW.png",
+      "size": 11257,
+      "sha256": "fec89a83200d195b109c7120aef66cc2eddb79f8310f15f82f61a1a4933c0c82"
+    },
+    {
+      "path": "AndroidProject/branding/concept-chevron.png",
+      "size": 12679,
+      "sha256": "6a5638220355557b5a638ceb65495831f0e22cbe46f7d32fa7597fee6fc44a4f"
+    },
+    {
+      "path": "AndroidProject/branding/concept-horizon.png",
+      "size": 13382,
+      "sha256": "fdfc1c6b5d774cbac8dbb94d7fc321038e0e66f148890f5d4312d66db84e8fda"
+    },
+    {
+      "path": "AndroidProject/branding/concept-sentinel.png",
+      "size": 12857,
+      "sha256": "079b5fc0e98857d1d0b7f16a38f94cb98b2f0698405a90a458dff8e05550fc4b"
+    },
+    {
+      "path": "AndroidProject/branding/selected-chevron.svg",
+      "size": 389,
+      "sha256": "a11d14050040b8b10d694be98b765ccc93aaf3126f6f602171e70c3b0fdceb98"
+    },
+    {
+      "path": "AndroidProject/branding/selected-monochrome.svg",
+      "size": 257,
+      "sha256": "256e555903937d9f55da9e9137c479a25916fc25b2e16d79f3610d4d2bc750f5"
+    },
+    {
+      "path": "AndroidProject/branding/THREE-CONCEPTS-COMPARISON.png",
+      "size": 54215,
+      "sha256": "16594db1da5de355fe3155f4ac387abcb0a1a0355172af0dcccd47bf2e9c6e27"
+    },
+    {
+      "path": "AndroidProject/build-debug.bat",
+      "size": 2983,
+      "sha256": "a42f9f574e66d04037ed22bc7c1b90fa210c6649d80a8d59c96e4272066a1386"
+    },
+    {
+      "path": "AndroidProject/BUILD-ON-WINDOWS.md",
+      "size": 3224,
+      "sha256": "bf7a979f65a9cf8646f519e14087621f9827e3345856bf01a26b92fb9f77a5b4"
+    },
+    {
+      "path": "AndroidProject/build.gradle",
+      "size": 74,
+      "sha256": "6844d442e0ae87ec0b784c8afe5598878784c4fa41aced1e9389a9b3bfb25666"
+    },
+    {
+      "path": "AndroidProject/CHANGELOG-MERGED-SOURCE.md",
+      "size": 2352,
+      "sha256": "806b5e28591035d600cf6fc040323a099eeadaf7641761ee0c10b3d5ef498bfe"
+    },
+    {
+      "path": "AndroidProject/CURRENT-SOURCE-SHA256.txt",
+      "size": 11535,
+      "sha256": "e9689a001d70b75886b9f1547f2c4ac9a118235ff94312e2d131bfeba924765a"
+    },
+    {
+      "path": "AndroidProject/DEVICE-UPDATE-ACCEPTANCE.md",
+      "size": 3806,
+      "sha256": "8b199bf4da4babdc389f86c3c5f34c02f644cdd68b2febac955bc5662ca2a542"
+    },
+    {
+      "path": "AndroidProject/FOUNDATION-HISTORICAL-SHA256.txt",
+      "size": 3013,
+      "sha256": "4d5f47fd4e1cf52c7937846e6396f0baa1f685e4cef30d19d66dc4c2f7072118"
+    },
+    {
+      "path": "AndroidProject/gradle/wrapper/gradle-wrapper.jar",
+      "size": 43705,
+      "sha256": "81a82aaea5abcc8ff68b3dfcb58b3c3c429378efd98e7433460610fecd7ae45f"
+    },
+    {
+      "path": "AndroidProject/gradle/wrapper/gradle-wrapper.properties",
+      "size": 80,
+      "sha256": "d74bc593f7e07b3fb48a23a9c7e6484e84ad45d1411cfc0055229f9ab757ce55"
+    },
+    {
+      "path": "AndroidProject/gradle.properties",
+      "size": 76,
+      "sha256": "4d4c82226865844bdc85391d907a383da4a35d3a3f5348985d5ec3997ab932fe"
+    },
+    {
+      "path": "AndroidProject/gradlew",
+      "size": 8752,
+      "sha256": "734b3879d3501dce471cf0522d3bcbafe76873d9fc5129345b67fb43bd15e933"
+    },
+    {
+      "path": "AndroidProject/gradlew.bat",
+      "size": 2966,
+      "sha256": "57931b17dd228e5c24dac90e815d0bf82477e831a4618dfab4136f5446b42a9f"
+    },
+    {
+      "path": "AndroidProject/INTEGRATION-AND-RELEASE-GATES.md",
+      "size": 4909,
+      "sha256": "08d53d855441cbd32e6a0b3b2daa46fb463cc51c229642a18ddf325b5a1fa96d"
+    },
+    {
+      "path": "AndroidProject/INTEGRATION-QA-RESULTS.json",
+      "size": 1816,
+      "sha256": "b340a22be0caa3415526495ea325aebebc7a01f2e4e4234bb1a44d9f10aeca03"
+    },
+    {
+      "path": "AndroidProject/KNOWN-LIMITATIONS.md",
+      "size": 1599,
+      "sha256": "a9d3ea8d7d571333eacfb93c16a6cfb1b5da74fab0c1140704aa08827333c37f"
+    },
+    {
+      "path": "AndroidProject/MERGE-AND-RELEASE-VERIFICATION.md",
+      "size": 5669,
+      "sha256": "bfb8b1a4424fee7383052e01fac1d94253c345cfeb713195d6ff9c455cbd5082"
+    },
+    {
+      "path": "AndroidProject/OPTIONAL-UPDATE-HISTORICAL-SHA256.txt",
+      "size": 4264,
+      "sha256": "b5d8e380aaf603828b994e079c60e00f5d6623c98035f8709ca6dd5045f15f92"
+    },
+    {
+      "path": "AndroidProject/OWNER-ACCEPTANCE.md",
+      "size": 2209,
+      "sha256": "12cfbfdebd57a625dcf2d7545a24cc9d93c8125e8b5875cdf756db9d43987ace"
+    },
+    {
+      "path": "AndroidProject/PHONE-HOST-RUNTIME-SETUP.md",
+      "size": 1024,
+      "sha256": "8551f136142f0bdd0e147b069f0d2bbd95aa4755bb8db66f6a737ce5ca1de76e"
+    },
+    {
+      "path": "AndroidProject/qa/BASELINE-ASSET-SHA256.json",
+      "size": 1080,
+      "sha256": "a2bc32ba567b8b51f270c6311dd0ba7830a3074ccdbd80007e8fc53534b508f3"
+    },
+    {
+      "path": "AndroidProject/qa/check_art_acceptance.py",
+      "size": 1505,
+      "sha256": "9fab074fae276d01591606a24270ba28061625ba2bce8a1f4f06458add9e1496"
+    },
+    {
+      "path": "AndroidProject/qa/check_brand_integration.py",
+      "size": 6275,
+      "sha256": "8070964326304ac0eeed8a01944508cb0d5c90364aa874b4d0943f0115ea4ccb"
+    },
+    {
+      "path": "AndroidProject/qa/check_combat_milestone.py",
+      "size": 3385,
+      "sha256": "986175587182daba36a6c913bc682852616373ab9d01a0c3a2101bf955975de3"
+    },
+    {
+      "path": "AndroidProject/qa/check_final_integration.py",
+      "size": 4660,
+      "sha256": "35bf2bec8a75f9fe7974dc8c1a1884682a3c69f47e3389676dfdbadf6c133000"
+    },
+    {
+      "path": "AndroidProject/qa/check_fps_quality.py",
+      "size": 2125,
+      "sha256": "42e8b75991d0a24ec42a4b6494fbb1fb45f674e3ca4dc096285dd596fc953284"
+    },
+    {
+      "path": "AndroidProject/qa/check_project.py",
+      "size": 2979,
+      "sha256": "6ec90bdee32b7ea94516a2e9149037fac4acbeb2cf6d569c229e36d21ce6b32a"
+    },
+    {
+      "path": "AndroidProject/qa/HostPolicyTest.java",
+      "size": 1128,
+      "sha256": "659a5f61764d056b8e4bdbcff032712163d2fe8c3831504b0465f677ff7313ba"
+    },
+    {
+      "path": "AndroidProject/qa/test_mobile_combat_hud.py",
+      "size": 10046,
+      "sha256": "2881176692f98513b1120f87b2007bca28bdf36fe9756a5dcb1afcf7f06ea75e"
+    },
+    {
+      "path": "AndroidProject/qa/test_rendered_touch.py",
+      "size": 3464,
+      "sha256": "53333e269652fdabd4244e3f8767fea3f91bcb87c500987fc37b5573c70fe6b7"
+    },
+    {
+      "path": "AndroidProject/qa/test_rendered_walker_hp.py",
+      "size": 2903,
+      "sha256": "33b4e4218bcb62f3ea1199dd9ad11980ab285fa95bd79a171fd36eb5eb6d14cf"
+    },
+    {
+      "path": "AndroidProject/qa/UpdatePolicyTest.java",
+      "size": 3208,
+      "sha256": "dec4eaeea87865fc2daec840d12e4c597b72cbb798efc129ddf89a34afb840eb"
+    },
+    {
+      "path": "AndroidProject/QA-MERGE-RESULTS.json",
+      "size": 6044,
+      "sha256": "ec75a681d7b5dae3f89abd2389a1a0c448ed93b459e4d8b47d044e6acd875a99"
+    },
+    {
+      "path": "AndroidProject/QA-RESULTS.json",
+      "size": 1325,
+      "sha256": "fd850640dc03b08cd861a94398b8f15a18631f7ab30d7e8baf348e088bc67376"
+    },
+    {
+      "path": "AndroidProject/README.md",
+      "size": 1952,
+      "sha256": "9219a0c572ea0a7295cae50627218e9dd1e06c159a1b4d8be69a5001d2ec1447"
+    },
+    {
+      "path": "AndroidProject/RELEASE-GATES.md",
+      "size": 1388,
+      "sha256": "374320823c06ca44384833e2c9a2e39b8ffea9d011cdd915f7f669d89d725b83"
+    },
+    {
+      "path": "AndroidProject/SAMSUNG-ACCEPTANCE.md",
+      "size": 1059,
+      "sha256": "1acbb6691cd38934f048b83c192c48464cb7824d9088b7ee0a8e9e0526ec0c9c"
+    },
+    {
+      "path": "AndroidProject/settings.gradle",
+      "size": 289,
+      "sha256": "0fd38cb3c2332f21b7263c149d51b8bd3be95cacda28e58101fb09780b71e520"
+    },
+    {
+      "path": "AndroidProject/tools/audit-local-project.ps1",
+      "size": 1462,
+      "sha256": "d366d26964051b9050ec4ae0b7e60992df3edd12bc4daa7e71d7135e33c67ade"
+    },
+    {
+      "path": "AndroidProject/tools/bootstrap-build.ps1",
+      "size": 622,
+      "sha256": "6890c48ec5452d9fdbaa2bff44521bf3f783ac0d4b055980b796804b96c911d1"
+    },
+    {
+      "path": "AndroidProject/tools/build-phone-host-gate3.ps1",
+      "size": 1890,
+      "sha256": "79c1ed06b9d6748084c24f4dee34a9da563f018c8b5a6dfb4e3874bffc109ee7"
+    },
+    {
+      "path": "AndroidProject/tools/build-release.ps1",
+      "size": 3099,
+      "sha256": "886c95088e3b9b8ed6eea46cdc4fe0724b29642d0d49ac54e9d8a553ca4dce75"
+    },
+    {
+      "path": "AndroidProject/tools/bump-version.ps1",
+      "size": 917,
+      "sha256": "39de6927288d7e76b73017b1c340115ba3b6da78349357414a4ad5d8a91b770d"
+    },
+    {
+      "path": "AndroidProject/tools/create-genuine-wrapper.ps1",
+      "size": 1005,
+      "sha256": "f9520839cfb2a5fc572c3e8a379c353a1773ce49bb20aa5e9db451e2fc1186a7"
+    },
+    {
+      "path": "AndroidProject/tools/install-phone-node-runtime.ps1",
+      "size": 7069,
+      "sha256": "2a177555d779a506a483dc14948687135443e70df98811e1675d4c3d6d4e3aa9"
+    },
+    {
+      "path": "AndroidProject/tools/provision-signing-key.ps1",
+      "size": 1776,
+      "sha256": "26418fa97d7b1680953943d1482b4a9ce7d0b78f51c97586483556df3ed7f6ae"
+    },
+    {
+      "path": "AndroidProject/tools/publish-manifest.ps1",
+      "size": 2762,
+      "sha256": "3d92b92646e65b492d67100b8495043f358a97fafb2ac4c3c27af500141d80ee"
+    },
+    {
+      "path": "AndroidProject/UPDATE-RELEASE-STATUS.md",
+      "size": 1372,
+      "sha256": "ddd97d80b22b017286b5c10e6646024100e7f399d10613724612732e7e15dc56"
+    },
+    {
+      "path": "AndroidProject/UPDATE-SYSTEM.md",
+      "size": 6168,
+      "sha256": "34b4c12d29906f415a08ea3f6d925eac2bd4cf008bce375884dc4d93dcb74dc4"
+    },
+    {
+      "path": "APK-DEBUG.bat",
+      "size": 64,
+      "sha256": "8d5e3846d60f48c9d538ee1daaadfac132fa9a83dacfa9a8dd9c35dc901ada7d"
+    },
+    {
+      "path": "config/release-inputs.template.env",
+      "size": 919,
+      "sha256": "724502deb7abd2db5ff2e8804fa97755139d8063b5b3f366495a3f76351d39f8"
+    },
+    {
+      "path": "docs/MULTIPLAYER-PROTOCOL-V2.md",
+      "size": 3864,
+      "sha256": "437a42fa113c448a621f744f5dc9d49c8664530b82059ff736fe70df82bed4c4"
+    },
+    {
+      "path": "GAMEPLAY-LAN-QUICKSTART.md",
+      "size": 1723,
+      "sha256": "fe91c73a5c1fd6f3fcfa1b4de8972ab83bb357bd4cfd254bbaa8adad3eb6a434"
+    },
+    {
+      "path": "GAMEPLAY-LAN-ZOMBIES-4.0-MANIFEST.json",
+      "size": 109293,
+      "sha256": "04d14694e53dd69f116211f1a536dd3332a4dd5afe83f68693528e3ae58b4a86"
+    },
+    {
+      "path": "GAMEPLAY-LAN-ZOMBIES-4.1-MANIFEST.json",
+      "size": 111908,
+      "sha256": "da23d1d589919d2f9708eeda0ceee8c07ad72df51687daf895cfa619ab40c574"
+    },
+    {
+      "path": "GAMEPLAY-LAN-ZOMBIES-4.2-MANIFEST.json",
+      "size": 116327,
+      "sha256": "c5dba0b24362ca23cc0c34375e9732c8b1d6e637e823b8ac1e697718d877dbf0"
+    },
+    {
+      "path": "GAMEPLAY-LAN-ZOMBIES-4.2-QUICKSTART.md",
+      "size": 2368,
+      "sha256": "635fb08ec3f3518e140b678c898a17d949b618c374f08cab857cf270fee66e6d"
+    },
+    {
+      "path": "GAMEPLAY-QUALITY-6.0-QUICKSTART.md",
+      "size": 1204,
+      "sha256": "f57a9e358a438ada8f06cb6f9778d4ca701b67404b2dc9cc5742e1f08789f74a"
+    },
+    {
+      "path": "GAMEPLAY-QUALITY-6.0-REPORT.md",
+      "size": 7740,
+      "sha256": "dee823be03129cc00bd75c11858d4d43e7b3088f446d746cf65b35e989c5d622"
+    },
+    {
+      "path": "PACKAGE-MANIFEST.json",
+      "size": 87966,
+      "sha256": "8ee890326e8f75df5c0dc67e5820af4f96d205dd63bdd79c501098cb3cdb004f"
+    },
+    {
+      "path": "README-SOURCE-PACKAGE.md",
+      "size": 2658,
+      "sha256": "54cf473c886cf1b405a4a3f080413f6b27485e3b8cdab91a0386804509bec623"
+    },
+    {
+      "path": "rollback/2026-11-05-pre-android-build-script-hardening/AndroidProject/build-debug.bat",
+      "size": 303,
+      "sha256": "7fe761d84bb1c31ad6aeb4f911856e2810dc75319d6c5f633833bc2a4d3e4ffa"
+    },
+    {
+      "path": "rollback/2026-11-05-pre-android-build-script-hardening/AndroidProject/BUILD-ON-WINDOWS.md",
+      "size": 2518,
+      "sha256": "456185a5e710ecaca117cc7190261ffa2802e6c5fac3d575a33f7c81fa6426f6"
+    },
+    {
+      "path": "rollback/2026-11-05-pre-android-build-script-hardening/AndroidProject/tools/bootstrap-build.ps1",
+      "size": 1629,
+      "sha256": "0b70d199d1aa0e8248ef95f11405a29c484b35f2ee757544055642dbb6e07850"
+    },
+    {
+      "path": "rollback/lan-motion-presentation-before-20261102/capture-lan-host-status.cjs",
+      "size": 16771,
+      "sha256": "18b5f3b073f91aea9438eac3444037ed3b1936b33758934f6fa11108e2329501"
+    },
+    {
+      "path": "rollback/lan-motion-presentation-before-20261102/mp-bot-snapshot-smoothing.test.cjs",
+      "size": 3224,
+      "sha256": "8ffe585be796875077a1dbd7e91a936d10595b911670fe719e3ab57d57d9b9ab"
+    },
+    {
+      "path": "rollback/lan-motion-presentation-before-20261102/server.js",
+      "size": 177607,
+      "sha256": "5b88efcf9778129cfb2749a7cf27f2f1ba03e72b274194aebbd1b92e5ef7c8de"
+    },
+    {
+      "path": "rollback/lan-motion-presentation-before-20261102/SHA256-MANIFEST.json",
+      "size": 614,
+      "sha256": "f0ffb4ded8b79993819a1f1a3df41f30a0a3c57e6769f6b360f078d2cc8a6698"
+    },
+    {
+      "path": "rollback/offline-infection-parity-before-20261102/AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 942513,
+      "sha256": "a3c8f457e2597cb11a9aed03baa2b1e016696919df8a0f7a8b44a3943eb5e41d"
+    },
+    {
+      "path": "rollback/offline-infection-parity-before-20261102/AndroidProject/app/src/main/assets/www/index.html",
+      "size": 937948,
+      "sha256": "f3eaf6cbf357059a074ca090a9842b0ab565b38783b5280be21c17dd3231b686"
+    },
+    {
+      "path": "rollback/offline-infection-parity-before-20261102/SHA256-MANIFEST.json",
+      "size": 384,
+      "sha256": "6ebb89e52ac59433433daf4e6ece3521defa5df5a90b3ceca00e335feac5e429"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 948360,
+      "sha256": "bb7698f7343ace0132a352b750d522c117d1594a570ad800142b48bc542c46c2"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/AndroidProject/app/src/main/assets/phone-host/legendary-packs.js",
+      "size": 208281,
+      "sha256": "7710d78b8476c971cbc35b18ff863fe378917ba77d238acd382bfc9903f002d9"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/AndroidProject/app/src/main/assets/phone-host/SHA256SUMS",
+      "size": 4382,
+      "sha256": "ef4224d9e0845285ae90c3af7246ace6d70dbea11a3605da30f6a7d747cfa7bd"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/AndroidProject/app/src/main/assets/www/index.html",
+      "size": 948360,
+      "sha256": "bb7698f7343ace0132a352b750d522c117d1594a570ad800142b48bc542c46c2"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/AndroidProject/app/src/main/assets/www/legendary-packs.js",
+      "size": 208281,
+      "sha256": "7710d78b8476c971cbc35b18ff863fe378917ba77d238acd382bfc9903f002d9"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/AndroidProject/app/src/main/java/com/sightline/v3/MainActivity.java",
+      "size": 28302,
+      "sha256": "e009971ce15b7809aa8db7473baf124ee67737eea3a493e9acf3e1edd985d802"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/AndroidProject/CURRENT-SOURCE-SHA256.txt",
+      "size": 11535,
+      "sha256": "6fd521896d497b383ab707215c3c3e82f66cc688c92447d0ac8941a364ef3514"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/PACKAGE-MANIFEST.json",
+      "size": 87966,
+      "sha256": "8ee890326e8f75df5c0dc67e5820af4f96d205dd63bdd79c501098cb3cdb004f"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/ROLLBACK-MANIFEST.json",
+      "size": 2688,
+      "sha256": "2af02501f610aa6b665f49cd8421af352647cb7d1af2aa25c8e9afd1c664eaf0"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/tests/p12-legendary-skin-system.cjs",
+      "size": 19164,
+      "sha256": "77b4db54bdd383b7eeaf9f072925b2f51937fffd0054a5f56c88b2eea67b9f69"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/tests/p13-legendary-audio-inspection.cjs",
+      "size": 11436,
+      "sha256": "b2ef02f97bf2d7bc312975967c71ac36e4bbf6485de18937a8ab3e455be41a30"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/tests/phase15-rook117-legendary-reconstruction.cjs",
+      "size": 9016,
+      "sha256": "75f303ce703a7d1eaf93adaa4d46e76b64fdf41bdee89ba075f816c2f78599da"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/tools/capture-lan-host-status.cjs",
+      "size": 16771,
+      "sha256": "0d2bc418697de47d3de38b8460858298a1f04979ae194b69b180c9ffe20bd7d6"
+    },
+    {
+      "path": "rollback/pre-legendary-guns-2-20261104/tools/create-offline-lan-dev-package-manifest.cjs",
+      "size": 5883,
+      "sha256": "70b6509f4af2fdba2a5e9a29a51441603f1e553d62add67f0f96c525ebc92af5"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 946950,
+      "sha256": "a096e1e39cecd8aa0a9c609afd93c4a9b4f4dbc6c79e07876761afb48296be9c"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/app/src/main/assets/phone-host/legendary-packs.js",
+      "size": 178066,
+      "sha256": "aca555d928d532361021cb299ac8a74d0ee72e53094af09bc0acfddcd4d9fbe3"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/app/src/main/assets/phone-host/SHA256SUMS",
+      "size": 4382,
+      "sha256": "7d3a674d0e4497eaca57b1da1f27a02e06edd8dfa0f3bc169ea8230beb318342"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/app/src/main/assets/phone-host/weapon-skins.js",
+      "size": 70205,
+      "sha256": "56a9246ae8d939803e83728acd95b277fde698e5ad74f2af656c16893bab9a04"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/app/src/main/assets/www/index.html",
+      "size": 946950,
+      "sha256": "a096e1e39cecd8aa0a9c609afd93c4a9b4f4dbc6c79e07876761afb48296be9c"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/app/src/main/assets/www/legendary-packs.js",
+      "size": 178066,
+      "sha256": "aca555d928d532361021cb299ac8a74d0ee72e53094af09bc0acfddcd4d9fbe3"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/app/src/main/assets/www/weapon-skins.js",
+      "size": 70205,
+      "sha256": "56a9246ae8d939803e83728acd95b277fde698e5ad74f2af656c16893bab9a04"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/AndroidProject/CURRENT-SOURCE-SHA256.txt",
+      "size": 11535,
+      "sha256": "86cf3b3ba13921cc519ed54bb65a6e9d6f7ac469a075afbd30704858643a9dc9"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/PACKAGE-MANIFEST.json",
+      "size": 81072,
+      "sha256": "486c698429d6492c35286eaaa3e9a7236d3aa8fe93bec14120228a619f9cccc2"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/ROLLBACK-MANIFEST.json",
+      "size": 2196,
+      "sha256": "7c5c8080d43671ca73e0be98f4a097f7c27275bac0b419802c3ed7ffdd020bac"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/tests/p12-legendary-skin-system.cjs",
+      "size": 17321,
+      "sha256": "8ebe7d84e7af48169a6d9d3879d27f6d1d5a32b1e15020009e560ef563d1d99f"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/tests/p13-legendary-audio-inspection.cjs",
+      "size": 11360,
+      "sha256": "ae03d5dc32d7492abeeefe50d56e59f9ade28aa10d44199b874e07910febee92"
+    },
+    {
+      "path": "rollback/pre-revamped-legendary-restore-20261103/tests/phase15-rook117-legendary-reconstruction.cjs",
+      "size": 3811,
+      "sha256": "d91fc431815956de674b7821fd22b701606da17ac9d3beb6f7910265d1beeb8d"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 948048,
+      "sha256": "0e4032205c5e8c51e5ba5c3073119688d9b999d7bf016af1dc2a90e51b5a2b30"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/AndroidProject/app/src/main/assets/phone-host/SHA256SUMS",
+      "size": 4382,
+      "sha256": "051dcd0ff93d5919ded1174f98a00c39490395b0be6784983b229b0c15f72bf3"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/AndroidProject/app/src/main/assets/www/index.html",
+      "size": 948048,
+      "sha256": "0e4032205c5e8c51e5ba5c3073119688d9b999d7bf016af1dc2a90e51b5a2b30"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/AndroidProject/app/src/main/java/com/sightline/v3/MainActivity.java",
+      "size": 28302,
+      "sha256": "6673cacf808f47ae5da090d59ced377e4a0c8267c6b26e7657202d1386370cf0"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/AndroidProject/CURRENT-SOURCE-SHA256.txt",
+      "size": 11535,
+      "sha256": "188a66709b61cb89bd2148bbc66d3f4a0919eedfa073715210775e6cfc4babd5"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/PACKAGE-MANIFEST.json",
+      "size": 84934,
+      "sha256": "ddc11f291d53e3757d6e3a67c5eb42c17cacbe8583c822fd8526820d69b7ff5e"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/ROLLBACK-MANIFEST.json",
+      "size": 1913,
+      "sha256": "95edb3abcb92042d4292b0a8aeb0ff6d0f07da64a90eb3a4eb9b8fdba24bba5d"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/tests/p12-legendary-skin-system.cjs",
+      "size": 17209,
+      "sha256": "0b2464c5369cfdf9ccd04a86f419745405bec7cae5e3987b932941ae2bb61bef"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/tests/phase15-rook117-legendary-reconstruction.cjs",
+      "size": 8166,
+      "sha256": "4d1650b60d20aaaca7cf43b321f33deb527dae2336150411afd8245b4f47f1c7"
+    },
+    {
+      "path": "rollback/pre-runtime-dress-call-20261103/tools/capture-lan-host-status.cjs",
+      "size": 16771,
+      "sha256": "db6336c1c27976adf42abd2f28be9d9a248e7c40ff2f317335525995748f8deb"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/AndroidProject/app/src/main/assets/phone-host/index.html",
+      "size": 937948,
+      "sha256": "f3eaf6cbf357059a074ca090a9842b0ab565b38783b5280be21c17dd3231b686"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/AndroidProject/app/src/main/assets/phone-host/server.js",
+      "size": 177607,
+      "sha256": "5b88efcf9778129cfb2749a7cf27f2f1ba03e72b274194aebbd1b92e5ef7c8de"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/AndroidProject/app/src/main/assets/phone-host/SHA256SUMS",
+      "size": 4297,
+      "sha256": "e129147673b63daaea91392c47cf16fb873fb2c2fffd85c328ee60836a514c6d"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/AndroidProject/app/src/main/assets/www/index.html",
+      "size": 937948,
+      "sha256": "f3eaf6cbf357059a074ca090a9842b0ab565b38783b5280be21c17dd3231b686"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/AndroidProject/app/src/main/java/com/sightline/v3/MainActivity.java",
+      "size": 28258,
+      "sha256": "f910cc079e24bfc2b1d7e7d5074773f13819a254efa99e8bfb8a1ed7ccfa876e"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/AndroidProject/CURRENT-SOURCE-SHA256.txt",
+      "size": 11310,
+      "sha256": "6f9ab0fe61a7ca93caa3120a8471a21d1014243d41620de73dfb42b29fbb1064"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/PACKAGE-MANIFEST.json",
+      "size": 73756,
+      "sha256": "75477fedb091d2db226332637d113010e28b5bec28e3281ffc90294f40384e64"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/SHA256-MANIFEST.json",
+      "size": 2510,
+      "sha256": "73dee6df1578fb1a689718ecbe7d9287ebcbc872f9702926cd9d9cfdeeae0524"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/tests/infection-offline-flow.test.cjs",
+      "size": 2904,
+      "sha256": "5a31bce5b2eee9e3c2af9caab1c06080d22ed87fd03fa8271f018cb8684b26f6"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/tests/mp-bot-snapshot-smoothing.test.cjs",
+      "size": 3224,
+      "sha256": "8ffe585be796875077a1dbd7e91a936d10595b911670fe719e3ab57d57d9b9ab"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/tests/offline-64bot-capacity.cjs",
+      "size": 2883,
+      "sha256": "0c0cf1b39e9f8dd9d134791ce7f36ed71574272cb0ac93b202d99205a7106957"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/tests/outbreak-server-roster.test.cjs",
+      "size": 3576,
+      "sha256": "ca27c661ca9c87aae19850f90c0863e4b4d4131395b3fd090d9fb025e11603d2"
+    },
+    {
+      "path": "rollback/safe-final-integration-before-20261102/tools/capture-lan-host-status.cjs",
+      "size": 16771,
+      "sha256": "18b5f3b073f91aea9438eac3444037ed3b1936b33758934f6fa11108e2329501"
+    },
+    {
+      "path": "SIGHTLINE.bat",
+      "size": 6449,
+      "sha256": "ac31b30ffe8de6897d73ccfc2833dc438559f7e42319def1a4e97c9b7f37c511"
+    },
+    {
+      "path": "START-HOST.bat",
+      "size": 68,
+      "sha256": "e6d7b1733470f488754e444f689fea15fcc2ba442243bd13d1dc3f60e72209ea"
+    },
+    {
+      "path": "tests/android-build-wrapper-policy.test.cjs",
+      "size": 1681,
+      "sha256": "7863126127d4b7722ab265c97cbce233971362e392a7166ea22583586f2282a1"
+    },
+    {
+      "path": "tests/android-mainactivity-asset-url.test.cjs",
+      "size": 864,
+      "sha256": "6afa2064e3b748ee2dacb65c7f0fbf806268c40be2938ce50caf7f78788fcc97"
+    },
+    {
+      "path": "tests/authoritative-combat.mjs",
+      "size": 1719,
+      "sha256": "732ce3ebe61716590a2f278965b1215f443e6657edbed706c7814a241daa69dd"
+    },
+    {
+      "path": "tests/bench-mp-audit-optimizations.cjs",
+      "size": 3195,
+      "sha256": "25b8f817400189b87c6c82aaa6f09fdfc7f15a9078e89402e740369d144573ac"
+    },
+    {
+      "path": "tests/bench-mp-client-interpolation.cjs",
+      "size": 5249,
+      "sha256": "37d2a97146a3cacc9ec9e6c8da3b50ef3f23ee845392169a1bb3ed63f64abde0"
+    },
+    {
+      "path": "tests/bench-navigation-build.cjs",
+      "size": 1134,
+      "sha256": "9dfdeef325f6790293a07adf4568ef352666dca0a54a894ec9bb80c31f01c0c7"
+    },
+    {
+      "path": "tests/bench-wall-ray-bvh.cjs",
+      "size": 3554,
+      "sha256": "a25c42a27b060673ad2b9762b329bc334390be7e5a8a3990a9d1929d2ce082a4"
+    },
+    {
+      "path": "tests/bot-scan-occlusion-audit.cjs",
+      "size": 2613,
+      "sha256": "eb558f0f61e471563c2ba2b83978f0603aecf662304a0a447287bfebc3ecc0a6"
+    },
+    {
+      "path": "tests/bot-tactics-invalid-geometry.test.cjs",
+      "size": 1512,
+      "sha256": "c37b997f741edb134c00d9b15e746754bd43249d189e0979f26e3cf65a0cb045"
+    },
+    {
+      "path": "tests/bot-tactics-occupied-index.test.cjs",
+      "size": 1326,
+      "sha256": "6479140b9493d1da954bd00b809cdb07403bdc111e866e0ead138ee00c38838a"
+    },
+    {
+      "path": "tests/bot-tactics-ray-index.test.cjs",
+      "size": 2197,
+      "sha256": "1f193e36bf97e9113f34e5b81a092d7897d03e71e14cefb9bccf618a4d385713"
+    },
+    {
+      "path": "tests/build-claude-restore-evidence.py",
+      "size": 5748,
+      "sha256": "3b73dbbd2253f601272234ceed960f5e61719025d7bd99f55fd161371d6cf276"
+    },
+    {
+      "path": "tests/capture-firstperson-legacy-fallback.cjs",
+      "size": 3409,
+      "sha256": "75fdc4b4b53254e804b8587a282b4f5771747edc0f48e85eab347b07abfae6e9"
+    },
+    {
+      "path": "tests/capture-lan-host-status.test.cjs",
+      "size": 9110,
+      "sha256": "92a7c03e6e7558ac784f7a52462a23a5f544827b81a632699fb47e3cfb9115af"
+    },
+    {
+      "path": "tests/capture-rook117-image2-arm-baseline.cjs",
+      "size": 4421,
+      "sha256": "914def6e28bb46fa5242cb55d5d817c78378c3bc2f6869d652ecf17f5b0dd5d0"
+    },
+    {
+      "path": "tests/character-bot-roster-runtime.cjs",
+      "size": 11888,
+      "sha256": "c3710102a1aef82c65b09bb719e848c7ce65bfb872f455d7a211eb91a1031fc0"
+    },
+    {
+      "path": "tests/character-thirdperson-grip-review.cjs",
+      "size": 5837,
+      "sha256": "6efb229eb5014571ba68965fbc3a727d8af29e3facc14e4ef4096f0797295704"
+    },
+    {
+      "path": "tests/claude-character-baseline-runtime-check.cjs",
+      "size": 8896,
+      "sha256": "9beb78c00c78db0f50f36ab1e941fd13d1807955a8de11fcfab2b016ff594acc"
+    },
+    {
+      "path": "tests/claude-character-restore.cjs",
+      "size": 3396,
+      "sha256": "0696b2a491a02874f70ba9e3d086e38f0acbd602b153701cb2d29965508322eb"
+    },
+    {
+      "path": "tests/firstperson-character-consistency.cjs",
+      "size": 7791,
+      "sha256": "55b5a2fad5060232bbb802a637cf22ccd468c6f573faef6796657ae625a8977a"
+    },
+    {
+      "path": "tests/fixtures/README.md",
+      "size": 446,
+      "sha256": "52edd778c02e1199079a128128723b69979cbf66072adec73db06593756ac298"
+    },
+    {
+      "path": "tests/fixtures/TEST-ONLY-do-not-deploy-cert.pem",
+      "size": 1164,
+      "sha256": "5baa1f8acade42cfaea93f65af9078d1217e7eb362c6cf0360bc85c0192abb2d"
+    },
+    {
+      "path": "tests/fixtures/TEST-ONLY-do-not-deploy-key.pem",
+      "size": 1704,
+      "sha256": "2b9f0fc32d311ffe370b54c663276c81608b39a6830b07140f9c55c83f3b6d9d"
+    },
+    {
+      "path": "tests/graphics-color-pipeline.mjs",
+      "size": 1780,
+      "sha256": "1b49b8eb7384ba32f245c1942ee5ac40fdca935fd7f0ef5709a4f58d952595aa"
+    },
+    {
+      "path": "tests/host-timer-resolution-probe.cjs",
+      "size": 3665,
+      "sha256": "f98f99f582e35d9b5ce1ad304b908065ac24015d97064482686d479e47a4226d"
+    },
+    {
+      "path": "tests/infection-lan-protocol.mjs",
+      "size": 11391,
+      "sha256": "54feef0ae3693d743a8f9fe48db0b83a25b6a5525b215f08fbedbf73d3baa65e"
+    },
+    {
+      "path": "tests/infection-offline-flow.test.cjs",
+      "size": 20624,
+      "sha256": "180e773dfe95481c29cb6bae28ae350bd1eebc54572ed250f6f76ae37f15d31b"
+    },
+    {
+      "path": "tests/infection-offline-role-runtime.cjs",
+      "size": 5560,
+      "sha256": "9358796617506a42fd0de3ffd7cf174ed9b1c83e7d045141a82d92cebdae739b"
+    },
+    {
+      "path": "tests/infection-retreat-target-argument.test.cjs",
+      "size": 1549,
+      "sha256": "a8d857fa2545d3fb1c12c84f00bf0a931545f546abeaaa9e9612de18b57fce54"
+    },
+    {
+      "path": "tests/infection-shotgun-damage.test.cjs",
+      "size": 1693,
+      "sha256": "76e7cec610c3ed1e7ecae0bb8acc21391b64360c0f3230cd2db5eae152ed42be"
+    },
+    {
+      "path": "tests/infection-squad-roles.test.cjs",
+      "size": 9503,
+      "sha256": "ea6503ffbc11bc38e58658b7ad25d24d9d741a1c282c1ca2edcb9c0aeb265aba"
+    },
+    {
+      "path": "tests/lan-diagnostics.test.cjs",
+      "size": 3632,
+      "sha256": "0b493e310241730b2ca28d1374f5b48fa4d3986ceffb39e4613f53f70357d791"
+    },
+    {
+      "path": "tests/lan-outbreak-cap-stress.mjs",
+      "size": 6591,
+      "sha256": "d10aa5956c9642cc54f0ab5211f47c6525641756d29e454aa165524d88088ddd"
+    },
+    {
+      "path": "tests/lib/mp-protocol-v2-client.mjs",
+      "size": 1418,
+      "sha256": "c4d2056101a0fb7d1db94c1bfe5eb97c1f90a4374c0021c637462f970f328530"
+    },
+    {
+      "path": "tests/make-firstperson-comparison.py",
+      "size": 1066,
+      "sha256": "80ed95a2ef79a9d667368519bd0229901c7093f3a01d84bea11af272ec5b8f99"
+    },
+    {
+      "path": "tests/map-bot-navigation-audit.cjs",
+      "size": 3149,
+      "sha256": "0f58fc9d80b19c57c4a716e22486e4c4d7d6907cb7b4317265e40d5b98321044"
+    },
+    {
+      "path": "tests/merge-archives-20261026-webgl.cjs",
+      "size": 7079,
+      "sha256": "e168b49ec743208e0ca3da2b0945d26e1657f9c21effc03c08ff7ed7f5848c64"
+    },
+    {
+      "path": "tests/mp-64bot-host-bench.mjs",
+      "size": 20798,
+      "sha256": "7b28696b29efb6d61320bae41b97c857b189fcc9bae9dddea25a3cb4f21080b2"
+    },
+    {
+      "path": "tests/mp-audit-optimizations.test.cjs",
+      "size": 7487,
+      "sha256": "01cb9a9ab9b68e946ed797c81490ae368c875c1720a865764a6cb9d2657a0dca"
+    },
+    {
+      "path": "tests/mp-authoritative-death-respawn-projection.test.cjs",
+      "size": 3953,
+      "sha256": "6460b8deece02d31c0747abcf17f517d59fd81d30433fea5315233f41bb61f0a"
+    },
+    {
+      "path": "tests/mp-bot-fx-throttle.test.cjs",
+      "size": 2091,
+      "sha256": "87eb327bf1f6b9c45946675e8e83b330745b6184243ef3ed5971a814a515b0dd"
+    },
+    {
+      "path": "tests/mp-bot-partial-route-progress.test.cjs",
+      "size": 3443,
+      "sha256": "ff1e0e9abcfdf6ab4135d8764c3389dc359bffc263a4b1138dd4cc9d7dc5a90d"
+    },
+    {
+      "path": "tests/mp-bot-path-budget.test.cjs",
+      "size": 8483,
+      "sha256": "78b5fd75c7f99a2067d75180873950be85d184b567edc89dea28d8d3387cbfc2"
+    },
+    {
+      "path": "tests/mp-bot-scan-allocation.test.cjs",
+      "size": 2500,
+      "sha256": "4f47a23201aa7052dd05d19bf25dd275ac5d3ed31f046a665e3d22aeaa58cc95"
+    },
+    {
+      "path": "tests/mp-bot-scan-occlusion.test.cjs",
+      "size": 9970,
+      "sha256": "c559438ce753ed81974b1fd0b38231e1875253749fa8a52380064948f413b910"
+    },
+    {
+      "path": "tests/mp-bot-snapshot-smoothing.test.cjs",
+      "size": 4515,
+      "sha256": "519fece08f9633c161797ce95fef292fb5050b9e9fbf4ff4d2019663ce7205fa"
+    },
+    {
+      "path": "tests/mp-bot-think-scheduler.test.cjs",
+      "size": 8267,
+      "sha256": "42da7ac902203da8f1d6a0daf081f2b0fedc48695aad5e5df0280f1e0061e9b0"
+    },
+    {
+      "path": "tests/mp-capacity-rewind-lan.mjs",
+      "size": 8042,
+      "sha256": "5bbad5467e8da6285ee1a3b77c8b2d683686b66cf7cec634eddf53cd119247d4"
+    },
+    {
+      "path": "tests/mp-capacity-rewind.mjs",
+      "size": 7581,
+      "sha256": "54e8907d9d90490febc324de1c186654efcc5339dae978c487516d3cfc4a8983"
+    },
+    {
+      "path": "tests/mp-client-bot-lan-runtime.cjs",
+      "size": 23856,
+      "sha256": "cb8e9185a0ec4c55b8e4938b78f6e509f07d584884ec1e13ae8dcc85bf773e50"
+    },
+    {
+      "path": "tests/mp-fractional-host-tick.test.cjs",
+      "size": 2036,
+      "sha256": "38cefea42905c7f9b0003456f922f62013f724f33d9cecb0915ae42cf3dd8357"
+    },
+    {
+      "path": "tests/mp-infection-bot-interpolation.test.cjs",
+      "size": 3924,
+      "sha256": "e16e6d1d1c61a8ddbbe8f19e53c6d993e209a5f5bc310421247350b6a2f6d326"
+    },
+    {
+      "path": "tests/mp-jitter-interpolation.test.cjs",
+      "size": 8867,
+      "sha256": "881207daf1c9ae608c1c2658622256aa740b152d78cb466e4bbfbf4842571a16"
+    },
+    {
+      "path": "tests/mp-lan-fault-injection.mjs",
+      "size": 13805,
+      "sha256": "61dfb4f50361dd8dd444099f29689a02e4b11e9f0f652fcea5b67354a12bfd06"
+    },
+    {
+      "path": "tests/mp-network-gap-window.test.cjs",
+      "size": 1452,
+      "sha256": "46f7969a58da8bab484fbc2e62fcd2163e029183b86ce48dc848dc93d5e6f912"
+    },
+    {
+      "path": "tests/mp-outbreak-64bot-cap.mjs",
+      "size": 20074,
+      "sha256": "816e37cbe541c8e440f462645b54f9503811a850ca9a6e664a5a0d501004f6af"
+    },
+    {
+      "path": "tests/mp-protocol-v2-security.test.cjs",
+      "size": 8787,
+      "sha256": "5b56af63ba04c29dbe1f618ec374a8b69505502e6c53001b13d4e3006db8bcab"
+    },
+    {
+      "path": "tests/mp-reload-transition-correctness.test.cjs",
+      "size": 6948,
+      "sha256": "85e99cad7e5cad33f0ed29110a25becc89c52acd5b979a342308da98cd4d9a7e"
+    },
+    {
+      "path": "tests/mp-remote-pose-reuse.test.cjs",
+      "size": 11813,
+      "sha256": "b15043b51ab417ef7a346fc2490ff32b89675dad79b107745acc345b422b40f3"
+    },
+    {
+      "path": "tests/mp-server-snapshot-contract.test.cjs",
+      "size": 2482,
+      "sha256": "bfa3219906d05afa7933dfaaac3838301f133c63cb6bf1cdf9d98bf8b99ccb2e"
+    },
+    {
+      "path": "tests/mp-slow-peer-snapshot-isolation.test.cjs",
+      "size": 2828,
+      "sha256": "50c757ac64204a2a5c7a91e5ea55b580e0e79bd65a311714bfe32fcbc8313416"
+    },
+    {
+      "path": "tests/mp-stale-socket-session.test.cjs",
+      "size": 3654,
+      "sha256": "289fbecbd6754c7b24d91daae3ddc86c246bb3a4ef00fa6fcbe753d2f991e5fc"
+    },
+    {
+      "path": "tests/mp-websocket-handshake.test.cjs",
+      "size": 2565,
+      "sha256": "16929c105bfd4555050d91968499ffaba27f9e1b62a39470226d9e9d09a33d90"
+    },
+    {
+      "path": "tests/mp-websocket-ingress-fairness.test.cjs",
+      "size": 18527,
+      "sha256": "031a742258d9e61c53908b5bc6e91860f685174e2661065eb12a323ec7f52a10"
+    },
+    {
+      "path": "tests/mp-zombie-jitter-interpolation.test.cjs",
+      "size": 5900,
+      "sha256": "ce7d50d7dcc3ed91713c8d7f2cf5c3258b7fc621e72d5c4e9bdc3035594ab820"
+    },
+    {
+      "path": "tests/offline-64bot-capacity.cjs",
+      "size": 3406,
+      "sha256": "f4a3c6d0b80a4cdeabf11a62eada08a9daca34d275909f09c10e5b3f4d35431b"
+    },
+    {
+      "path": "tests/offline-bot-idle-autonomy.test.cjs",
+      "size": 3595,
+      "sha256": "9d1b713ea71b44245a0ec857a0f73becd913c40900cfcf7965d55e8c6665d09a"
+    },
+    {
+      "path": "tests/offline-bot-parkour.test.cjs",
+      "size": 2814,
+      "sha256": "1a1f866394323fc7d0e2fd5170da784d8a29ece11dda3af93de840bc8b838c55"
+    },
+    {
+      "path": "tests/outbreak-incremental-field.test.cjs",
+      "size": 1914,
+      "sha256": "3458a4114a2f027cc2be7359a7e3d7f92bd982439386b46bac839e824b72be7a"
+    },
+    {
+      "path": "tests/outbreak-multiplayer-client-roster-runtime.cjs",
+      "size": 6743,
+      "sha256": "4e608cf9bd1f1392c4ac731a1562ca841ab4f0fb15602d814934b72f86ee85b3"
+    },
+    {
+      "path": "tests/outbreak-occlusion-fairness.test.cjs",
+      "size": 8805,
+      "sha256": "83024423d27200551a169203f0966bde9d46848bf60e6e5d20d980466f04a6bc"
+    },
+    {
+      "path": "tests/outbreak-offline-runtime.cjs",
+      "size": 12059,
+      "sha256": "b768d4710bb03efbdd108b03545e29c04b42e045af53c49802d2fbfb3f17804d"
+    },
+    {
+      "path": "tests/outbreak-perception-cadence.test.cjs",
+      "size": 1446,
+      "sha256": "98b17ca1d5480855826c2539c89b88ddcd203e9933077855a89c890a4ef509e0"
+    },
+    {
+      "path": "tests/outbreak-server-roster.test.cjs",
+      "size": 4046,
+      "sha256": "59d6658d07cf4024bcb1c603ed9be364c1d954b30d758033b43c30a5bbb61fa5"
+    },
+    {
+      "path": "tests/outbreak-spawn-budget.test.cjs",
+      "size": 812,
+      "sha256": "b06aa5eb8e3d7ef5111b267a3d648f60580b635504252310da95377754b6d90d"
+    },
+    {
+      "path": "tests/p10-optics-webgl-browser.py",
+      "size": 12581,
+      "sha256": "5c53354a641063e44d4bc3ba37877db0b688da889cd331d2a0935f30a56de8c8"
+    },
+    {
+      "path": "tests/p101-capture-optic-views.py",
+      "size": 3592,
+      "sha256": "fe82818fffd05a3d964d27b9fbaee51599428e956a59e5a7eb21a17be0db8b46"
+    },
+    {
+      "path": "tests/p101-mobile-persistence-browser.py",
+      "size": 5160,
+      "sha256": "b1e9ba09eec0587fe43670a0416db95f2ef235a0997e37fcca416ea706f43fa7"
+    },
+    {
+      "path": "tests/p101-optics-storage-regression.mjs",
+      "size": 3140,
+      "sha256": "97aa87438cefb0f23fd77b573e20fcdd032d0ca5c337300eba866448116badf9"
+    },
+    {
+      "path": "tests/p101-optics-webgl-browser.py",
+      "size": 13066,
+      "sha256": "a538b521f4cf2aa4241afa622ceb6feb08a7c2cbec4501f581306d7e0decb866"
+    },
+    {
+      "path": "tests/p101-verify-source-overlay.py",
+      "size": 1711,
+      "sha256": "8bb727ac05db0d3e2442d794b97afbd89bf5feb99ee1f56c2d35b95d71dbc190"
+    },
+    {
+      "path": "tests/p11-optics-webgl-browser.py",
+      "size": 13067,
+      "sha256": "fb81eeaa73d1c0752f384755c049dd545f6a3e52d0266dfdcadb3c264210005a"
+    },
+    {
+      "path": "tests/p11-verify-file-manifest.py",
+      "size": 1079,
+      "sha256": "fbee2524eb2dba8e351df73e4cce8980a3398a4bfdc376e0fbc72efe81981503"
+    },
+    {
+      "path": "tests/p111-mobile-webgl-qa.py",
+      "size": 7311,
+      "sha256": "c2efb8d38f41115eef7be8e3477c59ddc97d57318a254c2b8edf04c23afadedf"
+    },
+    {
+      "path": "tests/p111-verify-release.py",
+      "size": 1703,
+      "sha256": "97b2ae72e70dfefb4f4ec76ea38739422e242267a8e816cd1f479c68d16ba63f"
+    },
+    {
+      "path": "tests/p113-frame-pacing.cjs",
+      "size": 3818,
+      "sha256": "98a9fdaa59b5052ac701a9fc710ef80d53484be982dcc70b305a48f23c2d5a21"
+    },
+    {
+      "path": "tests/p113-verify-candidate.py",
+      "size": 1342,
+      "sha256": "758236704f0cac8e752bdb7f9e826818ae30073a87f4b65cd4ee220f5eafabd2"
+    },
+    {
+      "path": "tests/p114-longbow-qa.cjs",
+      "size": 7585,
+      "sha256": "807ae29d3e34dddaa4ff589a08e86e4b603b22a7af38514f5e1db0b4ffa70ecb"
+    },
+    {
+      "path": "tests/p114-preview-server.cjs",
+      "size": 2374,
+      "sha256": "87bae4750b3d59ccb60bcc0fbaedcf919285177c78efcd772606b668486cb2cc"
+    },
+    {
+      "path": "tests/p114-verify-integrity.cjs",
+      "size": 1439,
+      "sha256": "25286d3d2a689571474a373ac6bcccd1514c217ec9b46880618e9a56984f75b0"
+    },
+    {
+      "path": "tests/p115-legendary-longbow-qa.cjs",
+      "size": 5865,
+      "sha256": "86c1509995261a24e73340f50582919b1e135a7ed8d6914ee7cfd645ddf3ea36"
+    },
+    {
+      "path": "tests/p115-verify-integrity.cjs",
+      "size": 1436,
+      "sha256": "ca5cfb620a4764bd4b703e1091408413658ebbba8e4a1b2e205ec3c9a69687a2"
+    },
+    {
+      "path": "tests/p1152-azure-sovereign-integrity.cjs",
+      "size": 1926,
+      "sha256": "b7559e0c54e7a152033ae98625a3301af0a1167837709bde3171b90ec85d2b05"
+    },
+    {
+      "path": "tests/p1153-performance-integrity.cjs",
+      "size": 5801,
+      "sha256": "7630fe7b43117f9c1d20f6a91282ae7852eeb30b852fd17e6c938623bffb7dc6"
+    },
+    {
+      "path": "tests/p1154-root-cause-regression.cjs",
+      "size": 5811,
+      "sha256": "b0668db18616aa3e567acb93dc9181460b46e6fa5438168e51a4d90cfaa757c8"
+    },
+    {
+      "path": "tests/p1155-fps-recovery.cjs",
+      "size": 7042,
+      "sha256": "f06400a43094cab9998ad6de035058cd7a484614ecc54d69d643920128c76b91"
+    },
+    {
+      "path": "tests/p1156-fps-diagnostics.cjs",
+      "size": 4512,
+      "sha256": "58cb6886c7dbe8287892fca960e09a0f22dc6e151b251e4488468b5c532f272c"
+    },
+    {
+      "path": "tests/p1157-smooth-clear.cjs",
+      "size": 3867,
+      "sha256": "d24a57dd123b6a250fad70be0d774d74064a276acee755fb9335ea88d03b6e3c"
+    },
+    {
+      "path": "tests/p1158-blackwater-merge.cjs",
+      "size": 6043,
+      "sha256": "8ed38ab1361eb4c053e8458e107c71b48083d5ef7fbca1c7593a62225d1b2d36"
+    },
+    {
+      "path": "tests/p1178-body-gameplay.cjs",
+      "size": 6766,
+      "sha256": "ea4b07648e4c5cd4157d1aa995b8c3126450267ef00d0aebab3c31322f527928"
+    },
+    {
+      "path": "tests/p1179-proportions-gameplay.cjs",
+      "size": 6905,
+      "sha256": "2ba72d05d1adbba60111b947d1d6b1b7fc9e3b67efc1fa4628d1b33800e8050e"
+    },
+    {
+      "path": "tests/p1180-individual-bodies-gameplay.cjs",
+      "size": 7019,
+      "sha256": "84d2b8526fe33a8d6ea3e899c3d5697eff29ada6a1ad5a90088ac7a14f8b29c3"
+    },
+    {
+      "path": "tests/p1181-rook117-authored-gameplay.cjs",
+      "size": 7591,
+      "sha256": "e7cbb90f836e079f5627860dba4361c4325290830d7cf8d2354549fcede744b2"
+    },
+    {
+      "path": "tests/p1182-rook117-redesign-gameplay.cjs",
+      "size": 8314,
+      "sha256": "d2e9ca7867eeccee53ac0a9444d17c4ee9c83aa0569cd2217e101c2f8cdfc5d5"
+    },
+    {
+      "path": "tests/p12-legendary-skin-system.cjs",
+      "size": 23362,
+      "sha256": "64c07e501a45c5c495b0ee20ebbda49a21a98f5fd0012c49d9c102e77da5c558"
+    },
+    {
+      "path": "tests/p13-legendary-audio-inspection.cjs",
+      "size": 11436,
+      "sha256": "2af334d4d8fce72f02cb12d54b15de318fd12d7ade41d2bf9a81b37d6eef19fc"
+    },
+    {
+      "path": "tests/p16-legendary-world-replacement.cjs",
+      "size": 2951,
+      "sha256": "183e2646c52645a9a6df66e42b1d845d153996a2d8a73805d76f9717c1ec86bf"
+    },
+    {
+      "path": "tests/p4-browser-gameplay-qa.py",
+      "size": 10537,
+      "sha256": "0fe1e277a6925db12a15acc9c8b6390410350f8cc5d1b70ec74bfd727ee75fb6"
+    },
+    {
+      "path": "tests/p4-deathmatch-result-webgl.py",
+      "size": 3586,
+      "sha256": "31081b4fd88c104914bc2cc86736850b4d41718fd1247958bcd6373adaa85225"
+    },
+    {
+      "path": "tests/p4-map-schema.mjs",
+      "size": 2272,
+      "sha256": "c324c431baa9e63defb80549f5132990ee4fa0a98fc682bddfef028af003641c"
+    },
+    {
+      "path": "tests/p7-feature-parity-authority.mjs",
+      "size": 4505,
+      "sha256": "f22f9ee80a976d73808a7531ddf0704ad5fb917e270cc5ff2bb9b865f074de4c"
+    },
+    {
+      "path": "tests/p7-feature-parity-lan-protocol.mjs",
+      "size": 10976,
+      "sha256": "ebbb565154ac9772f3957b790255ab32263e4d4459e6dd1a0e95e6a5add0ab4f"
+    },
+    {
+      "path": "tests/p7-rendered-ui-webgl.py",
+      "size": 6495,
+      "sha256": "2af6473f5c1228df7db99d217217746e7dac4b7f0a171e1dfa2b47c9572c5f1e"
+    },
+    {
+      "path": "tests/p8-p7-weapon-anchors.json",
+      "size": 11102,
+      "sha256": "9527c5eb24f885dc6a4980943f453b77da90a2f94ac2bbbe196c65065a2f3e18"
+    },
+    {
+      "path": "tests/p8-weapon-art-webgl.py",
+      "size": 5616,
+      "sha256": "a4905aafd9b65839998668eeb17b49cc6f268432cc3c188770b30bb0d9498681"
+    },
+    {
+      "path": "tests/p83-capture-matched-webgl.py",
+      "size": 8748,
+      "sha256": "ac1324ee24730b21dd740c3670f567e612312a045912e91105c023171b983487"
+    },
+    {
+      "path": "tests/p83-verify-file-manifest.py",
+      "size": 1168,
+      "sha256": "de3c01df2b7cae9f0cf6b2f1eed5c18e21ff120133ab2ca77bdb9a0ceea3ffac"
+    },
+    {
+      "path": "tests/p83-weapons-animations-webgl.py",
+      "size": 4157,
+      "sha256": "01965685f1eb4ed1d91ea6c261d7a3384acc03a6cc634b62d392ab7e605aef02"
+    },
+    {
+      "path": "tests/p84-capture-matched-webgl.py",
+      "size": 9087,
+      "sha256": "8e6407caa9b4e0282b5e11e719ff02b9b39a4d69b26e87bce69adfd3d5b3307b"
+    },
+    {
+      "path": "tests/p84-verify-file-manifest.py",
+      "size": 1331,
+      "sha256": "ce125aa298415d736adb262cabc0e955ccb29f223b3cd3fb2b1eb939520747a9"
+    },
+    {
+      "path": "tests/p85-capture-matched-webgl.py",
+      "size": 9325,
+      "sha256": "4edd0b04f3835062f61889f75aa5270bf3fcf4b1dd494fdfb86fceba7c458e80"
+    },
+    {
+      "path": "tests/p85-verify-release.py",
+      "size": 2405,
+      "sha256": "4bda2802631313e48658c19ae9510253681146862ee68e59b33c482e498ea889"
+    },
+    {
+      "path": "tests/p86-ads-audio-webgl.py",
+      "size": 9413,
+      "sha256": "41d6f1561839c8c50f3d79de99c2fbfd23345c98ac2702f85f88370442446ab5"
+    },
+    {
+      "path": "tests/p86-verify-release.py",
+      "size": 5037,
+      "sha256": "74a8b6e5544340a4e2bd86e7f9a18cc16657aa55590ee58287caa8bf7736d711"
+    },
+    {
+      "path": "tests/p88-ads-audio-webgl.py",
+      "size": 9413,
+      "sha256": "0caf0aae047dacc43bb1d475ddd9d11752a7ea587ff6d3e4572989c994dd9e4c"
+    },
+    {
+      "path": "tests/p88-aurora-browser-acceptance.py",
+      "size": 5737,
+      "sha256": "7ceb469e47288d2938c77444503cadcd661f843a655a41312820f67d1f99d877"
+    },
+    {
+      "path": "tests/p88-verify-release.py",
+      "size": 5289,
+      "sha256": "8317ce00772b39907bb43d5d76aa27d2297434ec5bfd1c6ef7b639aacfacbc7a"
+    },
+    {
+      "path": "tests/p88-weapon-art-webgl.py",
+      "size": 5617,
+      "sha256": "22ce41af9eacc6887c2d789e5ac9320bd66dbd049829d871148eea6210df30fd"
+    },
+    {
+      "path": "tests/p88-weapons-animations-webgl.py",
+      "size": 4157,
+      "sha256": "bd58c8ffd6786e8d78ed0bbb572d2e3478c4b6abbabdb828c1f7a15bb2a8ca86"
+    },
+    {
+      "path": "tests/package-provisional-master.py",
+      "size": 3639,
+      "sha256": "f3dd645d927700025bbdde7a5c995bc18424933b1ae150f0ddab58e136633948"
+    },
+    {
+      "path": "tests/phase10-character-prototype-review.cjs",
+      "size": 17635,
+      "sha256": "49bce2f42be18b0af86b59396a96c0afc5594822598945f0cf069d1de8d94e97"
+    },
+    {
+      "path": "tests/phase12_build_evidence.py",
+      "size": 16898,
+      "sha256": "975bfe90b41ba00171fe78d4a0d26daa429b48cf7ebb09a2be9f770e7e214e4c"
+    },
+    {
+      "path": "tests/phase15-rook117-legendary-reconstruction.cjs",
+      "size": 9669,
+      "sha256": "6f235072ee56959ae65e67bc654a933719c24f83335494bd6394336f63236905"
+    },
+    {
+      "path": "tests/phase16-gameplay-stabilization.cjs",
+      "size": 3100,
+      "sha256": "734c6e280147fea851c15e1e81aea31864494822ad080407f59208afb3b5a1a0"
+    },
+    {
+      "path": "tests/phase17-mobile-dual-fire.cjs",
+      "size": 4557,
+      "sha256": "fd85d4bc37bf26a9d471a90e3250936222afda6d5382a0cf9c6489be85dfeaf4"
+    },
+    {
+      "path": "tests/phase17-runtime-acceptance.cjs",
+      "size": 19336,
+      "sha256": "87c4709997b23d7102d6219c3b14e2577012d740253bee335ea951bebf184602"
+    },
+    {
+      "path": "tests/phase18-isolated-runtime.cjs",
+      "size": 22612,
+      "sha256": "faf3c5866789ce4f346fd9a8b29deccc48c2baabebcd44c9c522d2502629f5cc"
+    },
+    {
+      "path": "tests/phase19-3-hud-frame-benchmark.cjs",
+      "size": 5973,
+      "sha256": "4fe52422dd334d31715ff962563cfd7aa09be5106d2591f783cd0226a2666bb2"
+    },
+    {
+      "path": "tests/phase19-4-svg-audit.py",
+      "size": 2998,
+      "sha256": "d86bf7c8f4d3b8b934b6c389630926f4360157c4553224e6da4481608490f7be"
+    },
+    {
+      "path": "tests/phase19-mobile-hud-runtime.cjs",
+      "size": 28717,
+      "sha256": "50ed31c38930f58d27a615faf8aeab59afb2502998a4a58bbf74f29bab7ff0d4"
+    },
+    {
+      "path": "tests/phase2-android-asset-parity.mjs",
+      "size": 6386,
+      "sha256": "c8beb8e2b01c5a9e9a41fee2aa9df9d962ebbe234ff1f1325bbdc467f6912427"
+    },
+    {
+      "path": "tests/phase2-infection-evasion.test.cjs",
+      "size": 4583,
+      "sha256": "5edc76b2fb16b20ec50d057a5db768e1fc5ffd3a14a1148991da99953c503dfc"
+    },
+    {
+      "path": "tests/phase3-outbreak-integration.test.cjs",
+      "size": 2303,
+      "sha256": "65641fcb56afc60cb3d9e492bf3f746207bff6b68f05ad36ba77ce10ce94d72f"
+    },
+    {
+      "path": "tests/phase5-all-weapons.cjs",
+      "size": 8288,
+      "sha256": "8c5dde396a09cbc6777cc694edb6f4da5ad8816499c9b83105c7860dc15bd965"
+    },
+    {
+      "path": "tests/phase5-arsenal-material-pass.cjs",
+      "size": 8286,
+      "sha256": "6dfef88f90e6dd08ddfa4712c4bc4f04db3f1606527e6d7741acf33fd55fd7a5"
+    },
+    {
+      "path": "tests/phase5-contact-sheets.cjs",
+      "size": 1497,
+      "sha256": "ce496fec681d4e518d34912c5ff96a158421e78bd8adbce5638e7f8cb0991fea"
+    },
+    {
+      "path": "tests/phase5-export-weapon-audit.cjs",
+      "size": 2717,
+      "sha256": "c31f1cb32505cd94b0e3fa9ab6c053ca62dffd64fa45e8757d19c60624e73be5"
+    },
+    {
+      "path": "tests/phase5-refresh-android-hashes.cjs",
+      "size": 2680,
+      "sha256": "8fc1be3409cb0ca70b198e8b8502dfe224adb0a3d080479de0f9ed548ec05896"
+    },
+    {
+      "path": "tests/phase5-rook-material-capture.cjs",
+      "size": 8971,
+      "sha256": "c561aa1f98d6b9432859c3f7084d51b3381271d7d2ec997e4a5a2b0f16a6f8dd"
+    },
+    {
+      "path": "tests/phase5-rook-sight-acceptance.cjs",
+      "size": 9026,
+      "sha256": "52ca7e8e41556f73348c855f8ffdb299e12d96fa7619b298a48e95b2f70eab29"
+    },
+    {
+      "path": "tests/phase6-claude-integration.cjs",
+      "size": 13791,
+      "sha256": "21165ee8f607b4981195be3c45ae15e29e786ab9e00555211b06ae5f5d748253"
+    },
+    {
+      "path": "tests/phase6-source-manifest.cjs",
+      "size": 3338,
+      "sha256": "6db4315d7e1c66b99de520e043a2c59e90d80cb08999aa6f8736e25a2cb8f5d3"
+    },
+    {
+      "path": "tests/phase7-apk-assets.py",
+      "size": 1220,
+      "sha256": "36e8684720a035bbcce12af0bfbdc4d3e4f2a8cd12a1714480136570b64c686b"
+    },
+    {
+      "path": "tests/phase7-contact-sheets.py",
+      "size": 2633,
+      "sha256": "dcc4163dfd27392271422f9f9fc235b0cb4ef39ab8a189e5e38eb5f767a5eeb0"
+    },
+    {
+      "path": "tests/phase7-weapon-parity.cjs",
+      "size": 19336,
+      "sha256": "719ee34eb117291920a8265bfbdba70589d8f11583924af8582998775728de01"
+    },
+    {
+      "path": "tests/phase8-contact-sheets.py",
+      "size": 2129,
+      "sha256": "1f88549ca7ddab25b7f5e361c3f6bf39e76bcc4f84cd844d2b3c4064dda85755"
+    },
+    {
+      "path": "tests/phase8-performance-parity.cjs",
+      "size": 19580,
+      "sha256": "cef003e9824c699110d1fc7fd4003369612c1f1220fbb108ddd87d861748f3a1"
+    },
+    {
+      "path": "tests/phase8-thirdperson-review.cjs",
+      "size": 9419,
+      "sha256": "9704d2b31700957570f3ed82bbd6372bb48431e86ccb3fe0eb1df10cb5287ad8"
+    },
+    {
+      "path": "tests/phase9-character-review.cjs",
+      "size": 12494,
+      "sha256": "8cd73df42fb41a7555c8ecdfd143533b2e32033126eecd00babcc18040d465c7"
+    },
+    {
+      "path": "tests/private-bind-smoke.py",
+      "size": 1731,
+      "sha256": "0beecc3ff6425a60a3e1f9b5587a8ce438da2520b0e3966ed3b3b61181b25a1e"
+    },
+    {
+      "path": "tests/regressions/infection-v6.test.js",
+      "size": 5058,
+      "sha256": "fef55d3436cc0431e020f8a669087f659eae4862c0f0305c1be9f87201e0053b"
+    },
+    {
+      "path": "tests/regressions/mobile-v11.test.js",
+      "size": 4130,
+      "sha256": "4ac1bc6c839cc683393614fff3e4c0e0639f32000f33133dad18a6eac1817f84"
+    },
+    {
+      "path": "tests/regressions/outbreak-hunt.test.js",
+      "size": 2730,
+      "sha256": "b7b7e74b25182809de69b51ef6cd256dba5049de37878803f32768f77907d719"
+    },
+    {
+      "path": "tests/regressions/outbreak-server.test.js",
+      "size": 1488,
+      "sha256": "85a972a6a431890489a214482f6c36d85e7ba16fd42ee99f4eb305f1ce7563b5"
+    },
+    {
+      "path": "tests/regressions/v12-menu-settings.test.js",
+      "size": 2401,
+      "sha256": "c30218ecf2b7d1c19b60002bae38863532ae12c5080489b6ba1fac2502f8479b"
+    },
+    {
+      "path": "tests/regressions/v12-traversal.test.js",
+      "size": 5544,
+      "sha256": "a27385621a60c3f2c8745f83e8793f68c9e2f21b02ef7be0f6f9ac18df4d418d"
+    },
+    {
+      "path": "tests/rook117-restored-original-hands-qa.cjs",
+      "size": 7881,
+      "sha256": "c63b1b4277ec5e2a07b4a377566810d3fb45801928e6ee22ff35ff439e1afc0d"
+    },
+    {
+      "path": "tests/run-game-regressions.py",
+      "size": 1793,
+      "sha256": "5cdc20f1f684b4ef3e5925c24e610c4442dbf5b4d22a6db63cfdc0cdabb9dc80"
+    },
+    {
+      "path": "tests/run-gate3-checks.sh",
+      "size": 568,
+      "sha256": "a0cd80c1e1591b5cc5c23f32a8c8f6f5cc683cde8cb79cac59293cd23599dfbc"
+    },
+    {
+      "path": "tests/secure-transport-policy.test.cjs",
+      "size": 14931,
+      "sha256": "29d881903ecd889ae2a7132727a207cbe070823968e23f1fdd3240953d517a18"
+    },
+    {
+      "path": "tests/server-box-overlap-index.test.cjs",
+      "size": 1350,
+      "sha256": "ab552714b7b54517c9fba4733ff110add81340b3c06d98f96f73408c1a55e0e6"
+    },
+    {
+      "path": "tests/settings-accuracy.mjs",
+      "size": 6184,
+      "sha256": "212da59e016c8d060249b4f86cd55b685b4dc90b74274b4082bf99f078cd99d6"
+    },
+    {
+      "path": "tests/shotgun-spread-parity.mjs",
+      "size": 3356,
+      "sha256": "4f2d557852ec5d3badc3efacfeb08e36b339607c94e933f7c5a08017b824460d"
+    },
+    {
+      "path": "tests/skinned-fp-hands-cdp.cjs",
+      "size": 15883,
+      "sha256": "fa35b750b9998e9711f6495431c6ed5b1591406b8d9b62a355302f7ae0238f90"
+    },
+    {
+      "path": "tests/skinned-fp-hands-gameplay.cjs",
+      "size": 6972,
+      "sha256": "9a1143bafd6688de7f11ffac9de1602a9479b69925c2e83d12de8319167c2aaa"
+    },
+    {
+      "path": "tests/summarize-cpu-profile.cjs",
+      "size": 1123,
+      "sha256": "cf3ba6b2d4811498fade174b5b9126e3787f5a43f859057eadce0735cf695ae4"
+    },
+    {
+      "path": "tests/tactical-bot-post-assignment.test.cjs",
+      "size": 1466,
+      "sha256": "5580121fc35632cfffa651a3ffbd1ca35a86e95b1c0a63080eee59b677cbad2b"
+    },
+    {
+      "path": "tests/tactical-deathmatch-bot-policy.test.cjs",
+      "size": 2475,
+      "sha256": "e77859624ada7b1cd3d755793b83d48274909169f7a639d2b58d2e808d3e9157"
+    },
+    {
+      "path": "tests/two-clients.mjs",
+      "size": 9407,
+      "sha256": "43c0063b5c9320cce862bbe9252c797f4797e541e12005169cf402e751928479"
+    },
+    {
+      "path": "tests/verify-claude-restore-host-http.cjs",
+      "size": 2472,
+      "sha256": "82be04acb59cfcfce2d5f029a528b9d4632e3f4370f5e6907e15d8e411afc89d"
+    },
+    {
+      "path": "tests/vr18-empty-mag-switch-webgl.py",
+      "size": 4029,
+      "sha256": "375a6555903d712ddde4acd4e4dde803b0a1da7ce7d3f267ecce580b2f7905e1"
+    },
+    {
+      "path": "tests/vr18-live-acceptance.py",
+      "size": 9974,
+      "sha256": "b696d5a14f7bef08867adf7707044cfa4ed88ba8d1d3a49e3de849710f4358d6"
+    },
+    {
+      "path": "tests/vr18-precision-ads-qa.py",
+      "size": 6307,
+      "sha256": "969ad30aee8b348796f79567b63f26e332b8863f6ae9e533593c3458c8d58520"
+    },
+    {
+      "path": "tests/vr18-precision-aim-targets.py",
+      "size": 3903,
+      "sha256": "a6a387c571b318a58d6db019c364e1b2ba501999ef0d61d570be43eaa85f2db6"
+    },
+    {
+      "path": "tests/vr18-precision-state-smoke.py",
+      "size": 4802,
+      "sha256": "0213cea0946b47ad45d5bc5fd50ee7bab8e8668c8a461e65b7eaa26283f53b52"
+    },
+    {
+      "path": "tests/vr18-v31-source-audit.py",
+      "size": 3124,
+      "sha256": "96dc818e99e2846c23cf1a4091c03c199674ecd3dab036959f485ca6811b256d"
+    },
+    {
+      "path": "tests/wall-ray-bvh.test.cjs",
+      "size": 2615,
+      "sha256": "0b3b9e79a9561d46c1371dc978911fb66960acd93109d6c5e9de2012668ec84c"
+    },
+    {
+      "path": "tests/weapon-grip-visual-review.cjs",
+      "size": 6179,
+      "sha256": "006db7950e303d003174b69751d01bc512aed6b4c77672e225f53ac503507289"
+    },
+    {
+      "path": "tests/weapon-grip-workflow-audit.cjs",
+      "size": 14592,
+      "sha256": "9f640a34c7497c0e6d22078623f880a418fb7ae5db09cac833be8c6d6e776b38"
+    },
+    {
+      "path": "tests/zombie-combat-motion.test.cjs",
+      "size": 3285,
+      "sha256": "4a65b22bd3b6aa6f1eeb419851352b26d8f0d031051c4b8778b5641a09f1626e"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/pistol-hands.blend",
+      "size": 2467395,
+      "sha256": "d3dc9d9db1263f72aa258b396da06f96f5187f95f6a0ab17b499aba6a9696db9"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/pistol-hands.glb",
+      "size": 238284,
+      "sha256": "e8e6a269e811e388a45f2f4a1fa6957a0b4e7d52ddf2a47a7a8aab9850880e5e"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rifle-hands.blend",
+      "size": 2472563,
+      "sha256": "e73af24a6ead41eabd1b21321870c89f60ac15a89127e1cfc1f13fb74d360cea"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rifle-hands.glb",
+      "size": 238284,
+      "sha256": "c3f9e6d743928812c15014361f9728a451af477aa9b56fb6b89d5806bc6e7514"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/lmg.blend",
+      "size": 405269,
+      "sha256": "cb771c93a5ecc3f22284f516aaf9282b202288f748ad8e82ba0d2cfc41ca57b1"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/manifest.json",
+      "size": 10547,
+      "sha256": "dbda03b90b3acfa474fb64487620f789d13a4f7ee1dccdc3b65d560be1100796"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/marksman.blend",
+      "size": 405485,
+      "sha256": "b6435a806704985d027f7d52a5a643fa9d0055680ea8a0ad02933cf5b06ffabb"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/melee.blend",
+      "size": 265205,
+      "sha256": "d61a9d41e7a871455a96f81944f4a03d218d14956b43b136889b4bbcf91986e6"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/pistol.blend",
+      "size": 405770,
+      "sha256": "3fb8d0457a130d5fe6bdf4baed5f8bf1332cf2fd87cfc996cd2d034e70ee568e"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/rifle.blend",
+      "size": 405357,
+      "sha256": "7d4779bd4786bb1b592c6322a20c8f68dad49497060f19885bf0013110b52bab"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/shotgun.blend",
+      "size": 405476,
+      "sha256": "fd020b632ab225f76dd6b1ea4b310c4889348a0aad188af85c503b6601c301f1"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/rigged/smg.blend",
+      "size": 405611,
+      "sha256": "515544ee08c71e3d621be24dd4b52f36074ed5b704c2d65af4450cb16699e610"
+    },
+    {
+      "path": "tools/assets/firstperson-hands/source/mpfb-source-human.blend",
+      "size": 2162629,
+      "sha256": "89c370a42b0646c22102d72bfa1441dcfbf917738917901bc6ae7418c684acd8"
+    },
+    {
+      "path": "tools/audit-gq6-parent-diff.cjs",
+      "size": 3105,
+      "sha256": "fca0145c3f5fe1cf0dbf69df06e3cdef1e5aaee2742cb4138642ed0e201e3d1c"
+    },
+    {
+      "path": "tools/audit-universal-character-grips.cjs",
+      "size": 12794,
+      "sha256": "6e67b6485ed485af5745a7fbcb01073ad439fcf5f18cec5cd8049b7d53cca42e"
+    },
+    {
+      "path": "tools/bench-ai-perception-load.cjs",
+      "size": 6197,
+      "sha256": "397c77b8c950dc6853166008ca17535543757014fad99b6010a7e40d27afeee1"
+    },
+    {
+      "path": "tools/bench-bot-perception-probe.cjs",
+      "size": 4256,
+      "sha256": "3b01d0118a91dfdf861cef3a2f9ba7aea0e0009594bd1973ac1c76d2b50f68fa"
+    },
+    {
+      "path": "tools/bench-combat-full-tick.cjs",
+      "size": 9261,
+      "sha256": "e35efc715b47f96a02f767819872c6910168f8fce8c599db6407cfdab196e902"
+    },
+    {
+      "path": "tools/bench-lan-bot-motion-presentation.cjs",
+      "size": 4531,
+      "sha256": "f9ddfd6b3d6e05d10c123e84e519d750f2cc81d2906788afc11041ed1ea4f1e5"
+    },
+    {
+      "path": "tools/bench-lan-client-jitter.cjs",
+      "size": 10240,
+      "sha256": "944c962c05442f0a7d51e0f9a04bdc9adf326157d4841c340aebbabe9181ec39"
+    },
+    {
+      "path": "tools/bench-lan-client-presentation-4.2.cjs",
+      "size": 3888,
+      "sha256": "7ba5c658a574e482c115b2684059e6281b56dca5cadadeb470a6082ae6f4a018"
+    },
+    {
+      "path": "tools/bench-lan-host-simulation.cjs",
+      "size": 9862,
+      "sha256": "f7761a38fc33e6d5ef15f9cb149f7ba30b2a3437e8606b7c2e9aef4e4119878f"
+    },
+    {
+      "path": "tools/bench-mp-zombie-pose-recovery.cjs",
+      "size": 4545,
+      "sha256": "02e6c8852419c3c9f4d958ac5066d48732baf1e977ed04d89a0d768a8fe05c85"
+    },
+    {
+      "path": "tools/bench-outbreak-target-acquisition.cjs",
+      "size": 4618,
+      "sha256": "dfb887d1cdae709623af2ebe83818280373442d993428c10bd1ec0bed5068a43"
+    },
+    {
+      "path": "tools/benchmark-lan-timer-cadence.cjs",
+      "size": 4478,
+      "sha256": "ebf380a9c80f90c5e4d5d6407020c5050e8168c28af308588058e53aff5f652b"
+    },
+    {
+      "path": "tools/build_firstperson_grips.py",
+      "size": 13447,
+      "sha256": "2d558727267e6d29e66e8c91e3294dbb54e7e6b700e23485102585e266efbbb6"
+    },
+    {
+      "path": "tools/build_skinned_fp_grips.py",
+      "size": 13670,
+      "sha256": "0a947e815ec67d55189b21faa975d1d0dedc05b95716a31e9e6666493ea4473d"
+    },
+    {
+      "path": "tools/CAPTURE-LAN-HOST-STATUS.bat",
+      "size": 503,
+      "sha256": "ff37253c0dd1f2505a104942a9e032fa344e77bd347c16c09ef90013accb6efb"
+    },
+    {
+      "path": "tools/capture-lan-host-status.cjs",
+      "size": 16771,
+      "sha256": "70dd732dcf2d362f5d6deb58f63a1effb62fe065b7a7a9c8843e12284c3acec7"
+    },
+    {
+      "path": "tools/create-ai-combat-correctness-checkpoint.cjs",
+      "size": 3625,
+      "sha256": "a36020cccfef057a3a00165bfdc80cfc489dacb3f31a3f1bfd2388b7984f4dfd"
+    },
+    {
+      "path": "tools/create-android-performance-5.0-manifest.cjs",
+      "size": 8355,
+      "sha256": "d13909fdaffe09ad385fe2d66eb453c1a727efe13977f5de1f7b8499e4eeedb0"
+    },
+    {
+      "path": "tools/create-combat-lifecycle-checkpoint.cjs",
+      "size": 2983,
+      "sha256": "492b2a322e6679d9c6bc7609d85ecf24f5f62755f80e773cb37fb3097de3d846"
+    },
+    {
+      "path": "tools/create-gameplay-lan-4.1-package-manifest.cjs",
+      "size": 5354,
+      "sha256": "0339551d2330bc263d3fc702cc15357565ff327b8e08ac42d2c9578662021df9"
+    },
+    {
+      "path": "tools/create-gameplay-lan-4.2-manifest.cjs",
+      "size": 6401,
+      "sha256": "bb4f93def7c7ca8117b0e6e8d2d67633f349a91988b65a9646b054db0d21e1c1"
+    },
+    {
+      "path": "tools/create-gameplay-lan-package-manifest.cjs",
+      "size": 5132,
+      "sha256": "6a39ce089bf2e0af2ed2d8bc79e1c728134a3b236d4d06423d9faa1c2a1cbbce"
+    },
+    {
+      "path": "tools/create-gq6-manifest.cjs",
+      "size": 2776,
+      "sha256": "604fb18b664aff8eb16e5455cb350650e6d71a2dfda3fe677261b32ba486371e"
+    },
+    {
+      "path": "tools/create-offline-lan-dev-package-manifest.cjs",
+      "size": 5883,
+      "sha256": "70b6509f4af2fdba2a5e9a29a51441603f1e553d62add67f0f96c525ebc92af5"
+    },
+    {
+      "path": "tools/create-protocol-v2-checkpoint.cjs",
+      "size": 2721,
+      "sha256": "b02a26f465bf736a63abbdf2de986053ccdc9ba64ab3890a000f7c3c2005a219"
+    },
+    {
+      "path": "tools/inspect_arm_selection.py",
+      "size": 1266,
+      "sha256": "b50be409adfc3130e4cfb7bd0cbf55cc847c484f062d91ac62fed6cb42754fe8"
+    },
+    {
+      "path": "tools/inspect_asset_scene.py",
+      "size": 276,
+      "sha256": "3d91b60868d6bfcd693d6521fd07709942d82990c6a95605ce2922b087be95c3"
+    },
+    {
+      "path": "tools/inspect_hand_anatomy.py",
+      "size": 1040,
+      "sha256": "0f60f7772828889b1c51a21b54fb51c897674b4f3a93762f5ecbca7da97c87b0"
+    },
+    {
+      "path": "tools/inspect_hand_blends.py",
+      "size": 1299,
+      "sha256": "06fe981c0d76d87e4ac41f7512e4b87af0d1ac70a18fa1dd5066858293ebae59"
+    },
+    {
+      "path": "tools/pack_firstperson_grips.cjs",
+      "size": 1483,
+      "sha256": "138767c2b5cbca2e4fcbf7405f8dfcd7a64a83c65d77e9c76cb10e8fb892504b"
+    },
+    {
+      "path": "tools/pack_skinned_fp_grips.mjs",
+      "size": 684,
+      "sha256": "0d3314ef09d01599a95f1373537f03b049a64c1fb7149837a32fa773cc59fb67"
+    },
+    {
+      "path": "tools/preserve_sightline_dev_instructions.py",
+      "size": 4777,
+      "sha256": "d9d0f3bbc67b657e2c873381c6c298392eee0f1358882e8a1e9d5c60663966b6"
+    },
+    {
+      "path": "tools/preview_firstperson_grips.cjs",
+      "size": 3371,
+      "sha256": "d1ccd0561e2fc236661b767d6fdb434d79bbcdb465cb6dfce348932aae89508c"
+    },
+    {
+      "path": "tools/render_skinned_asset.py",
+      "size": 1119,
+      "sha256": "581caa5667dc9524afa8815b3bd372200ee1a3ea6c56ff2d1b3a49371f68dd10"
+    },
+    {
+      "path": "tools/run-package-regressions.cjs",
+      "size": 1299,
+      "sha256": "7b685d9c4b6f1ec448ddbcf6ba56f120f613b866c530e7fe903f355a72b79fa2"
+    },
+    {
+      "path": "tools/summarize-cpu-profile.cjs",
+      "size": 1889,
+      "sha256": "425c2c410b199a29d807be2be31f0619958bb6b4ed7c897ff4487379cd3f2835"
+    },
+    {
+      "path": "tools/summarize-host-bench.cjs",
+      "size": 1691,
+      "sha256": "3ee1e2fb7d89572d7e37cb9bc8e8a4ef5e24eb009f450e98f333d11c4c40fd2a"
+    },
+    {
+      "path": "tools/summarize-lan-capture.cjs",
+      "size": 3445,
+      "sha256": "34374a82afa6f7c62c46d200fd35afe8b3f3e117a0e8b86af7026de26ad35f6b"
+    },
+    {
+      "path": "tools/verify-android-performance-5.0-package.cjs",
+      "size": 5176,
+      "sha256": "747bf8c6ecbef703167053090e922372cf86972da6b929b81b1e73a686934184"
+    },
+    {
+      "path": "tools/verify-chat1-secure-integration.cjs",
+      "size": 6437,
+      "sha256": "9d382081dafa3146aff465c3a6f040a8f8c8c0a2beba7c3f94743d0563b851f9"
+    },
+    {
+      "path": "tools/verify-gameplay-lan-4.1-package.cjs",
+      "size": 5494,
+      "sha256": "0d9c003e6340787e677e9ff85a70e9019de5d880ca4c506b114841a40376d50a"
+    },
+    {
+      "path": "tools/verify-gameplay-lan-4.2-package.cjs",
+      "size": 4958,
+      "sha256": "c7b1a29db1e18bacef315bd1b39c9c6e95eb52037e888c6e05d608e85a2eb0e4"
+    },
+    {
+      "path": "tools/verify-gameplay-lan-package.cjs",
+      "size": 3131,
+      "sha256": "980c74a1a5c3ff164136189da9ce4863a395eb274e8723439572894aec399a98"
+    },
+    {
+      "path": "tools/verify-gq6-manifest.cjs",
+      "size": 1883,
+      "sha256": "15839a86fd78c36cdd046d5c5ca1d87e86dad63370c87df5babe26425f39ef96"
+    },
+    {
+      "path": "tools/verify-integration-source-manifest.cjs",
+      "size": 5200,
+      "sha256": "51168f13bdad4e175585f5308765758b5888558ce0cef561a54d3e032e670bb9"
+    },
+    {
+      "path": "tools/verify-source-package.cjs",
+      "size": 4453,
+      "sha256": "d9a14cc98541787535dacc89e9d61aca0b584fd5793a071d144a7915489dad73"
+    },
+    {
+      "path": "tools/verify-v2-secure-transport-base.cjs",
+      "size": 5742,
+      "sha256": "c7e68a18a91825b180c4e180ead562119f1da215741e97686ec76eafab0c8515"
+    },
+    {
+      "path": "tools/write-mp-protocol-v2-evidence.cjs",
+      "size": 7718,
+      "sha256": "f956ab7f586f3ced6a584845b90403a662378c4c762517337bcd62c9e03159f0"
+    },
+    {
+      "path": "tools/write-secure-transport-manifest.cjs",
+      "size": 8220,
+      "sha256": "d90def5d1d1d3556c0db62f49d6374ccf96cb36c654d1275c3085fa6db64e891"
+    },
+    {
+      "path": "VERIFY-GAMEPLAY-QUALITY.bat",
+      "size": 761,
+      "sha256": "91a20e168e59ec8dc7eb395be32932d87ec80e7c59c9710b428e2d7c4b3dc5f0"
+    },
+    {
+      "path": "VERIFY.bat",
+      "size": 73,
+      "sha256": "3882cf49fe033a60fa997068bafe4092e6b7251d7069cb338fadf0cae243e695"
+    }
+  ]
+}

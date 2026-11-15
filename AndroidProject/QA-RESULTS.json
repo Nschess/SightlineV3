@@ -1,0 +1,30 @@
+{
+  "baseline": {
+    "source_archive": "SightlineV3-SNIPER-AUTOADS-LAN-DIAGNOSTICS-QA-Windows-BETA.zip",
+    "verified_sha256": "dfd10479ea4a18135a2895c1f846e249ccca088ade1d8f26c411a9e65efc02d3",
+    "windows_source_modified": false
+  },
+  "source_checks": {
+    "asset_scripts_referenced": 12,
+    "asset_scripts_unique": 11,
+    "all_referenced_assets_present": true,
+    "all_javascript_modules_byte_identical_to_windows_baseline": true,
+    "android_xml_parse": "PASS",
+    "inline_javascript_syntax": "PASS: 13 scripts",
+    "private_lan_host_validator": "PASS: 6 approved examples and 19 rejected cases",
+    "chromium_inline_asset_smoke": "PASS: Three.js defined, stage/canvas present, zero observed JS exceptions",
+    "chromium_real_local_http_navigation": "BLOCKED: ERR_BLOCKED_BY_ADMINISTRATOR",
+    "android_main_activity_compiled": false
+  },
+  "android_build_environment": {
+    "java_runtime_available": "OpenJDK 21 (not a substitute for required Android SDK)",
+    "gradle_available": false,
+    "android_sdk_available": false,
+    "adb_available": false,
+    "android_dependency_download_access": false,
+    "genuine_apk_created": false,
+    "apk_sha256": null,
+    "physical_android_tests": "NOT_RUN"
+  },
+  "release_verdict": "ANDROID BUILD BLOCKED; SOURCE FOUNDATION DELIVERED; PUBLIC RELEASE BLOCKED"
+}

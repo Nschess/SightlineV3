@@ -1,0 +1,207 @@
+plugins { id 'com.android.application' }
+
+def versionProperties = new Properties()
+file('version.properties').withInputStream { versionProperties.load(it) }
+def code = Integer.parseInt(versionProperties.getProperty('VERSION_CODE','0'))
+def name = versionProperties.getProperty('VERSION_NAME','')
+if (code < 2 || !name || name.length() > 70) throw new GradleException('Invalid version.properties')
+
+def manifestUrl = providers.gradleProperty('sightlineUpdateManifestUrl')
+    .orElse(providers.environmentVariable('SIGHTLINE_UPDATE_MANIFEST_URL')).getOrElse('').trim()
+if (manifestUrl && !(manifestUrl ==~ /https:\/\/[A-Za-z0-9.-]+(?::443)?\/[A-Za-z0-9_~.\/\-]+\.json/)) {
+    throw new GradleException('Use one trusted HTTPS manifest URL with a DNS hostname, no query/fragment/userinfo.')
+}
+def releaseKeyPath = providers.environmentVariable('SIGHTLINE_KEYSTORE_PATH').orNull
+def releaseStorePassword = providers.environmentVariable('SIGHTLINE_KEYSTORE_PASSWORD').orNull
+def releaseKeyPassword = providers.environmentVariable('SIGHTLINE_KEY_PASSWORD').orNull
+def releaseAlias = providers.environmentVariable('SIGHTLINE_KEY_ALIAS').orElse('sightline-release').get()
+def releaseSigningProvided = releaseKeyPath && releaseStorePassword && releaseKeyPassword && releaseAlias
+def releaseTlsHost = providers.gradleProperty('sightlineLanTlsHost').getOrElse('').trim().toLowerCase(Locale.ROOT)
+def validReleaseTlsHost = {
+    if (!releaseTlsHost || releaseTlsHost.length() > 253 || releaseTlsHost.contains(':') ||
+        releaseTlsHost.startsWith('.') || releaseTlsHost.endsWith('.') ||
+        !(releaseTlsHost ==~ /[a-z0-9.-]+/) || !releaseTlsHost.contains('.')) return false
+    if (releaseTlsHost ==~ /(?i)(?:(?:0x[0-9a-f]+|[0-9]+)\.)+(?:0x[0-9a-f]+|[0-9]+)/) return false
+    if (releaseTlsHost == 'localhost' || releaseTlsHost.endsWith('.localhost') ||
+        releaseTlsHost.endsWith('.local') || releaseTlsHost.endsWith('.test') ||
+        releaseTlsHost.endsWith('.invalid') || releaseTlsHost.endsWith('.example') ||
+        ['example.com','example.net','example.org','example.edu','example.gov','example.mil'].any { host ->
+            releaseTlsHost == host || releaseTlsHost.endsWith('.' + host)
+        }) return false
+    def labels = releaseTlsHost.split('\\.', -1)
+    return labels.every { label -> label.length() >= 1 && label.length() <= 63 &&
+        label ==~ /[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/ }
+}
+
+def hostRequested = providers.gradleProperty('enableLanHost').orElse('false').get().toBoolean()
+def nodeSo = file('src/main/jniLibs/arm64-v8a/libnode.so')
+def nodeHeader = file('libnode/include/node/node.h')
+def nodeLock = file('phone-node-runtime.properties')
+if (hostRequested) {
+    for (def input : [nodeSo, nodeHeader, nodeLock]) {
+        if (!input.isFile()) throw new GradleException("Cannot enable phone hosting: missing verified native input ${input}")
+    }
+    def lock = new Properties()
+    nodeLock.withInputStream { lock.load(it) }
+    if (lock.getProperty('VERSION') != '24.21.0-0' ||
+        lock.getProperty('NDK_VERSION') != '28.2.13676358') {
+        throw new GradleException('Android host native SDK version/NDK lock mismatch')
+    }
+    def sha = { f ->
+        def md = java.security.MessageDigest.getInstance('SHA-256')
+        f.withInputStream { input ->
+            byte[] buf = new byte[65536]
+            int n
+            while ((n = input.read(buf)) != -1) md.update(buf, 0, n)
+        }
+        md.digest().collect { String.format('%02x',it & 255) }.join('')
+    }
+    if (sha(nodeSo) != lock.getProperty('LIBNODE_SHA256') ||
+        sha(nodeHeader) != lock.getProperty('NODE_HEADER_SHA256')) {
+        throw new GradleException('Android host runtime/header digest differs from verified install')
+    }
+    // Build fails before CMake if a random or misaligned binary is placed in jniLibs.
+    def elf = new java.io.RandomAccessFile(nodeSo, 'r')
+    try {
+        byte[] id = new byte[64]; elf.readFully(id)
+        if (id[0] != 127 || id[1] != 69 || id[2] != 76 || id[3] != 70 ||
+            id[4] != 2 || id[5] != 1) throw new GradleException('libnode must be ELF64 little-endian')
+        def le = java.nio.ByteBuffer.wrap(id).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        if (le.getShort(16) != 3 || le.getShort(18) != 183)
+            throw new GradleException('libnode must be AArch64 ET_DYN')
+        long phoff = le.getLong(32)
+        int entsz = Short.toUnsignedInt(le.getShort(54))
+        int count = Short.toUnsignedInt(le.getShort(56))
+        if (entsz < 56 || count < 2 || count > 100 || phoff < 64 || phoff > elf.length()-entsz*count)
+            throw new GradleException('Invalid ELF program header table')
+        int loads = 0
+        for (int i=0; i<count; i++) {
+            byte[] ph = new byte[56]
+            elf.seek(phoff + i*entsz);elf.readFully(ph)
+            def seg = java.nio.ByteBuffer.wrap(ph).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            if (seg.getInt(0) != 1) continue
+            loads++
+            long off = seg.getLong(8), address=seg.getLong(16), align=seg.getLong(48)
+            if (align < 16384 || (off & 16383L) != (address & 16383L))
+                throw new GradleException('Native library has non-16-KiB PT_LOAD segment alignment')
+        }
+        if (loads < 2) throw new GradleException('ELF has too few PT_LOAD segments')
+    } finally { elf.close() }
+}
+android {
+    namespace 'com.sightline.v3'
+    compileSdk 36
+    ndkVersion '28.2.13676358'
+    defaultConfig {
+        applicationId 'com.sightline.v3' // DO NOT CHANGE: Android updates require same application ID.
+        minSdk 26
+        targetSdk 36
+        versionCode code // Monotonic: tools/bump-version.ps1 for each release.
+        versionName name
+        buildConfigField 'boolean', 'LAN_HOST_ENABLED', hostRequested.toString()
+        buildConfigField 'boolean', 'SECURE_LAN_RELEASE', 'false'
+        buildConfigField 'String', 'LAN_TLS_HOST', '""'
+        buildConfigField 'String', 'UPDATE_MANIFEST_URL', '"' + manifestUrl + '"'
+    }
+    buildFeatures { buildConfig true }
+    if (hostRequested) {
+        defaultConfig { ndk { abiFilters 'arm64-v8a' }; externalNativeBuild { cmake { arguments '-DANDROID_STL=c++_shared' } } }
+        externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt' } }
+    }
+    signingConfigs {
+        if (releaseSigningProvided) {
+            create('sightlineRelease') {
+                storeFile file(releaseKeyPath)
+                storePassword releaseStorePassword
+                keyAlias releaseAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+    buildTypes {
+        debug { debuggable true } // Debug certificate is NOT the release certificate.
+        diagnostic {
+            initWith debug
+            applicationIdSuffix '.diagnostic'
+            matchingFallbacks = ['debug']
+        }
+        release {
+            minifyEnabled false
+            buildConfigField 'boolean', 'SECURE_LAN_RELEASE', 'true'
+            buildConfigField 'String', 'LAN_TLS_HOST', '"' + releaseTlsHost + '"'
+            if (releaseSigningProvided) signingConfig signingConfigs.sightlineRelease
+        }
+    }
+    sourceSets { diagnostic { assets.srcDir(layout.buildDirectory.dir('generated/diagnosticAssets')) } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Derive the diagnostic-only report from the unchanged gameplay asset.
+def diagnosticPage = layout.buildDirectory.file('generated/diagnosticAssets/www/index.html')
+def prepareDiagnosticAssets = tasks.register('prepareDiagnosticAssets') {
+    def sourcePage = file('src/main/assets/www/index.html')
+    inputs.file(sourcePage)
+    outputs.file(diagnosticPage)
+    doLast {
+        def text = sourcePage.getText('UTF-8')
+        def marker = 'r={frames:b.count};'
+        if (text.indexOf(marker) < 0 || text.indexOf(marker) != text.lastIndexOf(marker))
+            throw new GradleException('Diagnostic report marker changed; refusing to create an incomplete report.')
+        def replacement = 'r={frames:b.count};var totalInterval=a.reduce(function(sum,q){return sum+q.intervalMs},0);r.fps=totalInterval>0?+(1000*a.length/totalInterval).toFixed(1):null;'
+        def output = diagnosticPage.get().asFile
+        output.parentFile.mkdirs()
+        output.setText(text.replace(marker, replacement), 'UTF-8')
+    }
+}
+tasks.configureEach { task -> if (task.name == 'mergeDiagnosticAssets') task.dependsOn(prepareDiagnosticAssets) }
+
+// Validate the complete task graph before any package task can emit a release APK/AAB.
+// Guarding only assembleRelease is too late: its dependencies may already have packaged an APK.
+gradle.taskGraph.whenReady { graph ->
+    def releaseRequested = graph.allTasks.any { task ->
+        task.name.toLowerCase(Locale.ROOT).contains('release')
+    }
+    if (releaseRequested) {
+        if (!releaseSigningProvided || !file(releaseKeyPath).isFile()) {
+            throw new GradleException('Release signing key missing. Run tools/provision-signing-key.ps1 locally and set SIGHTLINE_KEYSTORE_* environment values. Never use debug signing for release.')
+        }
+        if (!validReleaseTlsHost()) {
+            throw new GradleException('Secure LAN release requires -PsightlineLanTlsHost=<approved non-reserved FQDN>.')
+        }
+        if (hostRequested) {
+            throw new GradleException('The native phone-host service uses development HTTP/WS and cannot be packaged in a release build.')
+        }
+        def acceptanceGate = new File(rootProject.projectDir.parentFile, 'tools/require-release-acceptance.ps1')
+        if (!acceptanceGate.isFile()) throw new GradleException('Fail-closed release acceptance gate is missing; Android production release is blocked.')
+        def acceptanceProcess = new ProcessBuilder('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', acceptanceGate.absolutePath, '-Mode', 'AndroidRelease')
+            .directory(rootProject.projectDir.parentFile).redirectErrorStream(true).start()
+        def acceptanceOutput = acceptanceProcess.inputStream.getText('UTF-8')
+        def acceptanceExit = acceptanceProcess.waitFor()
+        if (acceptanceExit != 0) throw new GradleException("Android production release acceptance blocked:\n${acceptanceOutput}")
+        logger.lifecycle(acceptanceOutput.trim())
+    }
+
+    // Private debug packages use source integrity, not production acceptance.
+    def debugPackageTasks = graph.allTasks.findAll { task ->
+        def taskVariantName = task.name.toLowerCase(Locale.ROOT)
+        (taskVariantName.contains('debug') || taskVariantName.contains('diagnostic')) && (taskVariantName.startsWith('assemble') || taskVariantName.startsWith('bundle') || taskVariantName.startsWith('package'))
+    }
+    if (!debugPackageTasks.isEmpty()) {
+        def gate = new File(rootProject.projectDir.parentFile, 'tools/package-candidate.ps1')
+        if (!gate.isFile()) throw new GradleException('Candidate source-integrity gate is missing; private Android debug build is blocked.')
+        def process = new ProcessBuilder('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', gate.absolutePath, '-VerifyOnly')
+            .directory(rootProject.projectDir.parentFile).redirectErrorStream(true).start()
+        def gateOutput = process.inputStream.getText('UTF-8')
+        def gateExit = process.waitFor()
+        if (gateExit != 0) throw new GradleException("Android private debug source-integrity check failed:\n${gateOutput}")
+        logger.lifecycle(gateOutput.trim())
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.15.0'
+    implementation 'androidx.core:core:1.16.0'
+}

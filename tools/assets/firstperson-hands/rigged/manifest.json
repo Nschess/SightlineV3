@@ -1,0 +1,382 @@
+{
+  "source": "MPFB2 CC0 human mesh and rig preserved from source .blend",
+  "workflow": "Continuous weighted arm surfaces; separate retargeted armature per side; wrist/forearm axes aligned to local class target; 15 articulated finger joints per hand retained; grip pose applied as rest pose.",
+  "classes": [
+    {
+      "class": "pistol",
+      "blend": "tools\\assets\\firstperson-hands\\rigged\\pistol.blend",
+      "glb": "AndroidProject\\app\\src\\main\\assets\\phone-host\\models\\fp-arms\\pistol.glb",
+      "bytes": 370136,
+      "skins": 2,
+      "joints": 56,
+      "hasJOINTS_WEIGHTS": true,
+      "arms": [
+        {
+          "role": "dominant",
+          "vertices": 2444,
+          "triangles": 4880,
+          "fingerBones": [
+            "finger1-1.R",
+            "finger1-2.R",
+            "finger1-3.R",
+            "finger2-1.R",
+            "finger2-2.R",
+            "finger2-3.R",
+            "finger3-1.R",
+            "finger3-2.R",
+            "finger3-3.R",
+            "finger4-1.R",
+            "finger4-2.R",
+            "finger4-3.R",
+            "finger5-1.R",
+            "finger5-2.R",
+            "finger5-3.R"
+          ],
+          "vertexGroupCount": 26
+        },
+        {
+          "role": "support",
+          "vertices": 2447,
+          "triangles": 4886,
+          "fingerBones": [
+            "finger1-1.L",
+            "finger1-2.L",
+            "finger1-3.L",
+            "finger2-1.L",
+            "finger2-2.L",
+            "finger2-3.L",
+            "finger3-1.L",
+            "finger3-2.L",
+            "finger3-3.L",
+            "finger4-1.L",
+            "finger4-2.L",
+            "finger4-3.L",
+            "finger5-1.L",
+            "finger5-2.L",
+            "finger5-3.L"
+          ],
+          "vertexGroupCount": 26
+        }
+      ]
+    },
+    {
+      "class": "rifle",
+      "blend": "tools\\assets\\firstperson-hands\\rigged\\rifle.blend",
+      "glb": "AndroidProject\\app\\src\\main\\assets\\phone-host\\models\\fp-arms\\rifle.glb",
+      "bytes": 369896,
+      "skins": 2,
+      "joints": 56,
+      "hasJOINTS_WEIGHTS": true,
+      "arms": [
+        {
+          "role": "dominant",
+          "vertices": 2444,
+          "triangles": 4880,
+          "fingerBones": [
+            "finger1-1.R",
+            "finger1-2.R",
+            "finger1-3.R",
+            "finger2-1.R",
+            "finger2-2.R",
+            "finger2-3.R",
+            "finger3-1.R",
+            "finger3-2.R",
+            "finger3-3.R",
+            "finger4-1.R",
+            "finger4-2.R",
+            "finger4-3.R",
+            "finger5-1.R",
+            "finger5-2.R",
+            "finger5-3.R"
+          ],
+          "vertexGroupCount": 26
+        },
+        {
+          "role": "support",
+          "vertices": 2447,
+          "triangles": 4886,
+          "fingerBones": [
+            "finger1-1.L",
+            "finger1-2.L",
+            "finger1-3.L",
+            "finger2-1.L",
+            "finger2-2.L",
+            "finger2-3.L",
+            "finger3-1.L",
+            "finger3-2.L",
+            "finger3-3.L",
+            "finger4-1.L",
+            "finger4-2.L",
+            "finger4-3.L",
+            "finger5-1.L",
+            "finger5-2.L",
+            "finger5-3.L"
+          ],
+          "vertexGroupCount": 26
+        }
+      ]
+    },
+    {
+      "class": "smg",
+      "blend": "tools\\assets\\firstperson-hands\\rigged\\smg.blend",
+      "glb": "AndroidProject\\app\\src\\main\\assets\\phone-host\\models\\fp-arms\\smg.glb",
+      "bytes": 370048,
+      "skins": 2,
+      "joints": 56,
+      "hasJOINTS_WEIGHTS": true,
+      "arms": [
+        {
+          "role": "dominant",
+          "vertices": 2444,
+          "triangles": 4880,
+          "fingerBones": [
+            "finger1-1.R",
+            "finger1-2.R",
+            "finger1-3.R",
+            "finger2-1.R",
+            "finger2-2.R",
+            "finger2-3.R",
+            "finger3-1.R",
+            "finger3-2.R",
+            "finger3-3.R",
+            "finger4-1.R",
+            "finger4-2.R",
+            "finger4-3.R",
+            "finger5-1.R",
+            "finger5-2.R",
+            "finger5-3.R"
+          ],
+          "vertexGroupCount": 26
+        },
+        {
+          "role": "support",
+          "vertices": 2447,
+          "triangles": 4886,
+          "fingerBones": [
+            "finger1-1.L",
+            "finger1-2.L",
+            "finger1-3.L",
+            "finger2-1.L",
+            "finger2-2.L",
+            "finger2-3.L",
+            "finger3-1.L",
+            "finger3-2.L",
+            "finger3-3.L",
+            "finger4-1.L",
+            "finger4-2.L",
+            "finger4-3.L",
+            "finger5-1.L",
+            "finger5-2.L",
+            "finger5-3.L"
+          ],
+          "vertexGroupCount": 26
+        }
+      ]
+    },
+    {
+      "class": "shotgun",
+      "blend": "tools\\assets\\firstperson-hands\\rigged\\shotgun.blend",
+      "glb": "AndroidProject\\app\\src\\main\\assets\\phone-host\\models\\fp-arms\\shotgun.glb",
+      "bytes": 370004,
+      "skins": 2,
+      "joints": 56,
+      "hasJOINTS_WEIGHTS": true,
+      "arms": [
+        {
+          "role": "dominant",
+          "vertices": 2444,
+          "triangles": 4880,
+          "fingerBones": [
+            "finger1-1.R",
+            "finger1-2.R",
+            "finger1-3.R",
+            "finger2-1.R",
+            "finger2-2.R",
+            "finger2-3.R",
+            "finger3-1.R",
+            "finger3-2.R",
+            "finger3-3.R",
+            "finger4-1.R",
+            "finger4-2.R",
+            "finger4-3.R",
+            "finger5-1.R",
+            "finger5-2.R",
+            "finger5-3.R"
+          ],
+          "vertexGroupCount": 26
+        },
+        {
+          "role": "support",
+          "vertices": 2447,
+          "triangles": 4886,
+          "fingerBones": [
+            "finger1-1.L",
+            "finger1-2.L",
+            "finger1-3.L",
+            "finger2-1.L",
+            "finger2-2.L",
+            "finger2-3.L",
+            "finger3-1.L",
+            "finger3-2.L",
+            "finger3-3.L",
+            "finger4-1.L",
+            "finger4-2.L",
+            "finger4-3.L",
+            "finger5-1.L",
+            "finger5-2.L",
+            "finger5-3.L"
+          ],
+          "vertexGroupCount": 26
+        }
+      ]
+    },
+    {
+      "class": "marksman",
+      "blend": "tools\\assets\\firstperson-hands\\rigged\\marksman.blend",
+      "glb": "AndroidProject\\app\\src\\main\\assets\\phone-host\\models\\fp-arms\\marksman.glb",
+      "bytes": 370008,
+      "skins": 2,
+      "joints": 56,
+      "hasJOINTS_WEIGHTS": true,
+      "arms": [
+        {
+          "role": "dominant",
+          "vertices": 2444,
+          "triangles": 4880,
+          "fingerBones": [
+            "finger1-1.R",
+            "finger1-2.R",
+            "finger1-3.R",
+            "finger2-1.R",
+            "finger2-2.R",
+            "finger2-3.R",
+            "finger3-1.R",
+            "finger3-2.R",
+            "finger3-3.R",
+            "finger4-1.R",
+            "finger4-2.R",
+            "finger4-3.R",
+            "finger5-1.R",
+            "finger5-2.R",
+            "finger5-3.R"
+          ],
+          "vertexGroupCount": 26
+        },
+        {
+          "role": "support",
+          "vertices": 2447,
+          "triangles": 4886,
+          "fingerBones": [
+            "finger1-1.L",
+            "finger1-2.L",
+            "finger1-3.L",
+            "finger2-1.L",
+            "finger2-2.L",
+            "finger2-3.L",
+            "finger3-1.L",
+            "finger3-2.L",
+            "finger3-3.L",
+            "finger4-1.L",
+            "finger4-2.L",
+            "finger4-3.L",
+            "finger5-1.L",
+            "finger5-2.L",
+            "finger5-3.L"
+          ],
+          "vertexGroupCount": 26
+        }
+      ]
+    },
+    {
+      "class": "lmg",
+      "blend": "tools\\assets\\firstperson-hands\\rigged\\lmg.blend",
+      "glb": "AndroidProject\\app\\src\\main\\assets\\phone-host\\models\\fp-arms\\lmg.glb",
+      "bytes": 370024,
+      "skins": 2,
+      "joints": 56,
+      "hasJOINTS_WEIGHTS": true,
+      "arms": [
+        {
+          "role": "dominant",
+          "vertices": 2444,
+          "triangles": 4880,
+          "fingerBones": [
+            "finger1-1.R",
+            "finger1-2.R",
+            "finger1-3.R",
+            "finger2-1.R",
+            "finger2-2.R",
+            "finger2-3.R",
+            "finger3-1.R",
+            "finger3-2.R",
+            "finger3-3.R",
+            "finger4-1.R",
+            "finger4-2.R",
+            "finger4-3.R",
+            "finger5-1.R",
+            "finger5-2.R",
+            "finger5-3.R"
+          ],
+          "vertexGroupCount": 26
+        },
+        {
+          "role": "support",
+          "vertices": 2447,
+          "triangles": 4886,
+          "fingerBones": [
+            "finger1-1.L",
+            "finger1-2.L",
+            "finger1-3.L",
+            "finger2-1.L",
+            "finger2-2.L",
+            "finger2-3.L",
+            "finger3-1.L",
+            "finger3-2.L",
+            "finger3-3.L",
+            "finger4-1.L",
+            "finger4-2.L",
+            "finger4-3.L",
+            "finger5-1.L",
+            "finger5-2.L",
+            "finger5-3.L"
+          ],
+          "vertexGroupCount": 26
+        }
+      ]
+    },
+    {
+      "class": "melee",
+      "blend": "tools\\assets\\firstperson-hands\\rigged\\melee.blend",
+      "glb": "AndroidProject\\app\\src\\main\\assets\\phone-host\\models\\fp-arms\\melee.glb",
+      "bytes": 185220,
+      "skins": 1,
+      "joints": 28,
+      "hasJOINTS_WEIGHTS": true,
+      "arms": [
+        {
+          "role": "dominant",
+          "vertices": 2444,
+          "triangles": 4880,
+          "fingerBones": [
+            "finger1-1.R",
+            "finger1-2.R",
+            "finger1-3.R",
+            "finger2-1.R",
+            "finger2-2.R",
+            "finger2-3.R",
+            "finger3-1.R",
+            "finger3-2.R",
+            "finger3-3.R",
+            "finger4-1.R",
+            "finger4-2.R",
+            "finger4-3.R",
+            "finger5-1.R",
+            "finger5-2.R",
+            "finger5-3.R"
+          ],
+          "vertexGroupCount": 26
+        }
+      ]
+    }
+  ]
+}

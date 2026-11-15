@@ -1,0 +1,220 @@
+/* Squad Bay / Operations Table / Armory Ready Room. Presentation-only rules;
+   mapSvg, makeUnit, the weapon preview, existing route handlers, and saved
+   selections remain the live game sources. */
+:root{--sl-ink:#081116;--sl-slate:#18262d;--sl-ivory:#f2f1e7;--sl-teal:#82e2cb;--sl-amber:#d3ad70;--sl-edge:rgba(213,229,222,.2)}
+body.sl-lobby-screen #ov-start .mn{background:linear-gradient(90deg,rgba(5,13,16,.94),rgba(7,16,19,.86) 30%,rgba(7,16,19,.48) 53%,rgba(7,16,19,.08) 86%),linear-gradient(0deg,rgba(4,12,15,.66),transparent 28%)}
+#ov-start .mn-rail{backdrop-filter:none}
+#ov-start .mn-brand b{color:var(--sl-ivory);letter-spacing:.18em}
+#ov-start .mn-tab[aria-selected=true]{color:var(--sl-ivory);border-color:var(--sl-teal)}
+#ov-start .mn-subtab[aria-current=page]{border-color:rgba(130,226,203,.62);color:#c4f3e6;background:rgba(25,70,63,.42)}
+#ov-start .squad-bay-overline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 7px;color:#a8c0b6;font:700 .64rem var(--f-mono);letter-spacing:.15em;text-transform:uppercase}
+#ov-start .squad-bay-overline span:first-child{color:var(--sl-teal)}
+#ov-start .squad-bay-overline span:last-child{color:#9baea6;font-size:.56rem;letter-spacing:.1em}
+#ov-start #pn-play .pn-h h2{font-size:clamp(2.6rem,4vw,4rem);letter-spacing:.035em}
+#ov-start #pn-play #ov-text{max-width:44ch;margin:8px 0 16px;color:#e0e6dd;font-size:clamp(.96rem,1.18vw,1.08rem)}
+#ov-start #pn-play .mode-header{margin:0 0 8px}
+#ov-start #pn-play .mode-header .mode-label{color:#c8d1c8;font-size:.67rem;letter-spacing:.16em}
+#ov-start #ov-note{max-width:58ch}
+#ov-start .mode-choice{border-color:rgba(220,233,222,.23);background-color:rgba(10,22,26,.9);box-shadow:inset 0 1px rgba(255,255,255,.035)}
+#ov-start .mode-choice[aria-pressed=true]{border-color:var(--sl-teal);background:linear-gradient(155deg,rgba(38,91,78,.88),rgba(8,24,27,.94));box-shadow:inset 0 -2px var(--sl-teal),0 6px 20px rgba(0,0,0,.2)}
+#ov-start .mode-name{color:var(--sl-ivory);font-size:clamp(.7rem,.85vw,.84rem);letter-spacing:.04em}
+#ov-start .mode-glyph{width:30px;height:30px}
+#ov-start .mode-brief{border-left-color:var(--sl-teal);background:linear-gradient(90deg,rgba(11,30,32,.78),rgba(11,30,32,.18) 72%,transparent)}
+#ov-start .play-deployment{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);align-items:stretch;gap:16px;margin:10px 0 8px}
+#ov-start .play-map-card{display:grid;grid-template-columns:minmax(0,1fr) 76px 82px;gap:10px;min-height:72px;padding:8px 0;border-top-color:var(--sl-edge);border-bottom-color:var(--sl-edge)}
+#ov-start .play-map-card-head{display:grid;gap:4px;align-content:center;min-width:0}
+#ov-start .play-map-card-head strong{font-size:1.08rem;letter-spacing:.06em}
+#ov-start .play-map-card-head span{font-size:.64rem}
+#ov-start #play-map-preview{display:block!important;width:76px;height:56px;overflow:hidden;border:1px solid rgba(211,173,112,.46);background:rgba(8,17,20,.78)}
+#ov-start #play-map-preview svg{display:block;width:100%;height:100%;object-fit:contain}
+#ov-start .play-map-open{position:relative;inset:auto;width:82px;height:38px;border-color:rgba(213,229,222,.3);color:#e2e9e0}
+#ov-start .play-map-open::after{content:'MAPS  →';font:800 .6rem var(--f-label);letter-spacing:.1em}
+#ov-start .play-map-open:hover{border-color:var(--sl-teal);color:#c9f6e9;background:rgba(19,55,49,.72)}
+#ov-start .pl-sum{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+#ov-start .pl-row{padding:8px 0}
+#ov-start .pl-row .vv{font-size:.92rem}
+#ov-start .pl-row .vv small{font-size:.7rem}
+#ov-start #btn-start{min-height:58px;min-width:210px;background:var(--sl-amber);border-color:#f1d7a7;color:#17201e;font-size:1rem;letter-spacing:.2em;box-shadow:0 7px 20px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.32)}
+#ov-start #btn-start:hover:not(:disabled){background:#e1c28b}
+
+/* The table uses the existing arena-derived SVG and map buttons. */
+body[data-sl-route=map] #ov-start .mn-main,body[data-sl-route=rules][data-sl-mode=bomb] #ov-start .mn-main{left:5vw;width:min(1360px,88vw);max-width:calc(100vw - 10vw);top:clamp(104px,13vh,132px);max-height:calc(100dvh - clamp(132px,17vh,160px));padding-right:14px;background:linear-gradient(90deg,rgba(6,15,19,.88),rgba(8,18,22,.64) 66%,rgba(8,18,22,.12))}
+#ov-start .operations-table{width:100%;padding:0 0 22px}
+#ov-start .ops-table-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 10px;padding-bottom:9px;border-bottom:1px solid var(--sl-edge);color:#a8bbb2;font:700 .65rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase}
+#ov-start .ops-table-meta strong{color:var(--sl-amber);font-weight:700}
+#ov-start .operations-table .pn-h h2{font-size:clamp(2.25rem,4vw,3.7rem)}
+#ov-start .ops-map-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(250px,.78fr);gap:clamp(18px,2.7vw,38px);align-items:stretch;margin:12px 0 18px}
+#ov-start .ops-map-window{display:grid;grid-template-rows:minmax(220px,1fr) auto;min-width:0;margin:0;border:1px solid rgba(211,173,112,.42);border-left:3px solid var(--sl-amber);background:linear-gradient(145deg,rgba(19,38,43,.88),rgba(7,16,20,.92));box-shadow:0 14px 36px rgba(0,0,0,.22)}
+#ov-start .ops-map-art{display:grid;min-height:0;place-items:center;padding:clamp(12px,1.8vw,24px);background:radial-gradient(ellipse at 50% 45%,rgba(50,85,86,.25),transparent 70%)}
+#ov-start .ops-map-art svg{display:block;width:100%;height:auto;max-height:42vh;filter:drop-shadow(0 7px 12px rgba(0,0,0,.28))}
+#ov-start .ops-map-window figcaption{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border-top:1px solid var(--sl-edge);color:#a8bbb2;font:700 .62rem var(--f-mono);letter-spacing:.12em}
+#ov-start .ops-map-window figcaption strong{color:var(--sl-ivory);font:800 1rem var(--f-label);letter-spacing:.08em}
+#ov-start .ops-map-brief{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:6px 0}
+#ov-start .ops-kicker{color:var(--sl-teal);font:700 .62rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase}
+#ov-start .ops-map-brief h3{margin:8px 0 5px;color:var(--sl-ivory);font:900 clamp(1.5rem,2.4vw,2.2rem)/1 var(--f-label);letter-spacing:.055em;text-transform:uppercase}
+#ov-start .ops-map-brief>p{max-width:50ch;margin:0 0 10px;color:#d5dfd8;font:.92rem/1.5 var(--f-body)}
+#ov-start .ops-map-brief ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;margin:0;padding:0;list-style:none}
+#ov-start .ops-map-brief li{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 0;border-bottom:1px solid rgba(213,229,222,.14);color:#bdcbc3;font:.77rem/1.4 var(--f-body)}
+#ov-start .ops-map-brief li b{color:#f1d39d;font:700 .62rem var(--f-mono);letter-spacing:.12em}
+#ov-start .ops-map-brief .small{margin-top:12px;color:#9fb1a8;font:.7rem/1.45 var(--f-body)}
+#ov-start .ops-picker-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:10px 0 6px;color:#e8ece3}
+#ov-start .ops-picker-head span:first-child{font:800 .78rem var(--f-label);letter-spacing:.13em}
+#ov-start .ops-picker-head span:last-child{color:#9db2a8;font:.6rem var(--f-mono);letter-spacing:.09em}
+#ov-start .operations-table .mappick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;max-height:min(23vh,210px);overflow:auto;padding:2px 4px 8px 0}
+#ov-start .operations-table .mappick .mp{min-height:58px;padding:9px 11px;border-color:rgba(213,229,222,.19);background:linear-gradient(145deg,rgba(21,39,44,.88),rgba(8,17,21,.85));text-align:left}
+#ov-start .operations-table .mappick .mp[aria-pressed=true]{border-color:var(--sl-teal);background:linear-gradient(135deg,rgba(32,83,74,.82),rgba(9,23,26,.94));box-shadow:inset 2px 0 var(--sl-teal)}
+#ov-start .operations-table .mappick .mp b{color:#f1f2e9;font:800 .77rem var(--f-label);letter-spacing:.06em}
+#ov-start .operations-table .mappick .mp span{color:#aabbb1;font:.58rem var(--f-mono);letter-spacing:.09em}
+
+/* Bomb rules keep the existing real selectors and validated sites together. */
+body[data-sl-route=rules][data-sl-mode=bomb] #ov-start .ops-bomb-plan{display:grid;grid-template-columns:minmax(220px,.74fr) minmax(0,1fr);gap:clamp(14px,2vw,26px);align-items:center;margin:10px 0 18px;padding:12px;border:1px solid rgba(211,173,112,.42);border-left:3px solid var(--sl-amber);background:linear-gradient(130deg,rgba(25,38,39,.84),rgba(7,17,21,.88))}
+#ov-start .ops-bomb-map{min-width:0;padding:8px;border:1px solid rgba(213,229,222,.13);background:rgba(7,16,19,.65)}
+#ov-start .ops-bomb-map svg{display:block;width:100%;height:auto;max-height:210px}
+#ov-start .ops-bomb-info h3{margin:5px 0;color:var(--sl-ivory);font:900 clamp(1.3rem,2.4vw,2rem)/1 var(--f-label);letter-spacing:.06em;text-transform:uppercase}
+#ov-start .ops-bomb-info p{max-width:62ch;color:#cdd8d0;font:.84rem/1.5 var(--f-body)}
+#ov-start .ops-site-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+#ov-start .ops-site{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:2px 10px;padding:9px;border:1px solid rgba(213,229,222,.17);background:rgba(8,18,22,.64)}
+#ov-start .ops-site>i{grid-row:span 2;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--sl-amber);border-radius:50%;color:#ffe4b2;font:900 .8rem var(--f-label);font-style:normal}
+#ov-start .ops-site[data-site=b] > i{border-color:var(--sl-teal);color:#c7f6e9}
+#ov-start .ops-site b{color:#f0f1e8;font:800 .68rem var(--f-label);letter-spacing:.08em;text-transform:uppercase}
+#ov-start .ops-site small{color:#a9b9b0;font:.58rem var(--f-mono)}
+#ov-start .ops-rule-heading{margin:12px 0 4px;color:#f2f1e7;font:800 .78rem var(--f-label);letter-spacing:.14em;text-transform:uppercase}
+
+/* Armory Ready Room uses the existing live weapon render target and selection. */
+body[data-sl-route=loadout] #ov-start .mn-main{left:5vw;width:min(1320px,88vw);max-width:calc(100vw - 10vw);top:clamp(100px,12vh,124px);max-height:calc(100dvh - clamp(128px,16vh,152px));padding-right:14px;background:linear-gradient(90deg,rgba(6,15,19,.92),rgba(8,18,22,.77) 64%,rgba(8,18,22,.2))}
+body[data-sl-route=loadout] #ov-start .loadout-page{gap:12px;padding-bottom:24px}
+body[data-sl-route=loadout] #ov-start .loadout-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:5px 0 8px;padding-bottom:12px;border-bottom:1px solid var(--sl-edge)}
+body[data-sl-route=loadout] #ov-start .loadout-heading h3{margin:6px 0;color:var(--sl-ivory);font-size:clamp(2rem,4vw,3.4rem);letter-spacing:.035em}
+body[data-sl-route=loadout] #ov-start .loadout-heading p{max-width:52ch;margin:6px 0 0;color:#cbd6ce;font:.84rem/1.5 var(--f-body)}
+body[data-sl-route=loadout] #ov-start .loadout-mark{flex:0 0 auto;padding:8px 11px;border-left:2px solid var(--sl-amber);color:#f0d6a6;background:rgba(15,28,30,.58);font:700 .66rem var(--f-mono);letter-spacing:.12em}
+body[data-sl-route=loadout] #ov-start .loadout-workbench{grid-template-columns:minmax(0,1.25fr) minmax(330px,.75fr);gap:clamp(14px,2vw,26px);align-items:start}
+body[data-sl-route=loadout] #ov-start .loadout-viewport{overflow:hidden;border:1px solid rgba(211,173,112,.4);border-left:3px solid var(--sl-amber);background:radial-gradient(ellipse at 48% 48%,rgba(67,91,88,.28),transparent 63%),linear-gradient(145deg,rgba(19,37,42,.9),rgba(6,15,19,.94));box-shadow:0 14px 36px rgba(0,0,0,.24)}
+body[data-sl-route=loadout] #ov-start .loadout-viewport canvas{display:block;width:100%;height:auto;max-height:none;aspect-ratio:380/175;image-rendering:auto}
+body[data-sl-route=loadout] #ov-start .loadout-viewport-foot{display:flex;justify-content:space-between;gap:8px;padding:9px 12px;border-top:1px solid var(--sl-edge);color:#b9c9c0;font:.61rem var(--f-mono);letter-spacing:.07em}
+body[data-sl-route=loadout] #ov-start .loadout-controls{padding:12px;border:1px solid rgba(213,229,222,.17);background:rgba(8,18,22,.72)}
+body[data-sl-route=loadout] #ov-start .loadout-cats{max-height:23vh;overflow:auto;padding:0 2px 3px 0}
+body[data-sl-route=loadout] #ov-start .loadout-cats button{min-height:36px;padding-inline:10px;border-color:rgba(213,229,222,.19);color:#ced9d1;font-size:.58rem;letter-spacing:.07em}
+body[data-sl-route=loadout] #ov-start .loadout-cats button[aria-pressed=true]{border-color:var(--sl-teal);background:rgba(33,84,74,.68);color:#d1f6e9}
+body[data-sl-route=loadout] #ov-start #loadout-weapon-select{width:100%;min-height:44px;padding:8px 12px;font:800 .9rem var(--f-label)}
+body[data-sl-route=loadout] #ov-start .loadout-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;margin:11px 0}
+body[data-sl-route=loadout] #ov-start .loadout-facts>div{padding:8px 0;border-bottom:1px solid rgba(213,229,222,.14)}
+body[data-sl-route=loadout] #ov-start .loadout-facts span{color:#a7bbb1;font:.58rem var(--f-mono);letter-spacing:.1em}
+body[data-sl-route=loadout] #ov-start .loadout-facts strong{color:#f0f2e9;font:.85rem var(--f-label)}
+body[data-sl-route=loadout] #ov-start .loadout-actions{display:flex;flex-wrap:wrap;gap:8px}
+body[data-sl-route=loadout] #ov-start .loadout-actions .btn{min-height:42px}
+body[data-sl-route=loadout] #ov-start .loadout-finish-head{margin-top:3px}
+body[data-sl-route=loadout] #ov-start .loadout-finishes{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:7px}
+
+/* Operators remain selected from the playable roster; the adjacent world stage
+   continues to show the selected, rigged unit through makeUnit(). */
+body[data-sl-route=op] #ov-start .mn-main{left:5vw;width:min(920px,66vw);max-width:calc(100vw - 10vw);background:linear-gradient(90deg,rgba(6,15,19,.94),rgba(8,18,22,.8) 76%,rgba(8,18,22,.18))}
+body[data-sl-route=op] #ov-start .operator-console{max-width:100%;gap:10px}
+body[data-sl-route=op] #ov-start .opdet-copy{min-width:0}
+body[data-sl-route=op] #ov-start .opdet h3{font-size:clamp(2.15rem,3.6vw,3.3rem)}
+body[data-sl-route=op] #ov-start .opdet p{max-width:56ch;font-size:.9rem}
+body[data-sl-route=op] #ov-start .oppick{max-height:38vh}
+body[data-sl-route=op] #ov-start .chips{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+body[data-sl-route=op] #ov-start .op{min-height:58px;grid-template-columns:36px minmax(0,1fr);gap:6px;padding:6px}
+body[data-sl-route=op] #ov-start .op svg{width:34px;height:40px}
+body[data-sl-route=op] #ov-start .op b{font-size:.72rem}
+body[data-sl-route=op] #ov-start .operator-confirm{padding-top:12px;border-top:1px solid var(--sl-edge)}
+body[data-sl-route=op] #ov-start .operator-confirm .btn{background:var(--sl-amber);border-color:#f1d7a7;color:#17201e}
+body[data-sl-route=op] #ov-start .operator-bay-callout{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 9px;padding:8px 10px;border-left:2px solid var(--sl-teal);background:linear-gradient(90deg,rgba(20,60,53,.5),transparent);color:#b8c9bf;font:.68rem var(--f-body)}
+
+@media(max-width:1080px){#ov-start .play-deployment{grid-template-columns:minmax(0,1fr)}#ov-start .play-map-card{max-width:100%}#ov-start .ops-map-layout{grid-template-columns:minmax(0,1.15fr) minmax(220px,.85fr)}#ov-start .operations-table .mappick{grid-template-columns:repeat(3,minmax(0,1fr))}body[data-sl-route=loadout] #ov-start .loadout-workbench{grid-template-columns:minmax(0,1fr) minmax(290px,.8fr)}}
+@media(max-width:760px){#ov-start .squad-bay-overline{font-size:.56rem}#ov-start #pn-play .pn-h h2{font-size:clamp(2.05rem,8vw,3rem)}#ov-start .play-deployment{gap:8px}#ov-start .pl-sum{grid-template-columns:repeat(2,minmax(0,1fr))}#ov-start .play-map-card{grid-template-columns:minmax(0,1fr) 60px 72px;gap:6px}#ov-start #play-map-preview{width:60px;height:48px}#ov-start .play-map-open{width:72px}body[data-sl-route=map] #ov-start .mn-main,body[data-sl-route=rules][data-sl-mode=bomb] #ov-start .mn-main,body[data-sl-route=loadout] #ov-start .mn-main,body[data-sl-route=op] #ov-start .mn-main{left:14px;width:calc(100vw - 28px);max-width:none;top:78px;max-height:calc(100dvh - 88px);padding:0 6px 16px;background:linear-gradient(90deg,rgba(6,15,19,.94),rgba(8,18,22,.78))}#ov-start .ops-map-layout{grid-template-columns:minmax(0,1fr);gap:8px}#ov-start .ops-map-art svg{max-height:28vh}#ov-start .ops-map-window{grid-template-rows:minmax(150px,auto) auto}#ov-start .ops-map-brief ul{grid-template-columns:repeat(2,minmax(0,1fr))}#ov-start .operations-table .mappick{grid-template-columns:repeat(2,minmax(0,1fr));max-height:24vh}body[data-sl-route=rules][data-sl-mode=bomb] #ov-start .ops-bomb-plan{grid-template-columns:minmax(0,1fr);gap:9px}#ov-start .ops-bomb-map svg{max-height:170px}body[data-sl-route=loadout] #ov-start .loadout-workbench{grid-template-columns:minmax(0,1fr);gap:9px}body[data-sl-route=loadout] #ov-start .loadout-heading{align-items:start}body[data-sl-route=loadout] #ov-start .loadout-viewport canvas{max-height:none}body[data-sl-route=op] #ov-start .operator-roster-head{align-items:flex-start;flex-direction:column}body[data-sl-route=op] #ov-start .oppick{max-height:31vh}}
+@media(max-height:560px) and (orientation:landscape){#ov-start .ops-map-layout{grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr);margin-block:6px}#ov-start .ops-map-art svg{max-height:30vh}#ov-start .operations-table .mappick{max-height:18vh}body[data-sl-route=loadout] #ov-start .loadout-workbench{grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr)}body[data-sl-route=op] #ov-start .oppick{max-height:28vh}}
+@media(prefers-reduced-motion:reduce){#ov-start .operations-table *,#ov-start .loadout-page *,#ov-start .operator-console *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* 2026-11-08 visual polish. CSS only: the live character stage and weapon
+   preview remain the existing game objects; no model or gameplay changes. */
+body.sl-lobby-screen #ov-start .mn{background:radial-gradient(ellipse at 78% 34%,rgba(113,169,155,.13),transparent 30%),radial-gradient(ellipse at 68% 72%,rgba(194,151,87,.08),transparent 34%),linear-gradient(90deg,rgba(4,12,15,.96),rgba(6,15,18,.9) 30%,rgba(7,16,19,.48) 56%,rgba(7,16,19,.08) 88%),linear-gradient(0deg,rgba(4,11,14,.7),transparent 34%)}
+#ov-start .mn-rail{border-bottom-color:rgba(204,224,216,.18);background:linear-gradient(180deg,rgba(5,13,16,.94),rgba(5,13,16,.68));box-shadow:0 8px 28px rgba(0,0,0,.12)}
+#ov-start .mn-brand b{letter-spacing:.16em;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+#ov-start .mn-nav{min-width:0;gap:clamp(3px,.5vw,9px)}
+#ov-start .mn-tab{min-width:0;min-height:46px;padding-inline:clamp(9px,1.15vw,18px);border:1px solid transparent;border-radius:3px;color:#b8c8c1;letter-spacing:.09em}
+#ov-start .mn-tab:hover:not([aria-selected=true]){border-color:rgba(207,227,218,.16);background:rgba(208,230,220,.055);color:#f0f2e8}
+#ov-start .mn-tab[aria-selected=true]{border-color:rgba(130,226,203,.32);background:linear-gradient(180deg,rgba(44,101,88,.3),rgba(12,30,31,.18));color:#eaf4ee;box-shadow:inset 0 -2px var(--sl-teal),0 5px 20px rgba(0,0,0,.12)}
+#ov-start .mn-glyph{width:19px;height:19px;flex:0 0 19px;color:#a8c8be}
+#ov-start .mn-tab[aria-selected=true] .mn-glyph{color:var(--sl-teal)}
+#ov-start .mn-subtab{min-height:38px;padding-inline:12px;border-radius:3px;border-color:rgba(210,228,219,.17);background:rgba(8,19,22,.7);color:#c5d1ca;font-size:.65rem}
+#ov-start .mn-subtab:hover{border-color:rgba(130,226,203,.5);background:rgba(24,58,53,.58);color:#f2f3e8}
+#ov-start .mn-subtab[aria-current=page]{border-color:rgba(130,226,203,.72);background:linear-gradient(135deg,rgba(36,89,76,.6),rgba(8,22,25,.84));color:#e6f5ed;box-shadow:inset 0 -2px var(--sl-teal)}
+#ov-start .mn-main{scrollbar-color:rgba(130,226,203,.38) transparent;scrollbar-width:thin;overscroll-behavior:contain}
+#ov-start .pn-h{margin-bottom:9px}
+#ov-start .pn-h h2{color:var(--sl-ivory);text-shadow:0 2px 20px rgba(0,0,0,.28);letter-spacing:.045em}
+#ov-start .pn-h h2::after{width:52px;height:3px;background:linear-gradient(90deg,var(--sl-teal),rgba(130,226,203,0));box-shadow:0 0 14px rgba(130,226,203,.24)}
+#ov-start #ov-text{color:#d7e0da;line-height:1.48;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+#ov-start .mode-header .mode-label{color:#d7bc88;letter-spacing:.18em}
+#ov-start .mode-grid{gap:7px;overflow:visible}
+#ov-start .mode-choice{min-height:94px;padding:10px 10px 9px;border-radius:4px;border-color:rgba(216,230,220,.2);background-color:rgba(7,18,22,.82);box-shadow:inset 0 1px rgba(255,255,255,.035),0 8px 18px rgba(0,0,0,.08)}
+#ov-start .mode-choice:hover:not(:disabled){transform:translateY(-1px);border-color:rgba(216,235,224,.48);background-color:rgba(20,38,40,.92)}
+#ov-start .mode-choice[aria-pressed=true]{border-color:var(--mode-accent,var(--sl-teal));background-image:radial-gradient(ellipse at 90% 0,rgba(130,226,203,.12),transparent 65%),linear-gradient(145deg,rgba(31,74,66,.86),rgba(7,22,25,.96));box-shadow:inset 0 0 0 1px rgba(130,226,203,.12),inset 0 -2px var(--mode-accent,var(--sl-teal)),0 8px 22px rgba(0,0,0,.18)}
+#ov-start .mode-choice-head{gap:6px}
+#ov-start .mode-glyph{width:28px;height:28px;flex:0 0 28px;padding:4px;border:1px solid rgba(130,226,203,.4);border-radius:4px;background:linear-gradient(145deg,rgba(16,39,40,.72),rgba(4,12,15,.5));color:var(--mode-accent,var(--sl-teal));stroke-width:2.15;filter:drop-shadow(0 0 3px color-mix(in srgb,var(--mode-accent,var(--sl-teal)) 28%,transparent))}
+#ov-start .mode-name{font-size:clamp(.77rem,.9vw,.91rem);letter-spacing:.045em;line-height:1.12}
+#ov-start .mode-desc{color:#adbbb3;font-size:.7rem;line-height:1.35}
+#ov-start .mode-brief{border-bottom-color:rgba(213,229,222,.17);background:linear-gradient(90deg,rgba(8,23,25,.7),rgba(8,23,25,.18) 74%,transparent)}
+#ov-start .mode-brief strong{letter-spacing:.075em}
+#ov-start .mode-brief em{max-width:38%;white-space:normal;line-height:1.35}
+#ov-start #btn-start{min-height:54px;min-width:194px;border:1px solid #ecd39e;border-radius:4px;background:linear-gradient(135deg,#dec18a,#c9a56a);color:#17201d;letter-spacing:.17em;box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.34)}
+#ov-start #btn-start:hover:not(:disabled){transform:translateY(-1px);background:linear-gradient(135deg,#f0d6a3,#d6b578);box-shadow:0 10px 26px rgba(0,0,0,.26),0 0 20px rgba(213,173,112,.16)}
+#ov-start #btn-start:focus-visible,#ov-start .mn-tab:focus-visible,#ov-start .mn-subtab:focus-visible,#ov-start .mode-choice:focus-visible,#ov-start .op:focus-visible,#ov-start .btn:focus-visible{outline:2px solid #b0f1df;outline-offset:3px}
+#ov-start .play-map-card{border-top-color:rgba(213,229,222,.18);border-bottom-color:rgba(213,229,222,.18);background:linear-gradient(105deg,rgba(14,30,32,.64),rgba(8,18,22,.16) 80%,transparent)}
+#ov-start #play-map-preview{border-color:rgba(211,173,112,.56);box-shadow:0 4px 16px rgba(0,0,0,.22)}
+#ov-start .play-map-open{min-height:42px;border-radius:3px;background:rgba(9,21,24,.7)}
+#ov-start .pl-row{border-bottom-color:rgba(213,229,222,.12)}
+#ov-start .pl-row .k,#ov-start .play-map-card-head span{color:#9fb3aa;letter-spacing:.11em}
+#ov-start .btn{min-height:44px;border-radius:3px;font-weight:800;letter-spacing:.08em}
+#ov-start .srow{border-bottom-color:rgba(213,229,222,.15);background:linear-gradient(90deg,rgba(15,31,34,.28),transparent 72%)}
+#ov-start .srow input,#ov-start .srow select,#ov-start .seg button,#ov-start .subtabs button,#ov-start .op-filters button,#ov-start .loadout-cats button{min-height:40px;border-radius:3px}
+#ov-start .srow input:focus-visible,#ov-start .srow select:focus-visible,#ov-start .seg button:focus-visible,#ov-start .subtabs button:focus-visible,#ov-start .op-filters button:focus-visible,#ov-start .loadout-cats button:focus-visible{outline:2px solid var(--sl-teal);outline-offset:2px}
+#ov-start .ops-map-window,#ov-start .ops-bomb-plan{border-radius:5px;background:linear-gradient(145deg,rgba(17,35,39,.88),rgba(6,15,19,.94));box-shadow:0 12px 30px rgba(0,0,0,.18)}
+#ov-start .ops-map-art{background:radial-gradient(ellipse at 50% 48%,rgba(83,133,118,.2),transparent 68%),linear-gradient(180deg,rgba(4,13,17,.2),rgba(4,13,17,.58))}
+#ov-start .operations-table .mappick .mp{min-height:58px;border-radius:3px;transition:background .16s,border-color .16s,transform .16s}
+#ov-start .operations-table .mappick .mp:hover{transform:translateY(-1px);border-color:rgba(130,226,203,.55)}
+#ov-start .operations-table .mappick .mp:focus-visible{outline:2px solid var(--sl-teal);outline-offset:2px}
+body[data-sl-route=loadout] #ov-start .loadout-viewport{border-radius:5px;background:radial-gradient(ellipse at 50% 42%,rgba(82,123,114,.22),transparent 66%),linear-gradient(145deg,rgba(16,34,40,.96),rgba(5,14,18,.98));box-shadow:0 14px 32px rgba(0,0,0,.23)}
+body[data-sl-route=loadout] #ov-start .loadout-controls{border-radius:4px;background:linear-gradient(145deg,rgba(15,31,35,.88),rgba(7,17,21,.9))}
+body[data-sl-route=loadout] #ov-start .loadout-viewport-foot{min-height:38px}
+body[data-sl-route=loadout] #ov-start .loadout-cats button,body[data-sl-route=loadout] #ov-start .loadout-actions .btn{min-height:44px;font-size:.68rem}
+body[data-sl-route=loadout] #ov-start .loadout-finishes .loadout-finish{min-height:64px;border-radius:3px}
+body[data-sl-route=loadout] #ov-start .loadout-finish[aria-pressed=true]{border-color:var(--sl-teal);background:linear-gradient(130deg,rgba(33,83,74,.7),rgba(8,22,25,.9));box-shadow:inset 0 0 0 1px rgba(130,226,203,.15)}
+body[data-sl-route=op] #ov-start .opdet{border-radius:4px;background:linear-gradient(110deg,rgba(13,31,35,.92),rgba(6,17,21,.74));box-shadow:0 12px 26px rgba(0,0,0,.16)}
+body[data-sl-route=op] #ov-start .op-filters button{min-width:70px;min-height:42px;border-radius:3px}
+body[data-sl-route=op] #ov-start .op-filters button[aria-pressed=true]{background:rgba(35,91,78,.7);color:#e6f5ed;box-shadow:inset 0 -2px var(--sl-teal)}
+body[data-sl-route=op] #ov-start .op{min-height:58px;border-radius:3px;background:linear-gradient(145deg,rgba(19,38,42,.86),rgba(6,17,21,.86));}
+body[data-sl-route=op] #ov-start .op[aria-pressed=true]{border-color:var(--sl-teal);background:linear-gradient(135deg,rgba(35,83,74,.84),rgba(7,23,25,.94));box-shadow:inset 0 0 0 1px rgba(130,226,203,.14),inset 3px 0 var(--sl-teal)}
+body[data-sl-route=op] #ov-start .operator-confirm .btn{min-height:48px;border:1px solid #ecd39e;border-radius:3px;background:linear-gradient(135deg,#dec18a,#c9a56a);color:#17201d;letter-spacing:.11em}
+body.sl-lobby-screen #ov-start .mn-main,body.sl-lobby-screen #ov-start .mn-context,body.sl-lobby-screen #ov-start .mn-panel,body.sl-lobby-screen #ov-start .mn-panel *{box-sizing:border-box}
+body.sl-lobby-screen #ov-start .mn-main,body.sl-lobby-screen #ov-start .mn-panel{min-width:0;max-width:100%;overflow-wrap:normal;word-break:normal}
+@media(max-width:980px){#ov-start .mn-rail{gap:10px;padding-inline:18px}#ov-start .mn-brand{min-width:136px}#ov-start .mn-nav{flex:1;justify-content:center}#ov-start .mn-tab{padding-inline:9px}#ov-start .mn-tab .nm{font-size:.7rem}#ov-start .mode-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#ov-start .mode-choice{min-height:82px}#ov-start .mode-desc{display:none}}
+@media(max-width:760px){#ov-start .mn-rail{gap:6px;padding-inline:9px}#ov-start .mn-brand{gap:5px;min-width:0}#ov-start .mn-brand b{font-size:.76rem;letter-spacing:.1em}#ov-start .mn-brand span{font-size:.4rem}#ov-start .mn-nav{flex:1;justify-content:space-between}#ov-start .mn-tab{min-height:42px;gap:4px;padding-inline:6px}#ov-start .mn-tab .nm{font-size:.56rem;letter-spacing:.025em}#ov-start .mn-glyph{width:16px;height:16px;flex-basis:16px}#ov-start .mode-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}#ov-start .mode-choice{min-height:76px;padding:8px}#ov-start .mode-name{font-size:.78rem}#ov-start .mode-brief{gap:8px}#ov-start .mode-brief em{max-width:34%;font-size:.54rem}#ov-start #btn-start{min-height:48px;min-width:min(100%,190px)}}
+@media(max-width:420px){#ov-start .mn-brand span{display:none}#ov-start .mn-brand b{font-size:.68rem}#ov-start .mn-tab{padding-inline:4px}#ov-start .mn-tab .nm{font-size:.51rem}#ov-start .mode-name{font-size:.72rem}}
+@media(max-height:560px) and (orientation:landscape){#ov-start .mn-rail{min-height:58px}#ov-start .mode-choice{min-height:66px;padding:6px 8px}#ov-start .mode-glyph{width:23px;height:23px;flex-basis:23px}#ov-start .mode-brief{min-height:38px;margin-block:5px}#ov-start .play-map-card{min-height:40px}#ov-start .pl-row{padding-block:4px}#ov-start #btn-start{min-height:44px}}
+@media(prefers-reduced-motion:reduce){#ov-start .mn-tab,#ov-start .mode-choice,#ov-start .operations-table .mappick .mp,#ov-start .btn,#ov-start .op,#ov-start .loadout-finish{transition:none!important;transform:none!important}}
+
+/* Armory gives the actual preview render target most of the horizontal space. */
+body[data-sl-route=loadout] #ov-start .mn-main{left:4vw;width:min(1460px,92vw);max-width:calc(100vw - 8vw);background:linear-gradient(90deg,rgba(6,15,19,.94),rgba(8,18,22,.78) 65%,rgba(8,18,22,.12))}
+body[data-sl-route=loadout] #ov-start .loadout-workbench{grid-template-columns:minmax(0,1.72fr) minmax(320px,.72fr);gap:clamp(14px,1.8vw,26px)}
+body[data-sl-route=loadout] #ov-start .loadout-viewport{min-width:0;background:radial-gradient(ellipse at 52% 48%,rgba(101,139,123,.25),transparent 62%),linear-gradient(145deg,rgba(19,37,42,.94),rgba(6,15,19,.97))}
+body[data-sl-route=loadout] #ov-start .loadout-viewport canvas{width:100%;height:auto;aspect-ratio:380/175}
+body[data-sl-route=loadout] #ov-start .loadout-controls{min-width:0;padding:10px;border-color:rgba(213,229,222,.2)}
+body[data-sl-route=loadout] #ov-start .loadout-cats{display:flex;flex-wrap:wrap;gap:5px;max-height:21vh}
+body[data-sl-route=loadout] #ov-start .loadout-cats button{flex:1 1 96px;min-width:0;min-height:40px;padding-inline:7px;font-size:.62rem}
+body[data-sl-route=loadout] #ov-start .loadout-facts{gap:0 10px;margin:7px 0}
+body[data-sl-route=loadout] #ov-start .loadout-facts>div{padding:6px 0}
+body[data-sl-route=loadout] #ov-start .loadout-actions .btn{flex:1 1 auto;padding-inline:10px}
+
+/* Improve roster scanability while the same selected operator remains staged. */
+body[data-sl-route=op] #ov-start .mn-main{width:min(960px,68vw)}
+body[data-sl-route=op] #ov-start .operator-bay-callout{background:linear-gradient(90deg,rgba(20,60,53,.62),rgba(20,60,53,.08) 84%,transparent)}
+body[data-sl-route=op] #ov-start .opdet{border:1px solid rgba(213,229,222,.14);border-left:2px solid var(--sl-teal)}
+body[data-sl-route=op] #ov-start .oppick{max-height:42vh;padding:2px}
+body[data-sl-route=op] #ov-start .op{min-height:62px}
+body[data-sl-route=op] #ov-start .op[aria-pressed=true]{box-shadow:inset 3px 0 var(--sl-teal),0 4px 12px rgba(0,0,0,.15)}
+body[data-sl-route=op] #ov-start .operator-confirm{gap:12px}
+
+@media(max-width:1080px){body[data-sl-route=loadout] #ov-start .mn-main{width:92vw;max-width:calc(100vw - 8vw)}body[data-sl-route=loadout] #ov-start .loadout-workbench{grid-template-columns:minmax(0,1.45fr) minmax(285px,.85fr)}}
+@media(max-width:760px){body[data-sl-route=loadout] #ov-start .mn-main{left:14px;width:calc(100vw - 28px);max-width:none}body[data-sl-route=loadout] #ov-start .loadout-workbench{grid-template-columns:minmax(0,1fr);gap:8px}body[data-sl-route=loadout] #ov-start .loadout-viewport canvas{max-height:none}body[data-sl-route=op] #ov-start .mn-main{left:14px;width:calc(100vw - 28px);max-width:none}body[data-sl-route=op] #ov-start .oppick{max-height:34vh}}
+@media(max-height:560px) and (orientation:landscape){body[data-sl-route=op] #ov-start .oppick{max-height:32vh}}

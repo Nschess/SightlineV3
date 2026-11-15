@@ -1,0 +1,50 @@
+/* ---------- first-run intro (pure CSS/HTML/JS, no assets) ---------- */
+@keyframes si-title{from{opacity:0;transform:translateY(16px);letter-spacing:.28em}to{opacity:1;transform:none}}
+@keyframes si-line{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes si-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#sl-intro{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s ease;color:#eef3ee;font-family:var(--f-body,system-ui,sans-serif);
+ background:linear-gradient(90deg,rgba(2,5,7,.96) 0%,rgba(2,5,7,.84) 34%,rgba(2,5,7,.35) 62%,rgba(2,5,7,.9) 100%),radial-gradient(ellipse 60% 75% at 58% 50%,rgba(2,5,7,0),rgba(2,5,7,.7) 100%)}
+#sl-intro[hidden]{display:none!important}
+#sl-intro.si-in{opacity:1}#sl-intro.si-out{opacity:0}
+#sl-intro .si-bar{position:absolute;left:0;right:0;height:11vh;background:#000;transition:transform 1s cubic-bezier(.2,.7,.2,1);z-index:2}
+#sl-intro .si-top{top:0;transform:translateY(-100%)}#sl-intro .si-bot{bottom:0;transform:translateY(100%)}
+#sl-intro.si-in .si-bar{transform:none}
+#sl-intro .si-splash,#sl-intro .si-cards{position:relative;z-index:1}
+#sl-intro .si-splash{display:none;flex-direction:column;align-items:center;text-align:center;gap:14px}
+#sl-intro[data-phase=splash] .si-splash{display:flex;animation:si-fade .8s .3s ease-out both}
+#sl-intro .si-mark{width:54px;height:54px;color:#7be0c6;filter:drop-shadow(0 0 14px rgba(123,224,198,.6))}
+#sl-intro h1{margin:6px 0 0;font:800 clamp(1.6rem,min(6.5vw,13vh),4.6rem)/1 var(--f-label,system-ui);letter-spacing:.42em;padding-left:.42em;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.7)}
+#sl-intro .si-splash p{margin:0;font:600 clamp(.6rem,1.2vw,.8rem) var(--f-mono,monospace);letter-spacing:.4em;color:#e3b971}
+#sl-intro .si-begin{margin-top:18px;min-height:46px;padding:0 38px;border:0;cursor:pointer;color:#1b150b;font:900 .85rem var(--f-label,system-ui);letter-spacing:.3em;text-transform:uppercase;
+ background:linear-gradient(180deg,#f2cf90,#cf9b52);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+#sl-intro .si-begin:hover{filter:brightness(1.08)}
+#sl-intro button:focus-visible{outline:2px solid #fff3d6;outline-offset:3px}
+#sl-intro .si-cards{display:none;position:absolute;left:clamp(24px,7vw,120px);right:clamp(24px,7vw,120px);bottom:21vh;max-width:min(760px,56vw);text-align:left}
+#sl-intro[data-phase=cards] .si-cards{display:block}
+#sl-intro .si-card.play .si-kicker{animation:si-fade .6s ease-out both}
+#sl-intro .si-kicker{display:block;margin-bottom:14px;font:700 .7rem var(--f-mono,monospace);letter-spacing:.34em;color:#e3b971}
+#sl-intro .si-card h2{margin:0;font:800 clamp(1.5rem,min(6.2vw,11vh),4.8rem)/1.02 var(--f-label,system-ui);letter-spacing:.08em;text-transform:uppercase;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.75)}
+#sl-intro .si-card.play h2{animation:si-title .9s .1s cubic-bezier(.2,.7,.2,1) both}
+#sl-intro .si-card h2::after{content:"";display:block;width:min(220px,50%);height:2px;margin-top:18px;transform-origin:left;background:linear-gradient(90deg,#7be0c6,#e3b971,transparent);box-shadow:0 0 14px rgba(123,224,198,.6)}
+#sl-intro .si-card.play h2::after{animation:si-line .9s .5s ease-out both}
+#sl-intro .si-card p{margin:16px 0 0;max-width:46ch;font:500 clamp(.9rem,1.7vw,1.2rem)/1.5 var(--f-body,system-ui);color:#b9c9c3;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+#sl-intro .si-card.play p{animation:si-fade .8s .45s ease-out both}
+#sl-intro .si-dots{position:absolute;left:50%;bottom:calc(5.5vh - 3px);transform:translateX(-50%);display:flex;gap:8px;z-index:3}
+#sl-intro[data-phase=splash] .si-dots{display:none}
+#sl-intro .si-dots i{display:block;width:18px;height:3px;background:rgba(255,255,255,.22);transition:background .3s,width .3s}
+#sl-intro .si-dots i.on{width:34px;background:#7be0c6;box-shadow:0 0 10px rgba(123,224,198,.7)}
+#sl-intro .si-skip{position:absolute;right:clamp(16px,3.4vw,56px);bottom:calc(5.5vh - 17px);z-index:3;min-height:34px;padding:0 16px;cursor:pointer;color:#d6e4de;background:rgba(255,255,255,.06);border:1px solid rgba(214,232,226,.3);border-radius:999px;font:700 .64rem var(--f-label,system-ui);letter-spacing:.2em;text-transform:uppercase}
+#sl-intro .si-skip:hover{background:rgba(255,255,255,.14)}
+/* replay button in the lobby title block */
+html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .lobby-intro-btn{display:inline-flex;align-items:center;gap:9px;margin:16px 0 0;min-height:34px;padding:0 16px 0 12px;cursor:pointer;color:#d6e4de;background:rgba(255,255,255,.05);border:1px solid rgba(214,232,226,.24);border-radius:999px;font:700 .62rem var(--f-label,system-ui);letter-spacing:.2em;text-transform:uppercase}
+html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .lobby-intro-btn::before{content:"";width:0;height:0;border-left:8px solid #7be0c6;border-top:5px solid transparent;border-bottom:5px solid transparent}
+html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .lobby-intro-btn:hover{background:rgba(123,224,198,.14);border-color:rgba(123,224,198,.5)}
+@media(max-height:560px) and (orientation:landscape){
+ html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .lobby-intro-btn{display:none}
+ #sl-intro .si-cards{bottom:19vh}#sl-intro .si-card p{margin-top:8px}#sl-intro .si-kicker{margin-bottom:6px}
+ #sl-intro .si-bar{height:9vh}#sl-intro .si-dots{bottom:calc(4.5vh - 3px)}#sl-intro .si-skip{bottom:calc(4.5vh - 17px)}
+}
+@media(prefers-reduced-motion:reduce){
+ #sl-intro,#sl-intro .si-bar,#sl-intro .si-dots i{transition:none!important}
+ #sl-intro *{animation:none!important}
+}

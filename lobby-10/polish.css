@@ -1,0 +1,62 @@
+/* ---------- v2 polish: depth, colour, motion ---------- */
+@keyframes l10-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes l10-slide{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:none}}
+@keyframes l10-pulse{0%,100%{box-shadow:0 0 0 0 rgba(123,224,198,.55)}60%{box-shadow:0 0 0 7px rgba(123,224,198,0)}}
+@keyframes l10-sheen{0%,62%{transform:translateX(-130%) skewX(-22deg)}100%{transform:translateX(330%) skewX(-22deg)}}
+@keyframes l10-glow{0%,100%{filter:drop-shadow(0 6px 16px rgba(227,185,113,.28))}50%{filter:drop-shadow(0 8px 26px rgba(227,185,113,.55))}}
+
+/* atmosphere: colour blooms, light grain, bottom grounding */
+@P@ .mn::before{background:
+ radial-gradient(ellipse 46% 52% at 8% 104%,rgba(80,200,172,.2),transparent 70%),
+ radial-gradient(ellipse 40% 50% at 96% 104%,rgba(227,185,113,.17),transparent 70%),
+ linear-gradient(90deg,rgba(3,8,10,.92) 0%,rgba(3,8,10,.64) 24%,rgba(3,8,10,.12) 46%,rgba(3,8,10,0) 60%,rgba(3,8,10,.46) 100%),
+ linear-gradient(0deg,rgba(3,7,9,.84) 0%,rgba(3,7,9,0) 40%),
+ linear-gradient(180deg,rgba(3,7,9,.62) 0%,rgba(3,7,9,0) 18%)!important}
+@P@ .mn::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+ background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px)}
+@P@ .mn-rail::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(123,224,198,.7) 18%,rgba(227,185,113,.55) 62%,transparent);pointer-events:none}
+@P@ .mn-brand svg{animation:l10-glow 5s ease-in-out infinite}
+
+/* title: accent rule, gradient type, live dot */
+@PL@ .lobby-title-block{animation:l10-rise .5s ease-out both;padding-left:18px!important;position:relative}
+@PL@ .lobby-title-block::before{content:"";position:absolute;left:0;top:2px;bottom:4px;width:4px;border-radius:3px;background:linear-gradient(180deg,var(--l10-teal),var(--l10-gold));box-shadow:0 0 18px rgba(123,224,198,.5)}
+@PL@ .lobby-eyebrow::before{content:"";display:inline-block;width:7px;height:7px;margin-right:10px;border-radius:50%;background:var(--l10-teal);vertical-align:1px;animation:l10-pulse 2.2s infinite}
+@PL@ .pn-h h2{background:linear-gradient(180deg,#fff 30%,#b9ccc5);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;text-shadow:none!important;filter:drop-shadow(0 3px 18px rgba(0,0,0,.7));text-transform:uppercase}
+
+/* mission cards: chamfer, per-mode colour, staggered entry */
+@PL@ .mode-choice{--ac:var(--mode-accent,#7be0c6);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));border-radius:0!important;
+ border:0!important;background:linear-gradient(100deg,rgba(15,24,26,.86),rgba(7,13,15,.7))!important;
+ box-shadow:inset 0 0 0 1px var(--l10-line)!important;animation:l10-slide .45s ease-out both}
+@PL@ .mode-choice::before{display:block!important;content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ac);opacity:.5;transition:opacity .16s,width .16s;box-shadow:0 0 14px var(--ac)}
+@PL@ .mode-choice:nth-child(1){animation-delay:.05s}@PL@ .mode-choice:nth-child(2){animation-delay:.11s}@PL@ .mode-choice:nth-child(3){animation-delay:.17s}@PL@ .mode-choice:nth-child(4){animation-delay:.23s}@PL@ .mode-choice:nth-child(5){animation-delay:.29s}
+@PL@ .mode-choice:hover:not(:disabled){box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ac) 60%,transparent)!important;background:linear-gradient(100deg,color-mix(in srgb,var(--ac) 12%,rgba(18,30,32,.9)),rgba(8,15,17,.72))!important}
+@PL@ .mode-choice:hover:not(:disabled)::before{opacity:1}
+@PL@ .mode-choice[aria-pressed=true]{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ac) 80%,transparent),inset 0 0 40px color-mix(in srgb,var(--ac) 14%,transparent)!important;
+ background:linear-gradient(100deg,color-mix(in srgb,var(--ac) 30%,rgba(8,20,20,.92)),rgba(7,16,17,.8) 85%)!important}
+@PL@ .mode-choice[aria-pressed=true]::before{opacity:1;width:6px}
+@PL@ .mode-choice[aria-pressed=true]::after{background:var(--ac)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--ac) 22%,transparent),0 0 16px var(--ac)}
+@PL@ .mode-glyph{border-radius:0!important;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+@PL@ .mode-choice[aria-pressed=true] .mode-name{text-shadow:0 0 18px color-mix(in srgb,var(--ac) 70%,transparent)}
+
+/* brief + deploy card: chamfered, accent corner, glowing CTA */
+@PL@ .lobby-deploy-card{border:0;border-radius:0;animation:l10-rise .55s .15s ease-out both;
+ clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px));
+ box-shadow:inset 0 0 0 1px var(--l10-line2);background:linear-gradient(160deg,rgba(15,25,27,.9),rgba(6,12,14,.86))}
+@PL@ .lobby-deploy-card::before{height:3px;background:linear-gradient(90deg,var(--l10-gold),var(--l10-teal) 55%,transparent)}
+@PL@ .lobby-deploy-card::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(123,224,198,.16),transparent 70%);pointer-events:none}
+@PL@ .mode-brief strong{background:linear-gradient(90deg,#fff,#cfe9e1);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+@PL@ .lobby-deploy-row .btnrow{filter:drop-shadow(0 8px 20px rgba(227,185,113,.32));animation:l10-glow 3.2s ease-in-out infinite}
+@PL@ #btn-start{position:relative;overflow:hidden;border-radius:0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)!important;
+ clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))}
+@PL@ #btn-start::after{content:"";position:absolute;top:0;bottom:0;left:0;width:28%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:l10-sheen 3.4s ease-in-out infinite;pointer-events:none}
+@PL@ #btn-start:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.65)!important}
+@PL@ .lobby-deploy-row .btn.ghost{border-radius:0!important}
+
+/* other screens: chamfered sheet with accent edge, richer controls */
+@P@ #pn-dyn:not([hidden]){border:0;border-radius:0;animation:l10-rise .4s ease-out both;
+ clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,0 100%);
+ box-shadow:inset 0 0 0 1px var(--l10-line2),inset 3px 0 0 rgba(123,224,198,.75)}
+@P@ #pn-dyn h2::after{content:"";display:block;width:56px;height:3px;margin-top:10px;background:linear-gradient(90deg,var(--l10-gold),var(--l10-teal))}
+@P@ #pn-dyn button.chip[aria-pressed=true],@P@ #pn-dyn .chip.on,@P@ #pn-dyn .chip.active{box-shadow:0 0 14px rgba(123,224,198,.35)}
+@P@ .mn-tab{transition:color .18s,background .18s,transform .18s}
+@P@ .mn-tab:hover{transform:translateY(-1px)}

@@ -1,0 +1,4 @@
+<!doctype html><meta charset="utf-8"><title>Weapon source probe</title><pre id="out">boot</pre><iframe id="game" src="./index.html?debug=1" style="width:2px;height:2px;position:absolute;left:-20px"></iframe><script>
+const f=document.getElementById('game'), out=document.getElementById('out');let tries=0;
+const t=setInterval(()=>{tries++;try{const w=f.contentWindow;const keys=Object.keys(w.WEAPONS||{}).filter(k=>!w.WEAPONS[k].melee);if(w.__sl&&keys.length){clearInterval(t);out.textContent=JSON.stringify({keys,api:['buildGun','buildCoreWeapon','buildVariant','buildWorldSourceWeapon','worldViewmodelGeometry','legacyWorldWeaponShape','SightlineRealism','SightlineVR18V31','SightlineRook117Asset'].map(k=>[k,typeof w[k]]),renderer:w.THREE&&w.THREE.REVISION,errors:w.MODEL_DIAGNOSTICS||[]},null,2)}}catch(e){out.textContent=e.message}if(tries>250){clearInterval(t);out.textContent+='\ntimeout'}} ,100);
+</script>

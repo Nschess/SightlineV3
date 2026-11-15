@@ -1,0 +1,688 @@
+{
+  "www": {
+    "pistol": {
+      "sightY": 0.053,
+      "muzzle": [
+        0,
+        0.026,
+        -0.185
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "carbine": {
+      "sightY": 0.125,
+      "muzzle": [
+        0,
+        0.012,
+        -0.632
+      ],
+      "mag": true,
+      "model": "VR18-V3.3-R-ADS-P2",
+      "design": null
+    },
+    "longbow": {
+      "sightY": 0.105,
+      "muzzle": [
+        0,
+        0,
+        -0.985
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "smg": {
+      "sightY": 0.08,
+      "muzzle": [
+        0,
+        0.004,
+        -0.64
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "hawk": {
+      "sightY": 0.053,
+      "muzzle": [
+        0,
+        0.026,
+        -0.235
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "breacher": {
+      "sightY": 0.056,
+      "muzzle": [
+        0,
+        0.022,
+        -0.71
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "ranger": {
+      "sightY": 0.114,
+      "muzzle": [
+        0,
+        0.012,
+        -0.81
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "bulwark": {
+      "sightY": 0.08,
+      "muzzle": [
+        0,
+        0.014,
+        -0.87
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "knife": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "kestrel": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.5705000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "kestrel"
+    },
+    "mako": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6333000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "mako"
+    },
+    "hammer": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.5860000000000001
+      ],
+      "mag": false,
+      "model": "",
+      "design": "hammer"
+    },
+    "scatter": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6751
+      ],
+      "mag": true,
+      "model": "",
+      "design": "scatter"
+    },
+    "stinger": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6545
+      ],
+      "mag": true,
+      "model": "",
+      "design": "stinger"
+    },
+    "rampart": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7799
+      ],
+      "mag": true,
+      "model": "",
+      "design": "rampart"
+    },
+    "shiv": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "machete": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "cleaver": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "aurora": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7332000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "aurora"
+    },
+    "tide": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9051
+      ],
+      "mag": true,
+      "model": "",
+      "design": "tide"
+    },
+    "ember": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7022
+      ],
+      "mag": false,
+      "model": "",
+      "design": "ember"
+    },
+    "switchback": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6751
+      ],
+      "mag": true,
+      "model": "",
+      "design": "switchback"
+    },
+    "needle": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.5389
+      ],
+      "mag": true,
+      "model": "",
+      "design": "needle"
+    },
+    "thunder": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8119
+      ],
+      "mag": false,
+      "model": "",
+      "design": "thunder"
+    },
+    "falcon": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7538
+      ],
+      "mag": true,
+      "model": "",
+      "design": "falcon"
+    },
+    "vantage": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9408000000000002
+      ],
+      "mag": true,
+      "model": "",
+      "design": "vantage"
+    },
+    "pinion": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8584
+      ],
+      "mag": true,
+      "model": "",
+      "design": "pinion"
+    },
+    "mistral": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8535
+      ],
+      "mag": true,
+      "model": "",
+      "design": "mistral"
+    },
+    "forge": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8166
+      ],
+      "mag": true,
+      "model": "",
+      "design": "forge"
+    },
+    "bastion": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9318000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "bastion"
+    },
+    "cyclone": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9373000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "cyclone"
+    }
+  },
+  "phone-host": {
+    "pistol": {
+      "sightY": 0.053,
+      "muzzle": [
+        0,
+        0.026,
+        -0.185
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "carbine": {
+      "sightY": 0.125,
+      "muzzle": [
+        0,
+        0.012,
+        -0.632
+      ],
+      "mag": true,
+      "model": "VR18-V3.3-R-ADS-P2",
+      "design": null
+    },
+    "longbow": {
+      "sightY": 0.105,
+      "muzzle": [
+        0,
+        0,
+        -0.985
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "smg": {
+      "sightY": 0.08,
+      "muzzle": [
+        0,
+        0.004,
+        -0.64
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "hawk": {
+      "sightY": 0.053,
+      "muzzle": [
+        0,
+        0.026,
+        -0.235
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "breacher": {
+      "sightY": 0.056,
+      "muzzle": [
+        0,
+        0.022,
+        -0.71
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "ranger": {
+      "sightY": 0.114,
+      "muzzle": [
+        0,
+        0.012,
+        -0.81
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "bulwark": {
+      "sightY": 0.08,
+      "muzzle": [
+        0,
+        0.014,
+        -0.87
+      ],
+      "mag": true,
+      "model": "",
+      "design": null
+    },
+    "knife": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "kestrel": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.5705000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "kestrel"
+    },
+    "mako": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6333000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "mako"
+    },
+    "hammer": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.5860000000000001
+      ],
+      "mag": false,
+      "model": "",
+      "design": "hammer"
+    },
+    "scatter": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6751
+      ],
+      "mag": true,
+      "model": "",
+      "design": "scatter"
+    },
+    "stinger": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6545
+      ],
+      "mag": true,
+      "model": "",
+      "design": "stinger"
+    },
+    "rampart": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7799
+      ],
+      "mag": true,
+      "model": "",
+      "design": "rampart"
+    },
+    "shiv": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "machete": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "cleaver": {
+      "sightY": null,
+      "muzzle": [
+        0,
+        0,
+        0
+      ],
+      "mag": false,
+      "model": "",
+      "design": null
+    },
+    "aurora": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7332000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "aurora"
+    },
+    "tide": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9051
+      ],
+      "mag": true,
+      "model": "",
+      "design": "tide"
+    },
+    "ember": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7022
+      ],
+      "mag": false,
+      "model": "",
+      "design": "ember"
+    },
+    "switchback": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.6751
+      ],
+      "mag": true,
+      "model": "",
+      "design": "switchback"
+    },
+    "needle": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.5389
+      ],
+      "mag": true,
+      "model": "",
+      "design": "needle"
+    },
+    "thunder": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8119
+      ],
+      "mag": false,
+      "model": "",
+      "design": "thunder"
+    },
+    "falcon": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.7538
+      ],
+      "mag": true,
+      "model": "",
+      "design": "falcon"
+    },
+    "vantage": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9408000000000002
+      ],
+      "mag": true,
+      "model": "",
+      "design": "vantage"
+    },
+    "pinion": {
+      "sightY": 0.127,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8584
+      ],
+      "mag": true,
+      "model": "",
+      "design": "pinion"
+    },
+    "mistral": {
+      "sightY": 0.106,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8535
+      ],
+      "mag": true,
+      "model": "",
+      "design": "mistral"
+    },
+    "forge": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.8166
+      ],
+      "mag": true,
+      "model": "",
+      "design": "forge"
+    },
+    "bastion": {
+      "sightY": 0.115,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9318000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "bastion"
+    },
+    "cyclone": {
+      "sightY": 0.082,
+      "muzzle": [
+        0,
+        0.018,
+        -0.9373000000000001
+      ],
+      "mag": true,
+      "model": "",
+      "design": "cyclone"
+    }
+  }
+}

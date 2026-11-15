@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(sightline_lan_host LANGUAGES CXX)
+add_library(node SHARED IMPORTED)
+set_target_properties(node PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../jniLibs/${ANDROID_ABI}/libnode.so")
+add_library(sightline_host SHARED lan_host.cpp)
+target_include_directories(sightline_host PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../../libnode/include/node")
+target_compile_features(sightline_host PRIVATE cxx_std_17)
+target_link_libraries(sightline_host PRIVATE node log)
