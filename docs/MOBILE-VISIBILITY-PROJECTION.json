@@ -1,0 +1,65 @@
+{
+  "evidence": "CPU Three.js projection of a centered 1.8m target at 432px viewport height; NOT rendered or device performance evidence",
+  "rows": [
+    {
+      "aspect": 1.7777777777777777,
+      "distanceM": 10,
+      "oldHorizontalDeg": 104.50486444392199,
+      "newVerticalDeg": 46.692125710465916,
+      "beforePixels": 53.51372906791924,
+      "afterPixels": 90.07893777078417,
+      "ironPixels": 118.0680326191635,
+      "compact2xPixels": 180.15787554156836
+    },
+    {
+      "aspect": 1.7777777777777777,
+      "distanceM": 25,
+      "oldHorizontalDeg": 104.50486444392199,
+      "newVerticalDeg": 46.692125710465916,
+      "beforePixels": 21.4054916271677,
+      "afterPixels": 36.03157510831367,
+      "ironPixels": 47.227213047665394,
+      "compact2xPixels": 72.06315021662735
+    },
+    {
+      "aspect": 1.7777777777777777,
+      "distanceM": 40,
+      "oldHorizontalDeg": 104.50486444392199,
+      "newVerticalDeg": 46.692125710465916,
+      "beforePixels": 13.37843226697981,
+      "afterPixels": 22.51973444269604,
+      "ironPixels": 29.517008154790876,
+      "compact2xPixels": 45.03946888539209
+    },
+    {
+      "aspect": 2.2222222222222223,
+      "distanceM": 10,
+      "oldHorizontalDeg": 116.4541819419454,
+      "newVerticalDeg": 38.09929443027172,
+      "beforePixels": 53.51372906791924,
+      "afterPixels": 112.59867221348017,
+      "ironPixels": 147.58504077395432,
+      "compact2xPixels": 225.19734442696034
+    },
+    {
+      "aspect": 2.2222222222222223,
+      "distanceM": 25,
+      "oldHorizontalDeg": 116.4541819419454,
+      "newVerticalDeg": 38.09929443027172,
+      "beforePixels": 21.4054916271677,
+      "afterPixels": 45.039468885392075,
+      "ironPixels": 59.03401630958172,
+      "compact2xPixels": 90.07893777078415
+    },
+    {
+      "aspect": 2.2222222222222223,
+      "distanceM": 40,
+      "oldHorizontalDeg": 116.4541819419454,
+      "newVerticalDeg": 38.09929443027172,
+      "beforePixels": 13.37843226697981,
+      "afterPixels": 28.149668053370043,
+      "ironPixels": 36.89626019348858,
+      "compact2xPixels": 56.299336106740085
+    }
+  ]
+}

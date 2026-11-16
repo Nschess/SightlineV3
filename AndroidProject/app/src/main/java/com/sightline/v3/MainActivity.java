@@ -52,7 +52,12 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
+    private static final String HOST_BUNDLE_SHA256 = "2a435d0afd84a1c93eb2b68ac8a47c03dbb0cdf9db9c569742187b3be2291f50";
+    // Keep the recovered PC host compatible, alongside this exact development host.
+    private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
+    private static boolean acceptsHostBundle(String bundle) {
+        return HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle);
+    }
     private static final Set<String> FILES = new HashSet<>(Arrays.asList(
         "index.html", "three.min.js", "mp-transport-policy.js", "vr18-v31.js", "navigation.js", "squad-tactics.js", "bot-tactics.js", "character-poses.js", "zombie-counterplay.js", "thirdperson-hands.js", "character-prototypes.js", "character-realism.js", "character-realism-v12.js", "combat-foundation.js",
         "threejs-license.txt", "sightline-theme.mp3",
@@ -296,7 +301,7 @@ public final class MainActivity extends Activity {
                             org.json.JSONObject status = new org.json.JSONObject(body);
                             ready = status.optBoolean("ok",false) &&
                                 "sightline-v12-host-prototype".equals(status.optString("game")) &&
-                                HOST_BUNDLE_SHA256.equals(status.optString("bundle"));
+                                acceptsHostBundle(status.optString("bundle"));
                         } catch(org.json.JSONException error) { ready=false; }
                     }} finally {c.disconnect();}
                     if(ready)break;
@@ -465,7 +470,7 @@ public final class MainActivity extends Activity {
             java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();
             try(java.io.InputStream in=connection.getInputStream()){byte[] b=new byte[512];int n;while((n=in.read(b))!=-1){out.write(b,0,n);if(out.size()>4096)return null;}}
             org.json.JSONObject status=new org.json.JSONObject(new String(out.toByteArray(),StandardCharsets.UTF_8));
-            if(!status.optBoolean("ok")||!"sightline-v12-host-prototype".equals(status.optString("game"))||status.optInt("protocol")!=2||!"dev".equals(status.optString("transport"))||!HOST_BUNDLE_SHA256.equals(status.optString("bundle")))return null;
+            if(!status.optBoolean("ok")||!"sightline-v12-host-prototype".equals(status.optString("game"))||status.optInt("protocol")!=2||!"dev".equals(status.optString("transport"))||!acceptsHostBundle(status.optString("bundle")))return null;
             int players=status.optInt("players",-1),max=status.optInt("maxPlayers",-1);if(players<0||max<2||players>max||max>32)return null;
             candidate.players=players;candidate.maxPlayers=max;candidate.mode=status.optString("mode",candidate.mode);candidate.map=status.optString("map",candidate.map);candidate.phase=status.optString("phase",candidate.phase);return candidate;
         } catch(Exception ignored) { return null; }

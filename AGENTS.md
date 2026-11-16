@@ -42,3 +42,10 @@ These project requirements supplement the global Codex Engineering Standards. If
 - Use the workspace helper `tools/preserve_sightline_dev_instructions.py` to prepare missing instruction files and verify project roots and new DEV ZIP packages.
 - If an extracted project already has an `AGENTS.md` that differs from this one, preserve it and review both before reconciling. Never replace newer or project-specific rules with an older copy.
 - Every newly created DEV ZIP must contain the applicable `AGENTS.md` at the project root, byte-identical to the staged project's file. Verify the archive before delivery.
+
+## GitHub-first checkpoints
+- Canonical remote: `https://github.com/Nschess/SightlineV3`. Keep `main` stable; work on dedicated development branches and use reviewed pull requests for substantial integrations.
+- After meaningful verified source milestones, commit intended source/assets/configuration/documentation, push the development branch, and compare the exact local and remote commit IDs before calling the work remotely backed up.
+- Keep toolchains, caches, logs, generated binaries, redundant checkpoint archives, signing keys and credentials out of Git. Private distributable APKs belong in separately protected artifact storage or an explicitly authorized GitHub Release, not normal source history.
+- Do not delete local checkpoints until exact cleanup targets are approved. Protect independent signing credentials and a rollback backup. Adventure Mode remains separate and must not be migrated or merged until its complete source/assets and lineage are confirmed.
+- Document missing recovery work honestly. A Git commit or successful push does not prove HUD51 recovery, Android rendering, movement performance or physical-device acceptance.

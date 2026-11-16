@@ -3957,6 +3957,7 @@ function initMobileHudPositionEditor(){var pad=document.getElementById('touch');
 initMobileHudPositionEditor();
 /* ---------- display, audio, crosshair and HUD settings ---------- */
 var DEF_G = {
+  mobileFov: 75, // Independent horizontal gameplay FOV; desktop S.fov stays unchanged.
   renderScale: touchMode ? 85 : 100, shadows: touchMode ? 'off' : 'low', drawDist: 100, brightness: 100, viewBob: 100, shake: 100, flashAmt: 100, fps: false,
   master: 55, sfxVol: 100, uiVol: 70, hitSound: true, uiSound: true, legendaryAudio: true, legendaryEffects: true,
   xhStyle: 'cross', xhColor: '#f4f0dc', xhSize: 9, xhThick: 2, xhGap: 0, xhAlpha: 100, xhOutline: true, xhDot: false, xhDynamic: true,
@@ -4022,9 +4023,30 @@ var scene = new THREE.Scene();
 var SKY = 0xa9bac2;
 scene.background = new THREE.Color(SKY);
 scene.fog = new THREE.Fog(SKY, 40, 120);
+/* Mobile projection: Three.js uses vertical degrees; mobile settings use horizontal.
+   Projection only: world scale, hitboxes and authoritative shots are unchanged. */
+var MobileProjection = (function () {
+  var radians = Math.PI / 360, lastH = 0, lastAspect = 0, lastV = 0;
+  function horizontal(value) { return Number.isFinite(value) ? Math.max(65, Math.min(95, value)) : 75; }
+  function vertical(value, aspect) {
+    var h = horizontal(value), a = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
+    if (h !== lastH || a !== lastAspect) { lastH = h; lastAspect = a; lastV = 2 * Math.atan(Math.tan(h * radians) / a) / (2 * radians); }
+    return lastV;
+  }
+  function magnification(legacyFov, optic) {
+    return optic === 'compact' ? 2 : Math.max(1, Math.tan(72 * radians) / Math.tan(legacyFov * radians));
+  }
+  function ads(hip, legacyFov, optic) { return 2 * Math.atan(Math.tan(hip * radians) / magnification(legacyFov, optic)) / (2 * radians); }
+  function scale(actual, reference) { return Math.tan(actual * radians) / Math.tan(reference * radians); }
+  return { horizontal: horizontal, vertical: vertical, magnification: magnification, ads: ads, scale: scale };
+})();
+G.mobileFov = MobileProjection.horizontal(G.mobileFov);
 var camera = new THREE.PerspectiveCamera(72, 16 / 9, 0.05, 200);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
+// Preserve existing weapon framing without a second render pass.
+var mobileWeaponProjection = touchMode ? new THREE.Group() : null, mobileWeaponReferenceFov = 72;
+if (mobileWeaponProjection) camera.add(mobileWeaponProjection);
 var vmLight = new THREE.PointLight(0xfff2dc, 0.55, 3); vmLight.position.set(-0.25, 0.35, 0.1); camera.add(vmLight);
 var hemi = new THREE.HemisphereLight(0xdfe8ee, 0x8a7d5a, 0.85); scene.add(hemi);
 var sun = new THREE.DirectionalLight(0xfff0d0, 0.8);
@@ -4948,7 +4970,7 @@ function buildGun(kind, profileBaseOnly) {
   if (vr18) { g.userData.vr18ModelVersion = vr18.version; g.userData.modelMetrics = vr18.metrics; }
   g.position.set(0.2, -0.2, -0.42);
   g.visible = false;
-  camera.add(g);
+  (mobileWeaponProjection || camera).add(g);
   return g;
 }
 /* ---------- combat knife viewmodel ---------- */
@@ -4977,7 +4999,7 @@ function buildKnife(kind) {
   var muz = new THREE.Object3D(), flash = new THREE.Mesh(new THREE.PlaneGeometry(0.01, 0.01), new THREE.MeshBasicMaterial({ visible: false }));
   flash.visible = false; g.add(muz, flash);
   g.userData = { muzzle: muz, flash: flash, flashT: 0, knife: K };
-  g.position.set(0.2, -0.2, -0.42); g.visible = false; camera.add(g);
+  g.position.set(0.2, -0.2, -0.42); g.visible = false; (mobileWeaponProjection || camera).add(g);
   return g;
 }
 /* Legacy core guns remain fully backwards-compatible. New variants use independent profiled chassis, not merely base recolors. Built lazily on equip, never per frame. */
@@ -6997,6 +7019,12 @@ function opticFov(k){
  var w=WEAPONS[k];if(!SightlineOptics.has(k))return w.zoomFov[Math.min(zoomLvl,w.zoomFov.length-1)];
  var profile=SightlineOptics.descriptor(SightlineOptics.current(k));
  return profile?profile.fov:w.zoomFov[0];
+}
+
+function gameplayHipFov() { return touchMode ? MobileProjection.vertical(G.mobileFov, camera.aspect) : baseFov; }
+function gameplayOpticFov(k) {
+  var legacy = opticFov(k);
+  return touchMode ? MobileProjection.ads(gameplayHipFov(), legacy, SightlineOptics.has(k) ? SightlineOptics.current(k) : null) : legacy;
 }
 
 /* Cosmetic reload choreography is indexed by the active firearm.  These
@@ -11260,7 +11288,7 @@ function renderOpts() {
   }
   slider('sens', 'Mouse sensitivity', 0.2, 3, 0.05, function (v) { return v.toFixed(2) + '×'; });
   slider('adsSens', 'Scoped sensitivity', 0.3, 1.5, 0.05, function (v) { return v.toFixed(2) + '×'; });
-  slider('fov', 'Field of view', 65, 100, 1, function (v) { return Math.round(v) + '°'; });
+  if (!touchMode) slider('fov', 'Field of view', 65, 100, 1, function (v) { return Math.round(v) + '°'; });
   check('invertY', 'Invert vertical look');
   check('toggleAds', 'Toggle aim down sights (instead of hold)');
   check('toggleCrouch', 'Toggle crouch (instead of hold)');
@@ -11406,7 +11434,7 @@ tzl.addEventListener('touchstart', function (e) {
 tzl.addEventListener('touchmove', function (e) {
   var t = touchById(e.changedTouches, lookTouch.id);
   if (t && state === 'live' && P.alive && !(MP.on && MP.menu)) {
-    var ratio = G.touchSens / 100, fine = scoped ? G.touchAdsSens / 100 : 1;
+    var ratio = G.touchSens / 100 * MobileProjection.scale(camera.fov, 72), fine = scoped ? G.touchAdsSens / 100 : 1;
     P.yaw -= (t.clientX - lookTouch.x) * 0.006 * ratio * fine;
     P.pitch -= (t.clientY - lookTouch.y) * 0.006 * ratio * fine * (S.invertY ? -1 : 1);
     P.pitch = Math.max(-1.45, Math.min(1.45, P.pitch));
@@ -11625,6 +11653,7 @@ var pc = function (v) { return Math.round(v) + '%'; };
 var SPEC = {
   video: [
     { t: 'preset', l: 'Quality preset', h: 'Sets render scale, shadows and fog horizon. The pixel budget can cap the actual internal resolution on high-DPI screens.' },
+    touchMode ? { t: 'range', k: 'mobileFov', l: 'Mobile field of view', h: 'Horizontal degrees. Lower values make distant enemies larger; ADS keeps its relative magnification.', min: 65, max: 95, step: 1, f: function (v) { return Math.round(v) + '° horizontal'; } } :
     { t: 'range', o: 'S', k: 'fov', l: 'Field of view', min: 65, max: 100, step: 1, f: function (v) { return Math.round(v) + '°'; } },
     { t: 'range', k: 'renderScale', l: 'Render scale', h: 'Lower this first if the game stutters.', min: 50, max: 100, step: 5, f: pc },
     { t: 'seg', k: 'shadows', l: 'Shadows', opts: [['off', 'Off'], ['low', 'Low'], ['high', 'High']] },
@@ -13503,15 +13532,23 @@ function updatePlayer(dt) {
   if (g.userData.profileOptic) {var sightType=g.userData.profileOptic.userData.sightType;g.userData.profileOptic.visible=!SightlineOptics.has(cur)&&((sightType===1||sightType===2)||adsT<0.81);}
   if(cur==='rook117')legendRookOpticSync(g,legendActive(g));
   /* scope */
-  var targetFov = opticFov(cur);
+  var legacyTargetFov = opticFov(cur), hipFov = gameplayHipFov();
+  var targetFov = gameplayOpticFov(cur);
   /* Tangent-half-angle interpolation avoids visual pops and preserves center alignment. */
-  var wantFov = 2 * Math.atan(Math.tan(baseFov * Math.PI / 360) * (1 - adsT) + Math.tan(targetFov * Math.PI / 360) * adsT) * 180 / Math.PI;
+  var wantFov = 2 * Math.atan(Math.tan(hipFov * Math.PI / 360) * (1 - adsT) + Math.tan(targetFov * Math.PI / 360) * adsT) * 180 / Math.PI;
   var dd = G.drawDist / 100, fogZoom = adsT > 0.92 && w.scope;
   scene.fog.near = fogZoom ? 220 : CURMAP.fogN * dd; scene.fog.far = fogZoom ? 600 : CURMAP.fogF * dd;
   /* Also smooth multi-power zoom changes after the weapon is fully raised. */
   if (Math.abs(camera.fov - wantFov) > 0.015) {
     camera.fov += (wantFov - camera.fov) * (1 - Math.exp(-dt * 36));
     camera.updateProjectionMatrix();
+  }
+  if (mobileWeaponProjection) {
+    // XY compensation preserves screen-space weapon pose and sight axis, with unchanged depth.
+    var referenceWant = 2 * Math.atan(Math.tan(72 * Math.PI / 360) * (1 - adsT) + Math.tan(legacyTargetFov * Math.PI / 360) * adsT) * 180 / Math.PI;
+    mobileWeaponReferenceFov += (referenceWant - mobileWeaponReferenceFov) * (1 - Math.exp(-dt * 36));
+    var framing = MobileProjection.scale(camera.fov, mobileWeaponReferenceFov);
+    mobileWeaponProjection.scale.set(framing, framing, 1);
   }
   var showScope = adsT > 0.92 && w.scope && state === 'live' && P.alive;
   el.scope.hidden = !showScope;
@@ -13561,7 +13598,7 @@ function readFrameStats() {
   function q(p) { return a.length ? Math.round(a[Math.ceil(a.length * p) - 1] * 100) / 100 : 0; }
   frameStats.samples = frameCount; frameStats.p50 = q(.5); frameStats.p95 = q(.95); frameStats.p99 = q(.99); frameStats.max = a.length ? a[a.length - 1] : 0; return frameStats;
 }
-if (window.__sl) { window.__sl.opticInfo=function(k){return {id:SightlineOptics.current(k),options:SightlineOptics.options(k),fov:opticFov(k)};}; window.__sl.equipOptic=changeWeaponOptic; window.__sl.frameStats = readFrameStats; window.__sl.renderer = renderer; window.__sl.supplies = function () { return supplyProps; }; window.__sl.buyAmmo = mpBuyAmmo; window.__sl.adsState = function () { return { active: scoped, progress: adsT, fov: camera.fov, target: WEAPONS[cur].zoomFov[Math.min(zoomLvl,WEAPONS[cur].zoomFov.length-1)] }; }; window.__sl.offlineStations = offlineAmmoStations; window.__sl.infection=function(){return {solo:SOLO_INF,on:MP.mode==='infection',remote:MP.infStatus};}; window.__sl.maps = MAPS.map(function (m) { return { id: m.id, name: m.name }; }); }
+if (window.__sl) { window.__sl.opticInfo=function(k){return {id:SightlineOptics.current(k),options:SightlineOptics.options(k),fov:gameplayOpticFov(k),legacyFov:opticFov(k),hipFov:gameplayHipFov()};}; window.__sl.equipOptic=changeWeaponOptic; window.__sl.frameStats = readFrameStats; window.__sl.renderer = renderer; window.__sl.supplies = function () { return supplyProps; }; window.__sl.buyAmmo = mpBuyAmmo; window.__sl.adsState = function () { return { active: scoped, progress: adsT, fov: camera.fov, target: gameplayOpticFov(cur) }; }; window.__sl.offlineStations = offlineAmmoStations; window.__sl.infection=function(){return {solo:SOLO_INF,on:MP.mode==='infection',remote:MP.infStatus};}; window.__sl.maps = MAPS.map(function (m) { return { id: m.id, name: m.name }; }); }
 var fpsN = 0, fpsT = 0, radarT = 0, hudFrameT = 0, scoreT = 0, scoreEl = $('#score'), fpsEl = $('#fps'), netEl = $('#net');
 /* Diagnostics distinguish measured GAME render-loop FPS, the chosen limit and
    requestAnimationFrame callback cadence (an estimate, NOT physical panel Hz).

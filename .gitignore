@@ -25,3 +25,15 @@ local.properties
 !*.template.env
 acceptance/RELEASE-READINESS.json
 acceptance/ENGINEERING-OUTCOMES.json
+
+# Local-only development artifacts. Essential editable/runtime assets remain tracked.
+/.tmp/
+/.toolchains/
+/.private/
+/artifacts/
+/checkpoints/
+*.tar
+*.tar.gz
+*.tgz
+*.hprof
+*.heapdump

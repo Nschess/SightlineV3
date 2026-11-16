@@ -1,5 +1,10 @@
 # Sightline V3 — development source
 
+Branch status and recovery limitations are recorded in [RESUME-WORK.md](RESUME-WORK.md).
+The mobile visibility development branch reconstructs camera/ADS work from recorded
+development context. It does **not** recover the owner-approved smooth HUD51 source.
+Do not promote this branch as an accepted Android baseline.
+
 This is the consolidated main-game development candidate, including the PC/LAN host, Android Offline and LAN client, Lobby v10, the existing movement optimizations, and the opt-in Android frame diagnostic. Adventure Mode is developed separately and is not included. This is not a production release: Android gameplay, current performance and live multiplayer require acceptance on the target runtime.
 
 ## Project layout

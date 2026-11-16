@@ -1,14 +1,14 @@
 4f546d4c6e060f93ca5a7cd15fcb675248db5778772ea82e150c70684f576da7  ANDROID-DEVICE-QA.md
 f5f0c4fd7fbb46156930016017390da715ab2743a9906be21799ebf07f6ba64b  ANDROID-SECURITY-REVIEW.md
-1ef73452de236dd5504ae48180fb5277497d79d40642166c2561a8cb93493fe6  app/build.gradle
+3da03770b1554ccf79223deb08a311e94a14965eff304005db04f580fc0a00bc  app/build.gradle
 81d4c05918f71367ab6c0300b24646d3a6363a26cefdb9b215a95ef5d7f2106c  app/src/main/AndroidManifest.xml
 47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11  app/src/main/assets/phone-host/character-realism.js
-a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b  app/src/main/assets/phone-host/index.html
+2a435d0afd84a1c93eb2b68ac8a47c03dbb0cdf9db9c569742187b3be2291f50  app/src/main/assets/phone-host/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/phone-host/infection-evasion.js
 3603b9bdbbc15f17e5c04c3c15cee97e95524836456a26d7ca343cfe40261c4e  app/src/main/assets/phone-host/navigation.js
 6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53  app/src/main/assets/phone-host/rook117/rook117-model.js
 31527fbbe7a5e1f9c7a91dae9dc7e97c2bef4a2de463d23c37be30044845d29d  app/src/main/assets/phone-host/server.js
-9e44522d38b06c7daa884f2f1f3f0135d46a9d5742fab61f4e8204d383f96755  app/src/main/assets/phone-host/SHA256SUMS
+12bfd661fd1db6d3d565355ee7328bbb3bbaa955d83eed8ad75cb9a72427ba9c  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js
@@ -17,7 +17,7 @@ d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/a
 545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f  app/src/main/assets/www/character-skins.js
 e49ec0b3d6d8d87e14626c833686996793232bb82bc3d42c00341bcee5b4894a  app/src/main/assets/www/combat-foundation.js
 ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272  app/src/main/assets/www/deathmatch-rules.js
-a8a2cdbc68b8c7c175a73781958720224dcd9f60ea2283632c55f9c9d851b9c0  app/src/main/assets/www/index.html
+a3446352df4a481ce18c3b40a0d8174784f2ed1ac8e54e50f941c14ff735b417  app/src/main/assets/www/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/www/infection-evasion.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/www/navigation.js
 6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53  app/src/main/assets/www/rook117/rook117-model.js
@@ -32,7 +32,7 @@ f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493  app/src/main/a
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/www/zombie-hunt.js
 8812d43f52b0017fbca984e644d22ea9fb2848cc131d650c7767f6f4478b54b2  app/src/main/java/com/sightline/v3/HostPolicy.java
 7cb266b84a5e880254a531d39ca3da80d688367ec99d67c0a5358460e8bb6f94  app/src/main/java/com/sightline/v3/LanHostService.java
-0011359fb9c30a2c0becdc4813417ed550538b45bff1da5bd8bb3e3ce178bd73  app/src/main/java/com/sightline/v3/MainActivity.java
+fc03bd5aa8a8a8858fa51367a7e97da79052d912eb7e518f41b7782e30b879a7  app/src/main/java/com/sightline/v3/MainActivity.java
 8f010cdfea8ff723672eb33c22ea2a5d86f0892600a4ab390b27c48767d2b914  app/src/main/java/com/sightline/v3/UpdateManager.java
 bdcf6b4a260bf2517d77b83e967e8abaa48171f11e0de305daff2585cc642028  app/src/main/java/com/sightline/v3/UpdatePolicy.java
 ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847  app/src/main/res/drawable-nodpi/ic_sightline_foreground.png

@@ -1,0 +1,2 @@
+# Integrity manifests fingerprint exact bytes; do not apply machine-dependent EOL conversion.
+* -text whitespace=cr-at-eol
