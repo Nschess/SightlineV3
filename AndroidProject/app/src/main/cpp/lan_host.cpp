@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include "node.h"
 // JNI is invoked on the dedicated host-service process worker thread, never the UI thread.
@@ -33,8 +34,17 @@ extern "C" JNIEXPORT jint JNICALL Java_com_sightline_v3_LanHostService_runNode(
     env->ReleaseStringUTFChars(s, utf);
     env->DeleteLocalRef(s);
   }
-  std::vector<char*> argv;
-  argv.reserve(args.size());
-  for (auto& s : args) argv.push_back(s.data());
-  return node::Start(static_cast<int>(argv.size()), argv.data());
+  // Node/libuv expects writable contiguous argv storage, including the terminating null pointer.
+  size_t bytes = 0;
+  for (const auto& s : args) bytes += s.size() + 1;
+  if (bytes > 32768) return -7;
+  std::vector<char> storage(bytes);
+  std::vector<char*> argv(args.size() + 1, nullptr);
+  size_t offset = 0;
+  for (size_t i=0;i<args.size();i++) {
+    argv[i]=storage.data()+offset;
+    std::memcpy(argv[i],args[i].c_str(),args[i].size()+1);
+    offset+=args[i].size()+1;
+  }
+  return node::Start(static_cast<int>(args.size()), argv.data());
 }

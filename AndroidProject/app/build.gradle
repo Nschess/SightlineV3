@@ -33,9 +33,11 @@ def validReleaseTlsHost = {
         label ==~ /[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/ }
 }
 
-def hostRequested = providers.gradleProperty('enableLanHost').orElse('false').get().toBoolean()
-def nodeSo = file('src/main/jniLibs/arm64-v8a/libnode.so')
-def nodeHeader = file('libnode/include/node/node.h')
+def hostRequested = providers.gradleProperty('enableLanHost').orElse('true').get().toBoolean()
+def phoneNodeSdkPath = providers.gradleProperty('phoneNodeSdkRoot').getOrElse('')
+def phoneNodeSdk = phoneNodeSdkPath ? file(phoneNodeSdkPath) : null
+def nodeSo = phoneNodeSdk ? new File(phoneNodeSdk,'bin/arm64-v8a/libnode.so') : file('src/main/jniLibs/arm64-v8a/libnode.so')
+def nodeHeader = phoneNodeSdk ? new File(phoneNodeSdk,'include/node/node.h') : file('libnode/include/node/node.h')
 def nodeLock = file('phone-node-runtime.properties')
 if (hostRequested) {
     for (def input : [nodeSo, nodeHeader, nodeLock]) {
@@ -43,7 +45,7 @@ if (hostRequested) {
     }
     def lock = new Properties()
     nodeLock.withInputStream { lock.load(it) }
-    if (lock.getProperty('VERSION') != '24.21.0-0' ||
+    if (!phoneNodeSdk || lock.getProperty('VERSION') != '24.22.0-0' ||
         lock.getProperty('NDK_VERSION') != '28.2.13676358') {
         throw new GradleException('Android host native SDK version/NDK lock mismatch')
     }
@@ -60,6 +62,12 @@ if (hostRequested) {
         sha(nodeHeader) != lock.getProperty('NODE_HEADER_SHA256')) {
         throw new GradleException('Android host runtime/header digest differs from verified install')
     }
+    def headerRoot = new File(phoneNodeSdk,'include/node')
+    def headerFiles = fileTree(headerRoot).files.findAll { it.isFile() }.sort { a,b ->
+        headerRoot.toPath().relativize(a.toPath()).toString().replace('\\','/') <=> headerRoot.toPath().relativize(b.toPath()).toString().replace('\\','/') }
+    def headerInventory = headerFiles.collect { f -> sha(f)+'  '+headerRoot.toPath().relativize(f.toPath()).toString().replace('\\','/')+'\n' }.join('')
+    def headerDigest = java.security.MessageDigest.getInstance('SHA-256').digest(headerInventory.getBytes('UTF-8')).collect { String.format('%02x',it & 255) }.join('')
+    if(headerDigest != lock.getProperty('HEADERS_TREE_SHA256')) throw new GradleException('Native SDK headers changed')
     // Build fails before CMake if a random or misaligned binary is placed in jniLibs.
     def elf = new java.io.RandomAccessFile(nodeSo, 'r')
     try {
@@ -105,8 +113,8 @@ android {
     }
     buildFeatures { buildConfig true }
     if (hostRequested) {
-        defaultConfig { ndk { abiFilters 'arm64-v8a' }; externalNativeBuild { cmake { arguments '-DANDROID_STL=c++_shared' } } }
-        externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt' } }
+        defaultConfig { ndk { abiFilters 'arm64-v8a' }; externalNativeBuild { cmake { arguments '-DANDROID_STL=c++_shared', '-DNODE_MOBILE_SDK='+phoneNodeSdk.absolutePath.replace('\\','/') } } }
+        externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } }
     }
     signingConfigs {
         if (releaseSigningProvided) {

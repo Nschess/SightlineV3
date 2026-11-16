@@ -1,0 +1,41 @@
+{
+  "milestone": "Cross-platform LAN host source and native build",
+  "runtimeVersion": "24.20.0",
+  "sourceTestsPassed": 35,
+  "protocolAssertionsPassed": 47,
+  "protocolPass": true,
+  "protocolRuntime": "desktop Node.js, programmatic WebSocket clients (NOT Android)",
+  "hostLoad": {
+    "runtime": "Windows Node, four programmatic loopback clients; NOT Android or rendered acceptance",
+    "players": 4,
+    "bots": 0,
+    "sampleWallMs": 4014.67,
+    "hostCpuMs": 156,
+    "hostCpuPercentOfOneCore": 3.89,
+    "tickP95Ms": 0.44,
+    "tickP99Ms": 0.57,
+    "worstTickMs": 1.07,
+    "tickGapP95Ms": 32,
+    "tickGapP99Ms": 32,
+    "worstTickGapMs": 32,
+    "tickSamples": 201,
+    "rssBytes": 68976640,
+    "acceptedShots": 24,
+    "snapshots": [
+      802,
+      802,
+      802,
+      802
+    ],
+    "pass": true
+  },
+  "androidHostAndroidClient": "UNVERIFIED",
+  "androidHostWindowsClient": "UNVERIFIED",
+  "windowsHostAndroidClient": "UNVERIFIED",
+  "windowsHostWindowsClient": "UNVERIFIED",
+  "renderedGameplay": "UNVERIFIED",
+  "androidCpuAndCapacity": "UNVERIFIED",
+  "configuredHumanSlots": 4,
+  "capacityCaveat": "Four configured slots are a private candidate limit, not measured Android capacity.",
+  "productionRelease": "BLOCKED"
+}

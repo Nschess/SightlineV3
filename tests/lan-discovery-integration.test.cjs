@@ -12,7 +12,7 @@ test('Windows host advertises discovery only in development and client bridge is
   const launcher = read('SIGHTLINE.bat');
   const host = read('AndroidProject/app/src/main/assets/phone-host/server.js');
   const bridge = read('tools/offline-static-server.cjs');
-  const discovery = read('tools/lan-discovery.cjs');
+  const discovery = read('AndroidProject/app/src/main/assets/phone-host/lan-discovery.cjs');
   assert.match(launcher, /node server\.js .*--discover-lan/);
   assert.match(launcher, /SIGHTLINE\.bat lan-client/);
   assert.match(launcher, /Do not enable Public-network access/);
@@ -45,7 +45,7 @@ test('Android discovery validates the PC host and only auto-joins the exact appr
   const page = read('AndroidProject/app/src/main/assets/phone-host/index.html');
   assert.match(activity, /private void discoverLanHosts\(\)/);
   assert.match(activity, /DISCOVERY_PORT = 49192/);
-  assert.match(activity, /HOST_BUNDLE_SHA256\.equals\(status\.optString\("bundle"\)\)/);
+  assert.match(activity, /acceptsHostBundle\(status\.optString\("bundle"\)\)/);
   assert.match(activity, /openGame\(host\.address,true\)/);
   assert.match(activity, /"join=1"\.equals\(uri\.getQuery\(\)\)/);
   assert.match(activity, /uri\.getQuery\(\) == null \|\| autoJoinQuery/);

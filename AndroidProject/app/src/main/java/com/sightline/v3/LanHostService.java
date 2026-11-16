@@ -26,6 +26,8 @@ public final class LanHostService extends Service {
     private static final int NOTIF_ID=8842;
     private static final String LAST_ERROR_FILE="phone-host-last-error.txt";
     private volatile boolean started;
+    private android.os.PowerManager.WakeLock cpuLock;
+    private android.net.wifi.WifiManager.MulticastLock discoveryLock;
     private native int runNode(String[] argv, String home, String temp);
     @Override public IBinder onBind(Intent intent) { return null; }
     public static String lanAddress() {
@@ -72,7 +74,7 @@ public final class LanHostService extends Service {
                 hashes.put(parts[1],parts[0]);
             }
         }
-        if(hashes.size()!=49 || !hashes.containsKey("server.js") || !hashes.containsKey("index.html") || !hashes.containsKey("sightline-theme.mp3") || !hashes.containsKey("mp-transport-policy.js") || !hashes.containsKey("gameplay-mode-rules.js") || !hashes.containsKey("character-realism-v12.js") || !hashes.containsKey("zombie-hunt.js") || !hashes.containsKey("weapon-realism.js") || !hashes.containsKey("legendary-packs.js")) throw new Exception("Incomplete host bundle");
+        if(hashes.size()!=50 || !hashes.containsKey("lan-discovery.cjs") || !hashes.containsKey("server.js") || !hashes.containsKey("index.html") || !hashes.containsKey("sightline-theme.mp3") || !hashes.containsKey("mp-transport-policy.js") || !hashes.containsKey("gameplay-mode-rules.js") || !hashes.containsKey("character-realism-v12.js") || !hashes.containsKey("zombie-hunt.js") || !hashes.containsKey("weapon-realism.js") || !hashes.containsKey("legendary-packs.js")) throw new Exception("Incomplete host bundle");
         for(Map.Entry<String,String> item:hashes.entrySet()) {
             String name=item.getKey();
             byte[] buf;
@@ -122,16 +124,21 @@ public final class LanHostService extends Service {
                 File error=new File(getFilesDir(), LAST_ERROR_FILE);
                 if(error.exists()&&!error.delete()) throw new Exception("Cannot clear previous hosting failure");
                 File root=stage();
+                android.os.PowerManager power=(android.os.PowerManager)getSystemService(POWER_SERVICE);
+                cpuLock=power.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK,"Sightline:LanHost");
+                cpuLock.acquire(); // Active, user-visible foreground host only; released on every shutdown.
+                android.net.wifi.WifiManager wifi=(android.net.wifi.WifiManager)getApplicationContext().getSystemService(WIFI_SERVICE);
+                if(wifi!=null){discoveryLock=wifi.createMulticastLock("sightline-host-discovery");discoveryLock.setReferenceCounted(false);discoveryLock.acquire();}
                 final String initialIp=ip;
                 new Thread(()->{
                     while(started) {
                         try {Thread.sleep(3000);} catch(InterruptedException e) {return;}
-                        if(!initialIp.equals(lanAddress())) { stopSelf(); return; }
+                        if(!initialIp.equals(lanAddress())) { writeFailure("Wi-Fi changed. Rejoin Wi-Fi and create a new match.");stopSelf(); return; }
                     }
                 },"sightline-host-network-watch").start();
                 System.loadLibrary("node"); System.loadLibrary("sightline_host");
                 getSystemService(NotificationManager.class).notify(NOTIF_ID, notification("Hosting on "+ip+":8080 · trusted Wi-Fi only"));
-                int exit=runNode(new String[]{"node",new File(root,"server.js").getAbsolutePath(),"--transport","dev","--bind",ip,"--port","8080","--max","2","--total","96","--bots","0"},getFilesDir().getAbsolutePath(), getCacheDir().getAbsolutePath());
+                int exit=runNode(new String[]{"node",new File(root,"server.js").getAbsolutePath(),"--transport","dev","--bind",ip,"--port","8080","--max","4","--total","68","--bots","0","--discover-lan","--wait-for-host","--room","Phone Match"},getFilesDir().getAbsolutePath(), getCacheDir().getAbsolutePath());
                 android.util.Log.w("SightlineHost","Node exited: "+exit);
                 writeFailure("Authoritative server stopped (native exit " + exit + ")");
             } catch(Throwable t) {android.util.Log.e("SightlineHost","Native server unavailable",t); writeFailure("Native host failed: " + t.getClass().getSimpleName() + (t.getMessage()!=null ? ": " + t.getMessage() : ""));}
@@ -141,6 +148,8 @@ public final class LanHostService extends Service {
     }
     @Override public void onDestroy() {
         started=false;
+        if(discoveryLock!=null&&discoveryLock.isHeld())discoveryLock.release();
+        if(cpuLock!=null&&cpuLock.isHeld())cpuLock.release();
         super.onDestroy();
         // Only the dedicated :lanhost process is terminated; the game Activity and its save data survive.
         Process.killProcess(Process.myPid());

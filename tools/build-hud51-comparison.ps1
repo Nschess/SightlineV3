@@ -4,7 +4,8 @@ param(
   [Parameter(Mandatory=$true)][string]$SdkRoot,
   [Parameter(Mandatory=$true)][string]$GradleBin,
   [Parameter(Mandatory=$true)][string]$GradleUserHome,
-  [Parameter(Mandatory=$true)][string]$PrivateHome
+  [Parameter(Mandatory=$true)][string]$PrivateHome,
+  [Parameter(Mandatory=$true)][string]$PhoneNodeSdkRoot
 )
 $ErrorActionPreference='Stop'
 $root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -23,5 +24,5 @@ $env:JAVA_TOOL_OPTIONS='-Duser.home='+$privateFull
 $env:PATH=(Join-Path $JavaHome 'bin')+';'+$env:PATH
 [IO.Directory]::CreateDirectory($privateFull) | Out-Null
 $shell=(Get-Process -Id $PID).Path
-& $GradleBin '-p' (Join-Path $root 'AndroidProject') ':app:assembleDiagnostic' '--offline' '--no-daemon' '--console=plain' ('-PsightlinePowerShell='+$shell)
+& $GradleBin '-p' (Join-Path $root 'AndroidProject') ':app:assembleDiagnostic' '--offline' '--no-daemon' '--console=plain' ('-PsightlinePowerShell='+$shell) '-PenableLanHost=true' ('-PphoneNodeSdkRoot='+$PhoneNodeSdkRoot)
 if($LASTEXITCODE -ne 0){throw 'Comparison APK build failed; no APK acceptance claimed'}

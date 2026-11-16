@@ -16,7 +16,10 @@ if(!java.includes('HUD51_HOST_BUNDLE_SHA256')){
  java=java.replace('HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle);','HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);');
  fs.writeFileSync(native,java);
 }
-const sums=path.join(host,'SHA256SUMS');fs.writeFileSync(sums,fs.readFileSync(sums,'utf8').replace(/^[a-f0-9]{64}(  index.html\r?)$/m,bundle+'$1'));
+const sums=path.join(host,'SHA256SUMS');
+const entries=fs.readFileSync(sums,'utf8').trim().split(/\r?\n/).map(row=>row.slice(66));
+if(fs.existsSync(path.join(host,'lan-discovery.cjs'))&&!entries.includes('lan-discovery.cjs'))entries.push('lan-discovery.cjs');
+fs.writeFileSync(sums,entries.sort().map(name=>hash(path.join(host,name))+'  '+name).join('\n')+'\n');
 const current=path.join(root,'CURRENT-SOURCE-SHA256.txt');
 fs.writeFileSync(current,fs.readFileSync(current,'utf8').replace(/^([a-f0-9]{64})  (.+?)(\r?)$/gm,(row,old,rel,cr)=>hash(path.join(root,rel))+'  '+rel+cr));
 console.log('Synchronized current camera bundle/inventories:',bundle);

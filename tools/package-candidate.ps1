@@ -13,7 +13,7 @@ function Get-CandidateInventory([string]$Root) {
   $prefix = $rootFull + [IO.Path]::DirectorySeparatorChar
   $items = [System.Collections.Generic.List[string]]::new()
   $excludedDirectories = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-  foreach ($name in @('.git','.gradle','build','outputs','.tmp')) { [void]$excludedDirectories.Add($name) }
+  foreach ($name in @('.git','.gradle','.cxx','build','outputs','.tmp')) { [void]$excludedDirectories.Add($name) }
   $pending = [Collections.Generic.Stack[string]]::new()
   $pending.Push($rootFull)
   while ($pending.Count -gt 0) {

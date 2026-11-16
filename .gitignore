@@ -37,3 +37,4 @@ acceptance/ENGINEERING-OUTCOMES.json
 *.tgz
 *.hprof
 *.heapdump
+**/.cxx/

@@ -43,6 +43,14 @@ function resolveStaticTarget(root, requestTarget) {
 function createOfflineServer(root, options = {}) {
   const rootReal = fs.realpathSync(root);
   return http.createServer((req, res) => {
+    const pathname = new URL(req.url || '/', 'http://127.0.0.1').pathname;
+    if (pathname === '/__sightline/lan/create' || pathname === '/__sightline/lan/stop') {
+      // Only the local game's same-origin JSON action may start a process.
+      const trustedOrigin = ['http://127.0.0.1:8090','http://localhost:8090'].includes(req.headers.origin);
+      if(req.method!=='POST'||!trustedOrigin||req.headers['content-type']!=='application/json'||!options.hostManager){res.writeHead(403);res.end('Local game action required');return;}
+      let bytes=0;req.on('data',d=>{bytes+=d.length;if(bytes>1024)req.destroy();});
+      req.on('end',()=>{if(bytes>1024)return;Promise.resolve(pathname.endsWith('/create')?options.hostManager.start():options.hostManager.stop()).then(room=>{const body=JSON.stringify({ok:true,room:room||null});res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(body);}).catch(e=>{res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({ok:false,error:e.message}));});});return;
+    }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405, { 'Allow': 'GET, HEAD', 'Cache-Control': 'no-store' }); res.end(); return;
     }
@@ -96,9 +104,12 @@ if (require.main === module) {
   const root = path.resolve(__dirname, '../AndroidProject/app/src/main/assets/www');
   const discoveryEnabled = process.argv.includes('--lan-client');
   const discovery = discoveryEnabled ? require('./lan-discovery.cjs').createLanDiscoveryClient() : null;
-  const server = createOfflineServer(root, { discovery });
+  const hostManager = discoveryEnabled ? new (require('./local-lan-host.cjs').LocalLanHost)() : null;
+  const server = createOfflineServer(root, { discovery, hostManager });
+  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{if(hostManager)await hostManager.stop();server.close(()=>process.exit(0));});
   server.on('error', error => { console.error('Offline server failed:', error.message); process.exitCode = 1; });
   server.listen(8090, '127.0.0.1', () => {
+    if(process.argv.includes('--open-game')&&process.platform==='win32')require('node:child_process').spawn('cmd.exe',['/d','/c','start','','http://127.0.0.1:8090/'],{windowsHide:true,stdio:'ignore'}).unref();
     console.log(discoveryEnabled ? 'Sightline LAN client/discovery: http://127.0.0.1:8090/' : 'Sightline Offline game: http://127.0.0.1:8090/');
     console.log(discoveryEnabled
       ? 'Game assets and discovery API are loopback-only; UDP probes target private-LAN broadcast addresses. Ctrl+C stops this client bridge.'

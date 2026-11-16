@@ -12,6 +12,10 @@ const HostTransport = require('./host-transport-config.js');
 /* ---------------- options ---------------- */
 const argv = process.argv.slice(2);
 function opt(name, def, lo, hi) { const i = argv.indexOf('--' + name); if (i < 0 || i + 1 >= argv.length) return def; const v = Number(argv[i + 1]); return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : def; }
+const ROOM_INDEX = argv.indexOf('--room');
+const ROOM_NAME = (ROOM_INDEX >= 0 ? String(argv[ROOM_INDEX + 1] || '') : 'Sightline Match').replace(/[\x00-\x1f\x7f]/g,'').slice(0,48) || 'Sightline Match';
+let ROOM_OPENED = !argv.includes('--wait-for-host');
+const HOST_INSTANCE = process.env.SIGHTLINE_HOST_INSTANCE || crypto.randomBytes(12).toString('hex');
 const BIND_ARG = argv.indexOf('--bind');
 const BIND = BIND_ARG >= 0 ? String(argv[BIND_ARG + 1] || '') : '0.0.0.0';
 const VALID_BIND = /^(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
@@ -2471,7 +2475,7 @@ function handleHttpRequest(req, res) {
   if (u === '/status') {
     res.writeHead(200, { 'content-type': 'application/json','cache-control':'no-store' });
     if (!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress))
-      return res.end(JSON.stringify({ok:true,game:'sightline-v12-host-prototype',protocol:MULTIPLAYER_PROTOCOL,transport:RELEASE_TLS?'release':'dev',bundle:HOST_BUNDLE_SHA256,server:HOST_SERVER_SHA256,phase:G.phase,mode:G.mode,map:G.map,players:humanCount(),maxPlayers:MAX_PLAYERS}));
+      return res.end(JSON.stringify({ok:true,game:'sightline-v12-host-prototype',name:ROOM_NAME,instanceId:HOST_INSTANCE,protocol:MULTIPLAYER_PROTOCOL,transport:RELEASE_TLS?'release':'dev',bundle:HOST_BUNDLE_SHA256,server:HOST_SERVER_SHA256,phase:G.phase,mode:G.mode,map:G.map,players:humanCount(),maxPlayers:MAX_PLAYERS}));
     const statusAt=now(),clients=[...players.values()].filter(p=>!p.bot&&p.c&&!p.c.closed).map(p=>({
       id:p.id,team:p.team,alive:!!p.alive,
       rttMs:p.rttAt&&statusAt-p.rttAt<=5000?r2(p.rtt):null,
@@ -2483,7 +2487,7 @@ function handleHttpRequest(req, res) {
       snapshotQueueBytes:p.c.snapshotQueueBytes,snapshotQueuePeakBytes:p.c.snapshotQueuePeakBytes
     }));
     return res.end(JSON.stringify({
-      ok:true,game:'sightline-v12-host-prototype',protocol:MULTIPLAYER_PROTOCOL,transport:RELEASE_TLS?'release':'dev',maxPlayers:MAX_PLAYERS,bundle:HOST_BUNDLE_SHA256,server:HOST_SERVER_SHA256,
+      ok:true,game:'sightline-v12-host-prototype',name:ROOM_NAME,instanceId:HOST_INSTANCE,protocol:MULTIPLAYER_PROTOCOL,transport:RELEASE_TLS?'release':'dev',maxPlayers:MAX_PLAYERS,bundle:HOST_BUNDLE_SHA256,server:HOST_SERVER_SHA256,
       capacity:MAX_TOTAL,players:humanCount(),bots:players.size-humanCount(),botsAlive:[...players.values()].filter(p=>p.bot&&p.alive).length,
       botConfig:{mode:BOTCFG.mode,cooperative:BOTCFG.coop,team0:BOTCFG.t0,team1:BOTCFG.t1},zombies:OB.zs.size,zombieCap:ZMAX,
       phase:G.phase,map:G.map,mode:G.mode,snapshot:{tickMs:TICK_MS,everyTicks:snapshotEveryNow(),hz:Math.round(1000/(TICK_MS*snapshotEveryNow())),entities:snapshotEntityCount()},clients,
@@ -2545,7 +2549,7 @@ server.on('upgrade', (req, sock) => {
       if (!negotiation.ok) return c.closeAfterMessage({ t: 'err', code: negotiation.code, requiredProtocol: MULTIPLAYER_PROTOCOL, msg: negotiation.message });
       if (humanCount() >= MAX_PLAYERS) { c.text(JSON.stringify({ t: 'err', msg: 'Server is full.' })); return c.kill(); }
       if (players.size >= MAX_TOTAL) { const victim = [...players.values()].filter(p => p.bot).sort((a,b) => (a.alive-b.alive) || (b.id-a.id))[0]; if (victim) removeBot(victim); else { c.text(JSON.stringify({t:'err',msg:'Server is full.'})); return c.kill(); } }
-      me = addPlayer(c, m.name); log('joined:', me.name, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
+      me = addPlayer(c, m.name); ROOM_OPENED=true; log('joined:', me.name, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
       me.protocol = MULTIPLAYER_PROTOCOL; me.session = crypto.randomBytes(16).toString('hex'); me.lastActionSeq = 0;
       send(me, { t: 'welcome', protocol: MULTIPLAYER_PROTOCOL, features: negotiation.features, session: me.session, id: me.id, host: me.host, max: MAX_PLAYERS });
       syncBots(); pushLobby();
@@ -2596,6 +2600,7 @@ function ensureThree(cb) {
 }
 if (require.main === module) {
   const have = (() => { try { return fs.statSync(path.join(__dirname, 'three.min.js')).size > 400000; } catch (e) { return false; } })();
+  if(!have)throw new Error("Bundled Three.js is missing. Restore the game assets; this host never needs internet downloads.");
   let discoveryHost = null;
   server.listen(PORT, BIND, () => {
     console.log('\n  SIGHTLINE RANGE  -  LAN server running (max ' + MAX_PLAYERS + ' players, up to ' + MAX_TOTAL + ' with bots)');
@@ -2603,7 +2608,6 @@ if (require.main === module) {
     console.log('  Build fingerprint (served phone-host page): ' + HOST_BUNDLE_SHA256);
     console.log('  Host source fingerprint: ' + HOST_SERVER_SHA256 + '\n');
     console.log('  Simulation tick: ' + TICK_MS + ' ms (' + (1000/TICK_MS).toFixed(2) + ' Hz); default is 20 ms.');
-    if (!have) ensureThree(ok => console.log(ok ? '  three.min.js saved next to server.js: friends no longer need internet.' : '  Note: three.min.js could not be downloaded. Players will load it from the internet instead (see README).'));
     const a = lanAddresses();
     if (RELEASE_TLS) {
       console.log('  Secure host:  https://' + RELEASE_TLS.authority + '/');
@@ -2614,10 +2618,10 @@ if (require.main === module) {
       else console.log('  No network found. Connect to Wi-Fi or turn on a hotspot, then restart.');
       if (argv.includes('--discover-lan')) {
         try {
-          const Discovery = require(path.resolve(__dirname, '../../../../../../tools/lan-discovery.cjs'));
-          const discoveryInstance = process.env.SIGHTLINE_HOST_INSTANCE || crypto.randomBytes(12).toString('hex');
+          const Discovery = require('./lan-discovery.cjs');
+          const discoveryInstance = HOST_INSTANCE;
           discoveryHost = Discovery.createLanDiscoveryHost({ info: () => ({
-            id: discoveryInstance, port: PORT,
+            id: discoveryInstance, name: ROOM_NAME, port: PORT, ready: ROOM_OPENED,
             players: humanCount(), maxPlayers: MAX_PLAYERS, phase: G.phase, mode: G.mode, map: G.map
           }), onError: error => console.error('  LAN discovery socket error:', error && (error.code || error.message) || 'unknown error') });
           if (discoveryHost.start()) console.log('  LAN discovery: private IPv4 query/reply only on UDP ' + Discovery.DISCOVERY_PORT + ' (HTTP/WS remains on this host)');

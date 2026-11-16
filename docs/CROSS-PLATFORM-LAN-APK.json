@@ -1,0 +1,31 @@
+{
+  "apk": "AndroidProject/app/build/outputs/apk/diagnostic/app-diagnostic.apk",
+  "sha256": "098f8bb8b424538375a8e8bd35654ac6004d70329f002a85becd838ecefc21d4",
+  "bytes": 83419351,
+  "packageId": "com.sightline.v3.diagnostic.visibility",
+  "versionCode": 17,
+  "versionName": "0.3.4-lan-host-wip-17",
+  "debugCertificateSha256": "74516cfda39e6250bf50bedab19fbcaf0d33970db6807ad3ba7888a85f59c041",
+  "nativeHostingEnabled": true,
+  "packagedAssetsVerified": 104,
+  "nativeLibraries": [
+    {
+      "bytes": 66237584,
+      "name": "libnode.so"
+    },
+    {
+      "bytes": 64528,
+      "name": "libsightline_host.so"
+    },
+    {
+      "bytes": 1253544,
+      "name": "libc++_shared.so"
+    }
+  ],
+  "signature": "PASS",
+  "elfAndZip16KiBAlignment": "PASS",
+  "build": "PASS :app:assembleDiagnostic",
+  "buildSourceInventory": "0a66b532d346be51e4d8bffdbd2148369831e57109c874e933dfa0d1712c9dc8",
+  "physicalDeviceRuntime": "UNVERIFIED",
+  "productionRelease": "BLOCKED"
+}

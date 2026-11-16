@@ -13144,7 +13144,7 @@ function mpBotsHtml(L, coop, isHost, lobbyPhase) {
   if (coop) h += mpBotCount('coop', L.mode==='infection'?(B.mode==='fill'?'Total roster size':'Total Infection bots'):(B.mode === 'fill' ? 'Survivor squad size' : 'AI survivor squadmates'), B.coop, max, !lobbyPhase, B.mode);
   else h += mpBotCount('t0', (B.mode === 'fill' ? 'Team size · ' : 'Bots · ') + TEAMS[TEAMKEY[0]].short, B.t0, max, !lobbyPhase, B.mode) + mpBotCount('t1', (B.mode === 'fill' ? 'Team size · ' : 'Bots · ') + TEAMS[TEAMKEY[1]].short, B.t1, max, !lobbyPhase, B.mode);
   if (!coop) h += '<div class="srow"><span class="lb">Balance bots<small>Equalize team size while preserving human team choices</small></span>' + mpSeg('balance', [[true, 'On'], [false, 'Off']], B.balance !== false, !lobbyPhase) + '</div>';
-  h += '<p class="small">' + (L.mode==='infection'?'Infection: Blue and Red are allied survivors during the 10-second incubation. Two Patient Zero are then selected from the full roster; color does not determine infection. Fill targets 32 participants per color team at 64 total.':'Up to 32 human players and 64 AI bots. In Outbreak, Blue and Red are one allied survivor squad against the Hollowed; up to 56 squad bots are shared across both colors, with remaining AI slots reserved for Hollowed. Fill targets squad size; Add on top counts bots separately.') + '</p>';
+  h += '<p class="small">' + (L.mode==='infection'?'Infection: Blue and Red are allied survivors during the 10-second incubation. Two Patient Zero are then selected from the full roster; color does not determine infection. Fill targets 32 participants per color team at 64 total.':'Player slots follow room capacity. Start with small AI populations on phones. In Outbreak, Blue and Red are one allied survivor squad against the Hollowed; up to 56 squad bots are shared across both colors, with remaining AI slots reserved for Hollowed. Fill targets squad size; Add on top counts bots separately.') + '</p>';
   h += '<div class="srow"><span class="lb">Bot skill<small>Can change during a match</small></span>' + mpSeg('skill', BOT_SKILLS, B.skill, false) + '</div>';
   return h;
 }
@@ -13212,16 +13212,17 @@ function mpPanel(head) {
     var hostRoute=document.querySelector('meta[name="sightline-route"]')?.content==='lan-host'?SL82_HOST_SUBROUTE:'multiplayer';
     if(hostRoute==='maps')h=head.replace('Multiplayer','Maps')+'<section class="sl82-route-gate" aria-labelledby="sl82-route-gate-title"><span class="sl82-route-kicker">LAN HOST SETUP · ARENA</span><h3 id="sl82-route-gate-title">Connect to load the host map list</h3><p>Map choices come from the connected host so the arena, A/B validation, and match state stay synchronized. The host address and Connect action are below.</p></section>';
     else if(hostRoute==='rules')h=head.replace('Multiplayer','Match rules')+'<section class="sl82-route-gate" aria-labelledby="sl82-route-gate-title"><span class="sl82-route-kicker">LAN HOST SETUP · RULES</span><h3 id="sl82-route-gate-title">Connect to view and edit match rules</h3><p>Mode, teams, bots, bot skill, starting cash, and round timing are controlled by the host. Connect below to load the current authoritative settings.</p></section>';
-    h += '<p>Play with friends on the same Wi-Fi or phone hotspot. A PC host can be found automatically from the local Sightline client. Manual private IP remains available as a fallback.</p>' +
+    h += '<p>Play together on the same Wi-Fi or phone hotspot.</p>' + mpPlatformLanMarkup() +
       (mpLanDiscoveryBridge() ? mpLanDiscoveryMarkup() : '') +
       '<div class="srow"><label class="lb" for="mp-name">Your name</label><input id="mp-name" class="mp-in" maxlength="16" autocomplete="off" value="' + esc(MP.name || ME.name) + '"></div>' +
-      '<div class="srow"><label class="lb" for="mp-addr">' + (mpCurrentPageHost() ? 'Host serving this page' : 'Host address') + '<small>' + (mpCurrentPageHost() ? 'Detected from this LAN-host page; edit only to use another host.' : 'For example 192.168.1.20:8080') + '</small></label><input id="mp-addr" class="mp-in" autocomplete="off" placeholder="192.168.1.20:8080" value="' + esc(MP.addr) + '"></div>' +
+      '<details><summary>Advanced · join by address</summary><div class="srow"><label class="lb" for="mp-addr">' + (mpCurrentPageHost() ? 'Host serving this page' : 'Host address') + '<small>' + (mpCurrentPageHost() ? 'Detected from this LAN-host page; edit only to use another host.' : 'For example 192.168.1.20:8080') + '</small></label><input id="mp-addr" class="mp-in" autocomplete="off" placeholder="192.168.1.20:8080" value="' + esc(MP.addr) + '"></div>' +
       '<div class="setfoot"><button class="btn" type="button" data-net="connect"' + (MP.sock ? ' disabled' : '') + '>' + (MP.sock ? 'Connecting...' : (mpCurrentPageHost() ? 'Join this host' : 'Connect')) + '</button></div>' +
-      (MP.status ? '<p class="small">' + esc(MP.status) + '</p>' : '') + (MP.err ? '<p class="small mp-err" role="alert">' + esc(MP.err) + '</p>' : '') +
+      '</details>' + (MP.status ? '<p class="small">' + esc(MP.status) + '</p>' : '') + (MP.err ? '<p class="small mp-err" role="alert">' + esc(MP.err) + '</p>' : '') +
       '<p class="small">Single player still works exactly as before from the Play tab. Customization remains under Settings → Customization.</p>';
     if (mpLanDiscoveryBridge()) setTimeout(function () { mpScanLanHosts(false); }, 0);
     return h;
   }
+  if(mpLocalHostOwned)h+='<div class="setfoot"><button type="button" class="btn ghost" data-net="stop-local">Stop Hosting</button></div>';
   var me = mpMe(), isHost = !!(me && me.host), lobbyPhase = L.phase === 'lobby', col = ['', ''], cnt = [0, 0];
   if(isHost)return mpHostRouteHtml(h,L,SL82_HOST_SUBROUTE);
   L.players.forEach(function (p) {
@@ -13269,11 +13270,29 @@ function mpPanel(head) {
   return h;
 }
 var MP_LAN_DISCOVERY = { busy:false, hosts:[], error:'', scannedAt:0, timer:0 };
+var mpLocalHostOwned=false, mpLocalHostPending=false;
+function mpNativeLan() { return navigator.userAgent.indexOf('SightlineAndroid')>=0 && location.hostname==='appassets.androidplatform.net'; }
+function mpPlatformLanMarkup() {
+  if(!mpNativeLan()&&!mpLanDiscoveryBridge())return '';
+  return '<div class="setfoot"><button type="button" class="btn" data-net="create-local"'+(mpLocalHostPending?' disabled':'')+'>CREATE MATCH</button><button type="button" class="btn ghost" data-net="find-local">FIND LAN MATCH</button></div>'+(mpLocalHostOwned?'<button type="button" class="btn ghost" data-net="stop-local">Stop Hosting</button>':'');
+}
+function mpCreateLocalHost() {
+  if(mpNativeLan()){location.href='sightlinelan://create';return;}
+  if(!mpLanDiscoveryBridge()||mpLocalHostPending)return;
+  var n=$('#mp-name');if(n)MP.name=n.value;
+  mpLocalHostPending=true;MP.status='Starting your match…';MP.err='';renderOps();
+  fetch('/__sightline/lan/create',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json();}).then(function(result){
+    if(!result.ok||!result.room||!mpLanPrivateIp(result.room.address)||result.room.port!==8080||result.room.verified!==true)throw Error(result.error||'Local host did not become ready.');
+    mpLocalHostOwned=true;MP.addr=result.room.address+':8080';MP.status='Joining your match…';mpConnect();
+  }).catch(function(e){MP.err=String(e.message||'Could not create match');}).finally(function(){mpLocalHostPending=false;renderOps();});
+}
+function mpStopLocalHost() {if(!mpLocalHostOwned)return;fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){if(!r.ok)throw Error('Host shutdown failed');mpLocalHostOwned=false;mpLeave();renderOps();}).catch(function(e){MP.err=e.message;renderOps();});}
+window.addEventListener('pagehide',function(){if(mpLocalHostOwned)fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',keepalive:true}).catch(function(){});});
 function mpLanDiscoveryBridge() {
   return location.protocol === 'http:' && (location.hostname === '127.0.0.1' || location.hostname === 'localhost') && location.port === '8090';
 }
 function mpLanDiscoveryMarkup() {
-  return '<section class="mp-discovery" aria-label="Available LAN games"><div class="srow"><span class="lb"><b>Available Games</b><small>Private LAN hosts · automatic scan</small></span><button class="btn ghost" type="button" data-net="discover">Scan now</button></div><div id="mp-discovery-state" class="small" role="status">Searching the local network…</div><div id="mp-discovery-list"></div></section>';
+  return '<section class="mp-discovery" aria-label="Available LAN games"><div class="srow"><span class="lb"><b>Available Games</b><small>Private LAN hosts · automatic scan</small></span><button class="btn ghost" type="button" data-net="discover">Refresh</button></div><div id="mp-discovery-state" class="small" role="status">Searching the local network…</div><div id="mp-discovery-list"></div></section>';
 }
 function mpLanPrivateIp(ip) {
   if (typeof ip !== 'string') return false;
@@ -13297,10 +13316,13 @@ function mpScanLanHosts(manual) {
   fetch('/__sightline/lan/hosts',{cache:'no-store',signal:abort.signal}).then(function(r){if(!r.ok)throw new Error('Discovery bridge is unavailable. Start SIGHTLINE.bat lan-client.');return r.json();}).then(function(data){
     if(!data||data.schema!=='sightline-lan-hosts-v1'||!data.ok)throw new Error(data&&data.error||'Local discovery is unavailable.');
     var seen=new Set();MP_LAN_DISCOVERY.hosts=(Array.isArray(data.hosts)?data.hosts:[]).filter(function(h){if(!h||!mpLanPrivateIp(h.address)||h.port!==8080||h.protocol!==2||h.transport!=='dev'||h.verified!==true||seen.has(h.address))return false;seen.add(h.address);return true;});MP_LAN_DISCOVERY.scannedAt=Date.now();
-  }).catch(function(e){MP_LAN_DISCOVERY.error=e&&e.name==='AbortError'?'Discovery timed out. Use manual IP or try again.':String(e&&e.message||'Discovery failed.');}).finally(function(){clearTimeout(timeout);MP_LAN_DISCOVERY.busy=false;mpDrawLanHosts();clearTimeout(MP_LAN_DISCOVERY.timer);if(mpLanDiscoveryBridge()&&menuTab==='net'&&$('#mp-discovery-state'))MP_LAN_DISCOVERY.timer=setTimeout(function(){mpScanLanHosts(false);},900);});
+  }).catch(function(e){MP_LAN_DISCOVERY.error=e&&e.name==='AbortError'?'Discovery timed out. Use manual IP or try again.':String(e&&e.message||'Discovery failed.');}).finally(function(){clearTimeout(timeout);MP_LAN_DISCOVERY.busy=false;mpDrawLanHosts();clearTimeout(MP_LAN_DISCOVERY.timer);});
 }
 function mpAction(b) {
   var a = b.getAttribute('data-net'), v = b.getAttribute('data-v');
+  if(a==='create-local'){mpCreateLocalHost();return;}
+  if(a==='find-local'){if(mpNativeLan())location.href='sightlinelan://find';else mpScanLanHosts(true);return;}
+  if(a==='stop-local'){mpStopLocalHost();return;}
   if (a === 'connect') { var n = $('#mp-name'), d = $('#mp-addr'); if (n) MP.name = n.value; if (d) MP.addr = d.value; mpConnect(); }
   else if (a === 'discover') mpScanLanHosts(true);
   else if (a === 'join-discovered') { var ip=b.getAttribute('data-host'); if(!mpLanPrivateIp(ip))return; MP.addr=ip+':8080';var d=$('#mp-addr');if(d)d.value=MP.addr;MP.status='Joining verified LAN host…';mpConnect(); }

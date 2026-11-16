@@ -5,6 +5,12 @@ This integration uses the exact recovered HUD51 runtime plus the separately pres
 mobile camera/ADS changes. HUD rendering, controls and gameplay remain based on HUD51.
 The new comparison APK has not inherited the original binary's device acceptance.
 
+The current private LAN-hosting milestone is documented in
+[CROSS-PLATFORM-LAN-HOSTING.md](docs/CROSS-PLATFORM-LAN-HOSTING.md).
+Android Create Match embeds the real shared server; Windows players use `PLAY.vbs`
+to start the local game and create a host without a separate server command.
+Physical-device and rendered cross-platform acceptance remain unverified.
+
 Exact original packaged HUD51 runtime assets are now preserved as recovery evidence
 under [recovery/hud51-runtime](recovery/hud51-runtime/README.md), separate from active gameplay.
 

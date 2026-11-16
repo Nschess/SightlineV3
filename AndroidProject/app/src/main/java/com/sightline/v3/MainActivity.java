@@ -52,7 +52,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "bb50730551b012ce3bacda4ba38afcff18b3abf313a5762e6458625a97e411df";
+    private static final String HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
     private static final String HUD51_HOST_BUNDLE_SHA256 = "1be6c08ca8ef0460971f47c6f2986634003d22197c1b0b6e6dcd824a76a30b23";
@@ -78,6 +78,7 @@ public final class MainActivity extends Activity {
     private static final Set<String> LAN_PATHS = new HashSet<>(Arrays.asList("/", "/index.html", "/status", "/favicon.ico"));
     private WebView web;
     private String chosenLanHost;
+    private volatile boolean phoneHostStarting;
     private WebViewAssetLoader assetLoader;
     private FrameLayout root;
     private boolean showingGame;
@@ -179,8 +180,8 @@ public final class MainActivity extends Activity {
         layout.addView(label("Offline mode uses game files packaged inside this app. It does not require a PC or internet connection.", 14));
         layout.addView(button("Play Offline", () -> openGame(null)));
         if (BuildConfig.LAN_HOST_ENABLED) {
-            layout.addView(label("Phone-host LAN (experimental): Phone A hosts, Phone B joins over trusted Wi-Fi or Phone A's hotspot. Requires a separately verified ARM64 host-runtime build.", 13));
-            layout.addView(button("Host Phone LAN (experimental)", this::startPhoneHost));
+            layout.addView(label("Create a match on this phone, or find a match on your Wi-Fi. No PC is needed.", 13));
+            layout.addView(button("CREATE MATCH", this::startPhoneHost));
             if (activePhoneHostIp != null) {
                 layout.addView(label("Host address for Phone B: http://" + activePhoneHostIp + ":8080",14));
                 layout.addView(button("Copy Phone Join Address", () -> copyJoinAddress(activePhoneHostIp)));
@@ -280,14 +281,18 @@ public final class MainActivity extends Activity {
         }
     }
     private void startPhoneHost() {
-        if (!BuildConfig.LAN_HOST_ENABLED) return;
+        if (!BuildConfig.LAN_HOST_ENABLED) { toast("This build does not contain the phone host runtime."); return; }
+        if (phoneHostStarting) { toast("Your match is still starting…"); return; }
+        if (activePhoneHostIp != null && !new File(getFilesDir(),"phone-host-last-error.txt").exists()) { openGame(activePhoneHostIp,true); return; }
         String ip=LanHostService.lanAddress();
         if(ip==null) {toast("Connect to private Wi-Fi or activate a hotspot first");return;}
+        toast("Starting your match…");
         activePhoneHostIp=ip;
+        phoneHostStarting=true;
         try {
             Intent start=new Intent(this,LanHostService.class);
             if(Build.VERSION.SDK_INT>=26) startForegroundService(start); else startService(start);
-        } catch(Exception e) {activePhoneHostIp=null;toast("Hosting could not start: "+e.getMessage());return;}
+        } catch(Exception e) {activePhoneHostIp=null;phoneHostStarting=false;toast("Hosting could not start: "+e.getMessage());return;}
         new Thread(()->{
             boolean ready=false;
             for(int i=0;i<51;i++) {
@@ -312,17 +317,10 @@ public final class MainActivity extends Activity {
             final boolean available=ready;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed())return;
+                phoneHostStarting=false;
+                if(!ip.equals(activePhoneHostIp))return;
                 if(available) {
-                    new AlertDialog.Builder(this)
-                        .setTitle("Phone LAN host ready")
-                        .setMessage("Phone B: connect to the same Wi-Fi or this phone's hotspot, tap Join LAN Game, and enter " + ip + ".\n\nHost: http://" + ip + ":8080\n\nKeep Phone A running during the match.")
-                        .setPositiveButton("Play as Host", (dialog,which) -> openGame(ip))
-                        .setNeutralButton("Copy Address", (dialog,which) -> {
-                            copyJoinAddress(ip);
-                            openGame(ip);
-                        })
-                        .setNegativeButton("Stop Hosting", (dialog,which) -> stopPhoneHost())
-                        .setCancelable(false).show();
+                    openGame(ip,true);
                 } else {
                     String reason="Host did not become ready";
                     try {
@@ -344,7 +342,7 @@ public final class MainActivity extends Activity {
         if (clipboard!=null) clipboard.setPrimaryClip(ClipData.newPlainText("Sightline LAN address", "http://"+ip+":8080"));
         toast("Join address copied. Share it only on your trusted LAN.");
     }
-    private void stopPhoneHost() {
+    private void stopPhoneHost() { phoneHostStarting=false;
         stopService(new Intent(this,LanHostService.class));
         activePhoneHostIp=null;
         showHome();
@@ -365,9 +363,9 @@ public final class MainActivity extends Activity {
 
     private static final int DISCOVERY_PORT = 49192;
     private static final class LanHostCandidate {
-        String address, id, mode, map, phase; int players, maxPlayers;
+        String address, id, mode, map, phase, name; int players, maxPlayers;
         boolean full() { return players >= maxPlayers; }
-        String label() { return (full() ? "FULL · " : "") + "Sightline V3 Host · " + players + "/" + maxPlayers + " · " + mode + " · " + map + " · " + address; }
+        String label() { return (full() ? "FULL · " : "") + (name==null?"Sightline Match":name)+" · " + players + "/" + maxPlayers + " · " + mode + " · " + map; }
     }
     private static boolean privateLanAddress(String value) {
         if (value == null) return false;
@@ -392,15 +390,17 @@ public final class MainActivity extends Activity {
     }
     private void discoverLanHosts() {
         final AlertDialog searching=new AlertDialog.Builder(this).setTitle("Searching local network")
-            .setMessage("Looking for compatible Sightline PC hosts on this Wi-Fi. Manual IP remains available.")
+            .setMessage("Looking for phone and PC matches on this Wi-Fi.")
             .setPositiveButton("Manual IP",(d,w)->showManualHostEntry())
             .setNegativeButton("Cancel",null).create();
         searching.show();
         new Thread(()->{
             java.util.List<LanHostCandidate> found;
             String error="";
-            try { found=scanLanHosts(); }
+            android.net.wifi.WifiManager.MulticastLock multicast=null;
+            try { android.net.wifi.WifiManager wifi=(android.net.wifi.WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wifi!=null){multicast=wifi.createMulticastLock("sightline-discovery");multicast.setReferenceCounted(false);multicast.acquire();} found=scanLanHosts(); }
             catch(Exception e) { found=new java.util.ArrayList<>(); error="Local discovery could not run: "+(e.getMessage()==null?"network permission or Wi-Fi unavailable":e.getMessage()); }
+            finally { if(multicast!=null&&multicast.isHeld())multicast.release(); }
             final java.util.List<LanHostCandidate> hosts=found; final String scanError=error;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed())return;
@@ -441,7 +441,7 @@ public final class MainActivity extends Activity {
                     org.json.JSONObject offer=new org.json.JSONObject(new String(reply.getData(),reply.getOffset(),reply.getLength(),StandardCharsets.UTF_8));
                     if(!"sightline-v3-lan".equals(offer.optString("service"))||!"offer".equals(offer.optString("kind"))||offer.optInt("version")!=1||!nonce.toString().equals(offer.optString("nonce"))||offer.optInt("protocol")!=2||!"dev".equals(offer.optString("transport"))||offer.optInt("port")!=8080)continue;
                     String id=offer.optString("id");if(!id.matches("(?i)[a-f0-9-]{16,64}"))continue;
-                    LanHostCandidate c=new LanHostCandidate();c.address=source;c.id=id;c.players=offer.optInt("players",0);c.maxPlayers=offer.optInt("maxPlayers",0);c.mode=offer.optString("mode","lobby");c.map=offer.optString("map","map");c.phase=offer.optString("phase","lobby");
+                    LanHostCandidate c=new LanHostCandidate();c.address=source;c.id=id;c.name=offer.optString("name","Sightline Match");c.players=offer.optInt("players",0);c.maxPlayers=offer.optInt("maxPlayers",0);c.mode=offer.optString("mode","lobby");c.map=offer.optString("map","map");c.phase=offer.optString("phase","lobby");
                     if(c.players<0||c.maxPlayers<2||c.players>c.maxPlayers||c.maxPlayers>32)continue;
                     LanHostCandidate prior=candidates.get(id);if(prior==null&&candidates.size()<32)candidates.put(id,c);
                 } catch(java.net.SocketTimeoutException ignored) { }
@@ -473,17 +473,18 @@ public final class MainActivity extends Activity {
             org.json.JSONObject status=new org.json.JSONObject(new String(out.toByteArray(),StandardCharsets.UTF_8));
             if(!status.optBoolean("ok")||!"sightline-v12-host-prototype".equals(status.optString("game"))||status.optInt("protocol")!=2||!"dev".equals(status.optString("transport"))||!acceptsHostBundle(status.optString("bundle")))return null;
             int players=status.optInt("players",-1),max=status.optInt("maxPlayers",-1);if(players<0||max<2||players>max||max>32)return null;
-            candidate.players=players;candidate.maxPlayers=max;candidate.mode=status.optString("mode",candidate.mode);candidate.map=status.optString("map",candidate.map);candidate.phase=status.optString("phase",candidate.phase);return candidate;
+            if(status.has("instanceId")&&!candidate.id.equals(status.optString("instanceId")))return null;candidate.name=status.optString("name",candidate.name);candidate.players=players;candidate.maxPlayers=max;candidate.mode=status.optString("mode",candidate.mode);candidate.map=status.optString("map",candidate.map);candidate.phase=status.optString("phase",candidate.phase);return candidate;
         } catch(Exception ignored) { return null; }
         finally { if(connection!=null)connection.disconnect(); }
     }
     private void showLanHostResults(java.util.List<LanHostCandidate> hosts,String error) {
-        String message=hosts.isEmpty()?(error.isEmpty()?"No compatible host was found. Confirm both devices are on the same Wi-Fi and that the PC host is running. Some routers block device discovery; manual IP remains available.":error):"Select a compatible Sightline V3 host to join. Full hosts are shown but cannot be selected.";
+        String message=hosts.isEmpty()?(error.isEmpty()?"No compatible host was found. Confirm both devices are on the same Wi-Fi and that the host is still running. Some routers block device discovery; manual IP remains available.":error):"Select a compatible Sightline V3 host to join. Full hosts are shown but cannot be selected.";
         String[] rows=new String[hosts.size()];for(int i=0;i<hosts.size();i++)rows[i]=hosts.get(i).label();
-        AlertDialog.Builder builder=new AlertDialog.Builder(this).setTitle("Available LAN games").setMessage(message)
-            .setPositiveButton("Scan again",(d,w)->discoverLanHosts())
+        AlertDialog.Builder builder=new AlertDialog.Builder(this).setTitle("Find LAN Match")
+            .setPositiveButton("Refresh",(d,w)->discoverLanHosts())
             .setNeutralButton("Manual IP",(d,w)->showManualHostEntry())
             .setNegativeButton("Close",null);
+        if(rows.length==0)builder.setMessage(message);
         if(rows.length>0)builder.setItems(rows,(d,which)->{
             LanHostCandidate host=hosts.get(which);if(host.full()){toast("That LAN host is full");return;}
             getPreferences(Context.MODE_PRIVATE).edit().putString("lan-ip",host.address).apply();openGame(host.address,true);
@@ -564,6 +565,7 @@ public final class MainActivity extends Activity {
         web.setHapticFeedbackEnabled(false);
         WebSettings settings=web.getSettings();
         settings.setJavaScriptEnabled(true);
+        settings.setUserAgentString(settings.getUserAgentString()+" SightlineAndroid");
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
@@ -614,6 +616,14 @@ public final class MainActivity extends Activity {
                 }
             }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
+                Uri action=request.getUrl();
+                if (request.isForMainFrame() && "sightlinelan".equals(action.getScheme())) {
+                    if (request.hasGesture() && OFFLINE_URL.equals(v.getUrl())) {
+                        if ("create".equals(action.getHost())) startPhoneHost();
+                        else if ("find".equals(action.getHost())) discoverLanHosts();
+                    } else toast("Open Multiplayer in the main lobby to create or find a match.");
+                    return true;
+                }
                 if (!allowed(request.getUrl(), true)) {
                     runOnUiThread(() -> toast("Blocked a navigation outside Sightline"));
                     return true;
@@ -655,7 +665,7 @@ public final class MainActivity extends Activity {
         if (showingGame) {
             if (web != null) web.evaluateJavascript("window.dispatchEvent(new Event('blur'));", null);
             new AlertDialog.Builder(this).setTitle("Return to launcher?")
-                .setMessage("Return to Offline / Join LAN selection? If a match is running, it will end.")
+                .setMessage("Return to game selection? This player leaves the match. A hosted match keeps running until Stop Hosting.")
                 .setPositiveButton("Return", (d,w) -> showHome())
                 .setNegativeButton("Keep playing", null).show();
         } else finish();
