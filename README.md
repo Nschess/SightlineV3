@@ -1,9 +1,9 @@
 # Sightline V3 — development source
 
 Branch status and recovery limitations are recorded in [RESUME-WORK.md](RESUME-WORK.md).
-The mobile visibility development branch reconstructs camera/ADS work from recorded
-development context. It does **not** recover the owner-approved smooth HUD51 source.
-Do not promote this branch as an accepted Android baseline.
+This integration uses the exact recovered HUD51 runtime plus the separately preserved
+mobile camera/ADS changes. HUD rendering, controls and gameplay remain based on HUD51.
+The new comparison APK has not inherited the original binary's device acceptance.
 
 Exact original packaged HUD51 runtime assets are now preserved as recovery evidence
 under [recovery/hud51-runtime](recovery/hud51-runtime/README.md), separate from active gameplay.

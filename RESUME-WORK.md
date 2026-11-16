@@ -1,32 +1,17 @@
-# Sightline V3 — HUD51 runtime recovery milestone
+# Sightline V3 — HUD51/mobile camera integration
 
-Branch: `recovery/hud51-packaged-evidence`
-Parent commit: `77b2b6645df120c76a334c8a5ac2157feae68c2d`
-Latest checkpoint: the commit containing this document (`git rev-parse HEAD`). The delivery report records the verified remote SHA.
-Canonical remote: https://github.com/Nschess/SightlineV3
+Branch: `integration/hud51-mobile-camera`
+Recovery parent: `b0cd2cfb2f127ff5a86781a6ca5ae5661d1beec7`
+Current milestone SHA: `git rev-parse HEAD`; delivery report records the verified remote commit.
 
-## Recovered original runtime source
+Active game source now uses the exact recovered HUD51 runtime plus only the preserved mobile projection changes. Approved HUD styling/text controls, movement, animations, combat/respawn/Bomb Defusal/radar fixes and all 99 shared runtime assets are retained. Default mobile FOV is 75 horizontal degrees (65–95 adjustable); relative ADS and weapon framing are corrected without changing desktop defaults or authoritative shots. Original 102 assets remain reconstructable independently from the recovery evidence.
 
-The protected owner-approved HUD51 APK was located and read without modification. Full SHA-256 matched `ACEA893BB7689A207A46834B58B3DC0E60E8F4E68E06101B566B312C80B617F2` before and after extraction.
+Surviving native project was reused, not represented as original DEX-recovered Java. Protected APK metadata corroborates SDK 26/36, landscape and hardware configuration. Diagnostic LAN network policy was corrected: initWith(debug) did not include debug network resources, and the protected APK also had cleartext disabled. Release policy, WebView allowlist, HostPolicy and explicit bundle pins remain enforced. Comparison app is separate: `com.sightline.v3.diagnostic.visibility`, versionCode 16, label `Sightline HUD51 Visibility WIP`.
 
-All 102 packaged runtime assets are recoverable from Git: 99 match the pinned parent commit exactly; the other three are preserved byte-for-byte under `recovery/hud51-runtime/assets/`. `MANIFEST.json` records every entry, length, SHA-256 and reconstruction source. These are original packaged assets, not reconstructed replacements.
+BUILD PASSED: one `:app:assembleDiagnostic` using workspace tools only; source gate passed during Gradle. APK: `AndroidProject/app/build/outputs/apk/diagnostic/app-diagnostic.apk`, 15,326,607 bytes, SHA-256 `027e7163cbdefa0893a8b2ef7c0d897498b6372e364f20f3086a461ceb4e4345`. Debug certificate SHA-256: `74516cfda39e6250bf50bedab19fbcaf0d33970db6807ad3ba7888a85f59c041`. The separate package does not replace the protected HUD51 installation or its data. APK remains local and ignored by Git.
 
-Original Offline HTML SHA-256: `1e2281f407808f57ccc2b39ff5a3509c44054bf4ff4617bd32678cb5a21cf5b9`.
-Original phone-host HTML SHA-256: `1be6c08ca8ef0460971f47c6f2986634003d22197c1b0b6e6dcd824a76a30b23`.
-The pages contain the approved `android51-restored-hud` styling and text-button renderer.
+Fourteen targeted source/CPU checks passed. All 102 packaged assets, the exact diagnostic HTML transformation, compiled identity/landscape/LAN resources, signature and alignment were verified. Build input inventory was `c10f061f8190c8c260d8c3181fe08b142df6a323e57fa9054ef7bebcdfce2e3d`; subsequent changes add documentation/verification only. See `docs/HUD51-CAMERA-INTEGRATION.md` and its verification JSON for original-versus-reconstructed components and exact evidence.
 
-Focused verification: `node tests/hud51-packaged-recovery.test.cjs` — 3 tests verify all asset hashes, original HUD markers and unchanged active game assets. No device, renderer or APK build was attempted. The protected binary's owner acceptance does not transfer to a newly integrated build.
+The owner-approved APK is unchanged: SHA-256 `ACEA893BB7689A207A46834B58B3DC0E60E8F4E68E06101B566B312C80B617F2`. Original editable native workspace/signing identity is not claimed recovered. A new workspace debug key is used only for the separately identified comparison app.
 
-## Preserved development and remaining gap
-
-Active gameplay still contains the camera/ADS development work from `dev/mobile-visibility-context-recovery` at the parent commit. Its source-level checks remain recorded there; original HUD evidence has NOT yet been integrated into active gameplay. Both lineages are preserved, and main remains unchanged. No Adventure Mode access or changes.
-
-The original packaged Web game/HUD source gap is closed. The complete deleted editable workspace is not recovered: native Java source, original Gradle settings, signing keys and build-time metadata cannot be claimed from compiled APK contents. Historical whole-project fingerprint `80a6cd49fe1ba36a54edbccfac5600ae450b8a32383a8770475a444c4209b139` remains a recorded reference, not a recovered project identity.
-
-Next step: create a controlled integration branch, use the exact recovered HUD source with the preserved camera work, verify native startup/host pin/build configuration independently, and validate the resulting Android baseline before any main merge. Do not blindly replace gameplay or equate a source reconstruction with the accepted APK. Production release remains blocked by current-candidate runtime/device acceptance.
-
-## Git and storage
-
-Source milestones belong in Git commits, pushed development branches and verified remote refs. Keep source byte integrity portable through `.gitattributes`. Keep generated APKs, caches, toolchains, signing credentials and redundant archives out of ordinary Git history. Use reviewed PRs for substantial integrations; keep main stable.
-
-The owner-approved redundant inspection clone was verified to contain no unique files, ignored files, unreachable objects or commits missing from the active repository, then deleted alone: 54,490,383 file bytes removed. No other folder, APK, backup or Adventure Mode workspace was deleted. Recovery evidence reuses 99 existing assets instead of creating another full-project copy or ZIP.
+Next: validate this exact comparison APK's actual Android startup, HUD, multitouch, Deploy, camera/ADS, frame pacing during walking, and matching PC-host LAN play. Those remain UNVERIFIED; production release and main merge remain blocked. No personal device/UI or Adventure Mode was accessed, no release published and no duplicate project ZIP created. Continue Git-first milestones and verify remote SHAs. Keep protected artifacts and independent recovery evidence intact.

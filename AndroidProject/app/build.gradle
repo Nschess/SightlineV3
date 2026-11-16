@@ -122,7 +122,7 @@ android {
         debug { debuggable true } // Debug certificate is NOT the release certificate.
         diagnostic {
             initWith debug
-            applicationIdSuffix '.diagnostic'
+            applicationIdSuffix '.diagnostic.visibility'
             matchingFallbacks = ['debug']
         }
         release {
@@ -132,7 +132,11 @@ android {
             if (releaseSigningProvided) signingConfig signingConfigs.sightlineRelease
         }
     }
-    sourceSets { diagnostic { assets.srcDir(layout.buildDirectory.dir('generated/diagnosticAssets')) } }
+    sourceSets { diagnostic {
+        assets.srcDir(layout.buildDirectory.dir('generated/diagnosticAssets'))
+        // initWith(debug) does not inherit debug source-set resources.
+        res.srcDir('src/debug/res')
+    } }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -192,7 +196,8 @@ gradle.taskGraph.whenReady { graph ->
     if (!debugPackageTasks.isEmpty()) {
         def gate = new File(rootProject.projectDir.parentFile, 'tools/package-candidate.ps1')
         if (!gate.isFile()) throw new GradleException('Candidate source-integrity gate is missing; private Android debug build is blocked.')
-        def process = new ProcessBuilder('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', gate.absolutePath, '-VerifyOnly')
+        def gateShell = providers.gradleProperty('sightlinePowerShell').orElse('powershell.exe').get()
+        def process = new ProcessBuilder(gateShell, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', gate.absolutePath, '-VerifyOnly')
             .directory(rootProject.projectDir.parentFile).redirectErrorStream(true).start()
         def gateOutput = process.inputStream.getText('UTF-8')
         def gateExit = process.waitFor()

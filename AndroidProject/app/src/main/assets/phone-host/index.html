@@ -732,55 +732,11 @@ html.touch-device .card.store { max-height:100%; }
 html.touch-device .st-actions { position:sticky;bottom:0;background:#10222cf0;padding:8px 0;z-index:1; }
 html.touch-device .st-actions .btn { white-space:nowrap; }
 html.touch-device .st-actions kbd { display:none; }
-html.touch-device #touch { --touch-scale:1; touch-action:none; user-select:none; -webkit-user-select:none; }
-html.touch-device #tz-move { left:0; width:42%;top:28%;bottom:0; touch-action:none; }
-html.touch-device #tz-look { right:0;width:58%;top:0;bottom:0;touch-action:none; }
-html.touch-device #touch-joystick { position:absolute;left:34%;top:70%;width:104px;height:104px;transform:translate(-50%,-50%);pointer-events:none;border:2px solid rgba(184,237,224,.66);border-radius:50%;background:radial-gradient(circle,rgba(71,133,124,.14),rgba(15,32,40,.48));box-shadow:0 0 0 7px #0c263124;opacity:.65; }
-html.touch-device #touch-joystick i { position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px;border-radius:50%;border:2px solid #c1f6e8;background:rgba(102,201,185,.58);box-shadow:0 4px 18px #0711168c; }
-html.touch-device #touch-joystick span {position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);}
-html.touch-device #touch-joystick.active { opacity:1; }
-html.touch-device .tb { --ts:clamp(48px,13dvh,62px); width:max(48px,calc(var(--ts) * var(--touch-scale)));height:max(48px,calc(var(--ts) * var(--touch-scale)));padding:0 3px;appearance:none;box-sizing:border-box;border:1px solid rgba(241,234,210,.7);border-radius:50%;background-color:rgba(12,32,41,calc(var(--touch-opacity,.9) * .8));color:var(--hud-fg);font:700 clamp(10px,2.5dvh,13px)/1.15 var(--f-label);letter-spacing:.04em;text-shadow:0 1px 2px #07121b;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none;transition:background-color .1s; }
-html.touch-device .tb.pressed,html.touch-device .tb.selected { background-color:rgba(29,89,99,calc(var(--touch-opacity,.9) * .85)); }
-html.touch-device .tb:disabled { opacity:.45; }
-html.touch-device #tb-fire { width:calc(clamp(66px,18dvh,86px)*var(--touch-scale));height:calc(clamp(66px,18dvh,86px)*var(--touch-scale));right:3%;bottom:30%;background-color:rgba(217,121,31,calc(var(--touch-opacity,.9) * .93));font-size:clamp(14px,3.3dvh,18px); }
-html.touch-device #tb-fire.pressed { background-color:rgba(236,154,71,calc(var(--touch-opacity,.9) * 1)); }
-html.touch-device #tb-fire-alt { left:2%;top:32%;width:calc(clamp(48px,13dvh,62px)*var(--touch-scale));height:calc(clamp(48px,13dvh,62px)*var(--touch-scale));background-color:rgba(29,89,99,calc(var(--touch-opacity,.9) * .85));font-size:clamp(9px,2.2dvh,12px); }
-html.touch-device #tb-fire-alt.pressed { background-color:rgba(57,148,143,calc(var(--touch-opacity,.9) * 1)); }
 @media (prefers-reduced-motion:reduce) { html.touch-device .tb {transition:none!important;transform:none!important;} }
-html.touch-device #tb-aim { right:17%;bottom:54%; }
-html.touch-device #tb-jump { right:2%;bottom:7%; }
-html.touch-device #tb-rel { right:14%;bottom:5%; }
-html.touch-device #tb-swap { right:28%;bottom:7%;width:max(48px,calc(var(--ts) * var(--touch-scale)));height:max(48px,calc(var(--ts) * var(--touch-scale))); }
-html.touch-device #tb-slide { right:30%;bottom:32%; }
-html.touch-device #tb-more { right:2%;bottom:59%;width:max(48px,calc(clamp(48px,11dvh,54px)*var(--touch-scale)));height:max(48px,calc(clamp(48px,11dvh,54px)*var(--touch-scale))); }
-html.touch-device #tb-menu { right:2%;top:3%;width:clamp(48px,13dvh,58px);height:clamp(48px,13dvh,58px);border-radius:11px;background:rgba(11,25,32,.85);font-size:22px;z-index:4; }
-html.touch-device #tb-menu small {font:700 9px var(--f-label);letter-spacing:.06em;}
-html.touch-device #tb-prone { right:29%;bottom:62%; }
-html.touch-device #tb-buy { right:39%;bottom:68%; }
-html.touch-device #tb-nade { right:39%;bottom:46%; }
-html.touch-device #tb-nsel { right:49%;bottom:60%; }
-html.touch-device #tb-inspect { right:49%;bottom:46%; }
-html.touch-device .tb-utility { display:none; }
-html.touch-device #touch.tray-open .tb-utility,html.touch-device #touch.advanced .tb-utility { display:grid; }
-html.touch-device #touch.advanced #tb-more { display:none; }
-html.touch-device #hud { --rb:92px; }
-html.touch-device #radar {left:8px;top:8px;opacity:.84;}
-html.touch-device #money {left:11px;top:calc(var(--rb,92px)*var(--rs,1)*var(--hs,1) + 12px);font-size:1rem;}
-html.touch-device #topbar {top:4px;font-size:clamp(10px,2.7dvh,13px);border-radius:6px;white-space:nowrap;}
-html.touch-device #topbar span,html.touch-device #topbar b {padding:3px 6px;}
 html.touch-device #timer {font-size:1.05rem;line-height:1.8;}
-html.touch-device #alive {top:43px;font-size:clamp(10px,2dvh,12px);letter-spacing:0;max-width:54%;text-align:center;line-height:1.2;}
 html.touch-device #objective-status {top:61px;max-width:62vw;font-size:clamp(9px,1.8dvh,11px);padding:2px 6px;}
-html.touch-device #feed {top:58px;right:3px;font-size:11px;max-width:30%;}
-html.touch-device #vitals {left:44%;bottom:2%;transform:translateX(-50%);gap:3px;}
 html.touch-device .v,html.touch-device .vv {min-width:0;padding:3px 6px;border-radius:6px;}
-html.touch-device .v b,html.touch-device .vv b,html.touch-device #ammo b {font-size:clamp(16px,4dvh,23px);}
-html.touch-device .v .l,html.touch-device .vv .l,html.touch-device #ammo .l {font-size:10px;letter-spacing:.04em;}
-html.touch-device #ammo {bottom:auto;top:8%;right:11%;padding:4px 8px;border-radius:7px;}
-html.touch-device #ammo .r {font-size:12px;}
-html.touch-device #nade {right:11%;bottom:auto;top:28%;font-size:10px;max-width:32%;}
 html.touch-device #supply {bottom:43%;font-size:13px;padding:10px;max-width:50%;}
-html.touch-device #stance {bottom:13%;left:48%;font-size:12px;}
 html.touch-device #msg {top:24%;}
 html.touch-device #msg b {font-size:clamp(18px,4.5dvh,27px);}
 html.touch-device #msg span {font-size:clamp(10px,2.5dvh,14px);}
@@ -799,52 +755,16 @@ html.touch-device.touch-session .keys {display:none;}
 html.touch-device.touch-session .tool {font-size:12px;padding:5px 8px;}
 @media (max-width:700px) and (orientation:portrait) {
  html.touch-device #stage {aspect-ratio:auto;height:min(79dvh,690px);}
- html.touch-device #tb-fire {right:3%;bottom:23%;}
- html.touch-device #tb-aim {right:21%;bottom:37%;}
- html.touch-device #tb-slide {right:43%;bottom:29%;}
- html.touch-device #tb-more {right:3%;bottom:47%;}
- html.touch-device #tb-swap {right:40%;bottom:15%;}
- html.touch-device #tb-rel {right:20%;bottom:5%;}
- html.touch-device #tb-prone {right:37%;bottom:53%;}
- html.touch-device #tb-buy {right:55%;bottom:55%;}
- html.touch-device #tb-nade {right:55%;bottom:42%;}
- html.touch-device #tb-nsel {right:65%;bottom:49%;}
- html.touch-device #hud {--rb:80px;}
- html.touch-device #radar {left:8px;top:72px;opacity:.8;}
- html.touch-device #topbar {top:2px;max-width:calc(100% - 8px);font-size:clamp(10px,2.15dvh,12px);}
- html.touch-device #topbar span,html.touch-device #topbar b {padding-left:3px;padding-right:3px;}
- html.touch-device #alive {top:42px;max-width:96%;font-size:10px;white-space:nowrap;}
- html.touch-device #money {left:11px;top:169px;}
- html.touch-device #vitals {top:203px;bottom:auto;left:8px;transform:none;}
- html.touch-device #ammo {right:4%;top:125px;}
- html.touch-device #tb-menu {top:65px;right:3%;}
  html.touch-device #msg {top:28%;width:87%;}
  html.touch-device.touch-session #stage {height:100dvh;}
 }
 @supports (right: env(safe-area-inset-right)) {
- html.touch-device #tb-menu {right:calc(2% + env(safe-area-inset-right));top:calc(3% + env(safe-area-inset-top));}
- html.touch-device #tb-fire {right:calc(3% + env(safe-area-inset-right));}
- html.touch-device #tb-jump {right:calc(2% + env(safe-area-inset-right));}
- html.touch-device #tb-more {right:calc(2% + env(safe-area-inset-right));}
- html.touch-device #tb-rel {right:calc(14% + env(safe-area-inset-right));}
- html.touch-device #tb-aim {right:calc(17% + env(safe-area-inset-right));}
- html.touch-device #tb-swap {right:calc(28% + env(safe-area-inset-right));}
- html.touch-device #tb-slide {right:calc(30% + env(safe-area-inset-right));}
  @media (max-width:700px) and (orientation:portrait) {
-  html.touch-device #tb-aim {right:calc(21% + env(safe-area-inset-right));}
-  html.touch-device #tb-slide {right:calc(43% + env(safe-area-inset-right));}
-  html.touch-device #tb-swap {right:calc(40% + env(safe-area-inset-right));}
-  html.touch-device #tb-rel {right:calc(20% + env(safe-area-inset-right));}
  }
 }
 @media (max-width:700px) and (orientation:portrait) {
- html.touch-device #tb-menu {top:calc(65px + env(safe-area-inset-top));right:calc(3% + env(safe-area-inset-right));}
 }
 @media (max-height:440px) and (orientation:landscape) {
- html.touch-device #touch-joystick {width:86px;height:86px;}
- html.touch-device #touch-joystick i {width:38px;height:38px;margin:-19px;}
- html.touch-device #feed {display:none;}
- html.touch-device #radar {opacity:.66;}
 }
 
 
@@ -916,41 +836,13 @@ html.p11-game.touch-device.touch-session #stage .finish-quickpick,html.p11-game.
 }
 /* P19: keep touch targets and HUD edges inside notched-phone safe areas. */
 @supports (left:env(safe-area-inset-left)) {
- html.p11-game.touch-device #tb-fire-alt{left:calc(2% + env(safe-area-inset-left,0px))!important;}
- html.p11-game.touch-device #tb-fire{right:calc(3% + env(safe-area-inset-right,0px))!important;bottom:calc(30% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-jump{right:calc(2% + env(safe-area-inset-right,0px))!important;bottom:calc(7% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-rel{right:calc(14% + env(safe-area-inset-right,0px))!important;bottom:calc(5% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-swap{right:calc(28% + env(safe-area-inset-right,0px))!important;bottom:calc(7% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-slide{right:calc(30% + env(safe-area-inset-right,0px))!important;bottom:calc(32% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-aim{right:calc(17% + env(safe-area-inset-right,0px))!important;bottom:calc(54% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-more{right:calc(2% + env(safe-area-inset-right,0px))!important;bottom:calc(59% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-prone{right:calc(29% + env(safe-area-inset-right,0px))!important;bottom:calc(62% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-buy{right:calc(39% + env(safe-area-inset-right,0px))!important;bottom:calc(68% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-nade{right:calc(39% + env(safe-area-inset-right,0px))!important;bottom:calc(46% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-nsel{right:calc(49% + env(safe-area-inset-right,0px))!important;bottom:calc(60% + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #tb-inspect{right:calc(49% + env(safe-area-inset-right,0px))!important;bottom:calc(46% + env(safe-area-inset-bottom,0px))!important;}
  html.p11-game.touch-device #tb-objective{right:calc(2% + env(safe-area-inset-right,0px))!important;bottom:calc(43% + env(safe-area-inset-bottom,0px))!important;}
  html.p11-game.touch-device #tb-dropbomb{right:calc(14% + env(safe-area-inset-right,0px))!important;bottom:calc(43% + env(safe-area-inset-bottom,0px))!important;}
 }
 @supports (padding-top:env(safe-area-inset-top)) {
  @media(max-width:700px) and (orientation:portrait){
-  html.p11-game.touch-device #radar{left:calc(8px + env(safe-area-inset-left,0px))!important;top:calc(48px + env(safe-area-inset-top,0px))!important;}
-  html.p11-game.touch-device #topbar{top:calc(6px + env(safe-area-inset-top,0px))!important;}
-  html.p11-game.touch-device #vitals{left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #ammo{right:calc(8px + env(safe-area-inset-right,0px))!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;top:auto!important;}
-  html.p11-game.touch-device #tb-menu{top:calc(65px + env(safe-area-inset-top,0px))!important;right:calc(3% + env(safe-area-inset-right,0px))!important;}
-  html.p11-game.touch-device #tb-fire{bottom:calc(23% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-aim{right:calc(21% + env(safe-area-inset-right,0px))!important;bottom:calc(37% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-slide{right:calc(43% + env(safe-area-inset-right,0px))!important;bottom:calc(29% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-more{bottom:calc(47% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-swap{right:calc(40% + env(safe-area-inset-right,0px))!important;bottom:calc(15% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-rel{right:calc(25% + env(safe-area-inset-right,0px))!important;bottom:calc(5% + env(safe-area-inset-bottom,0px))!important;}
   html.p11-game.touch-device #tb-objective{right:calc(4% + env(safe-area-inset-right,0px))!important;bottom:calc(34% + env(safe-area-inset-bottom,0px))!important;}
   html.p11-game.touch-device #tb-dropbomb{right:calc(18% + env(safe-area-inset-right,0px))!important;bottom:calc(34% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-prone{right:calc(37% + env(safe-area-inset-right,0px))!important;bottom:calc(53% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-buy{right:calc(55% + env(safe-area-inset-right,0px))!important;bottom:calc(55% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-nade{right:calc(55% + env(safe-area-inset-right,0px))!important;bottom:calc(42% + env(safe-area-inset-bottom,0px))!important;}
-  html.p11-game.touch-device #tb-nsel{right:calc(65% + env(safe-area-inset-right,0px))!important;bottom:calc(49% + env(safe-area-inset-bottom,0px))!important;}
  }
 }
 </style>
@@ -2217,6 +2109,7 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
       <div id="touch" hidden aria-label="Touch game controls">
         <div id="tz-move" aria-label="Drag to move"><div id="touch-joystick" aria-hidden="true"><i></i><span></span></div></div>
         <div id="tz-look" aria-label="Drag to look around"></div>
+        <div id="touch-guide" role="status" aria-live="polite" hidden><span id="touch-guide-text"></span><button type="button" id="touch-guide-skip" aria-label="Dismiss control guide">SKIP</button></div>
         <button class="tb tb-menu" id="tb-menu" type="button" aria-label="Pause or open menu">Ⅱ <small>MENU</small></button>
         <button class="tb tb-main" id="tb-fire" type="button" aria-label="Fire weapon">FIRE</button>
         <button class="tb tb-main" id="tb-fire-alt" type="button" aria-label="Fire weapon using left-side trigger">FIRE 2</button>
@@ -3947,7 +3840,7 @@ var MOBILE_HUD_BUTTON_IDS=['tb-fire','tb-fire-alt','tb-jump','tb-rel','tb-swap',
 function loadMobileHud(){try{var raw=localStorage.getItem(MOBILE_HUD_KEY),p=JSON.parse(raw||'{}')||{},positions={},src=p.positions&&typeof p.positions==='object'?p.positions:{};MOBILE_HUD_BUTTON_IDS.forEach(function(id){var v=src[id];if(v&&Number.isFinite(+v.x)&&Number.isFinite(+v.y))positions[id]={x:Math.max(.06,Math.min(.94,+v.x)),y:Math.max(.08,Math.min(.92,+v.y))};});var result={style:'text',opacity:Number.isFinite(+p.opacity)?Math.max(50,Math.min(100,+p.opacity)):MOBILE_HUD_DEFAULT.opacity,fire2:p.fire2===true,hand:p.hand==='left'?'left':'right',editing:false,positions:positions};if(raw!==null&&(p.style!=='text'||p.hand!==result.hand||p.fire2!==result.fire2))localStorage.setItem(MOBILE_HUD_KEY,JSON.stringify(result));return result;}catch(e){return{style:'text',opacity:MOBILE_HUD_DEFAULT.opacity,fire2:false,hand:'right',editing:false,positions:{}};}}
 var mobileHud=loadMobileHud();
 var TOUCH_HUD_ICONS={fire:'<path d="M12 3c1.3 3.1 4.2 4.3 4.2 8.2A4.2 4.2 0 0 1 8 12c0-1.5.6-2.7 1.8-4.2.1 1.7.8 2.4 1.6 2.8C12.9 8.2 13 5.8 12 3Z"/><path d="M9.2 14.1a2.9 2.9 0 0 0 5.7 0"/>',aim:'<circle cx="12" cy="12" r="6.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M10 12h4"/>',reload:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2"/>',jump:'<path d="m5 14 7-7 7 7M12 7v13"/>',slide:'<path d="M4 17h16M6 13l4-4 3 3 5-5M16 7h2v2"/>',swap:'<path d="M4 8h15l-3-3M20 16H5l3 3"/>',more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',prone:'<path d="M4 16h16M6 13l4-3 3 2 5-2M8 10l-2-3"/>',buy:'<path d="M4 6h16l-1.5 14h-13L4 6Z"/><path d="M8 6a4 4 0 0 1 8 0M8 11h8"/>'};
-function renderTouchActionButton(id,label,aria,iconKey){var el=document.getElementById(id);if(!el)return;var key=iconKey||({FIRE:'fire','FIRE 2':'fire',AIM:'aim',RELOAD:'reload',JUMP:'jump',SLIDE:'slide',SWAP:'swap',MORE:'more',CLOSE:'more',PRONE:'prone',BUY:'buy'})[label]||'more';el.dataset.hudStyle='icon-label';el.setAttribute('aria-label',aria||label);el.innerHTML='<span class="tb-icon" aria-hidden="true"><svg viewBox="0 0 24 24">'+(TOUCH_HUD_ICONS[key]||TOUCH_HUD_ICONS.more)+'</svg></span><span class="tb-label">'+label+'</span>';}
+function renderTouchActionButton(id,label,aria,iconKey){var el=document.getElementById(id);if(!el)return;el.dataset.hudStyle='text';el.setAttribute('aria-label',aria||label);el.textContent=label;}
 function clampMobileHudPoint(el,pad,x,y){var r=pad.getBoundingClientRect(),b=el.getBoundingClientRect(),cs=window.getComputedStyle?window.getComputedStyle(pad):null;function inset(k){var n=cs?parseFloat(cs.getPropertyValue('--hud-safe-'+k)):0;return Number.isFinite(n)?n:0;}var w=Math.max(48,b.width||88),h=Math.max(48,b.height||88),rw=Math.max(1,r.width),rh=Math.max(1,r.height),m=4,minX=(inset('left')+w/2+m)/rw,maxX=1-(inset('right')+w/2+m)/rw,minY=(inset('top')+h/2+m)/rh,maxY=1-(inset('bottom')+h/2+m)/rh;if(minX>maxX)minX=maxX=.5;if(minY>maxY)minY=maxY=.5;return{x:Math.max(minX,Math.min(maxX,x)),y:Math.max(minY,Math.min(maxY,y))};}
 function applyHudPosition(el,id){var p=mobileHud.positions&&mobileHud.positions[id];if(p){el.dataset.hudCustom='true';var pad=document.getElementById('touch'),q=pad?clampMobileHudPoint(el,pad,p.x,p.y):p;el.style.setProperty('--hud-x',(q.x*100)+'%');el.style.setProperty('--hud-y',(q.y*100)+'%');}else{delete el.dataset.hudCustom;el.style.removeProperty('--hud-x');el.style.removeProperty('--hud-y');}}
 function applyMobileHud(){var pad=document.getElementById('touch');if(!pad)return;pad.style.setProperty('--touch-opacity',String(mobileHud.opacity/100));pad.classList.toggle('hand-left',mobileHud.hand==='left');pad.classList.toggle('hud-editing',!!mobileHud.editing);pad.classList.remove('hud-icon-mode','hud-hybrid-mode');var b=document.getElementById('tb-fire-alt');if(b)b.hidden=!mobileHud.fire2;[['tb-fire','FIRE','Fire weapon','fire'],['tb-fire-alt','FIRE 2','Fire with the left-side trigger','fire'],['tb-aim','AIM','Aim down sights','aim'],['tb-rel','RELOAD','Reload weapon','reload'],['tb-jump','JUMP','Jump','jump'],['tb-slide','SLIDE','Slide','slide'],['tb-swap','SWAP','Switch weapon','swap'],['tb-more',touchTrayOpen?'CLOSE':'MORE',touchTrayOpen?'Close extra actions':'More actions','more']].forEach(function(a){renderTouchActionButton(a[0],a[1],a[2],a[3]);});MOBILE_HUD_BUTTON_IDS.forEach(function(id){var el=document.getElementById(id);if(el&&id!=='tb-fire'&&id!=='tb-fire-alt'&&id!=='tb-jump'&&id!=='tb-rel'&&id!=='tb-swap'&&id!=='tb-aim'&&id!=='tb-slide'&&id!=='tb-more')applyHudPosition(el,id);else if(el)applyHudPosition(el,id);});}
@@ -9273,6 +9166,7 @@ function scheduleSoloInfectedPlayerRespawn(from) {
 }
 function respawnSoloInfectedPlayer() {
   if (!soloInfectionPlayer() || P.alive || SOLO_INF.playerRespawnT > 0) return false;
+  if (touchMode) { resetTouchMotion(); jumpQ = false; }
   var spawn = zSpot() || MAPD.spawn || {x:P.x,y:P.y,z:P.z};
   P.x=spawn.x; P.z=spawn.z; P.y=Number.isFinite(spawn.y)?spawn.y:groundAt(P.x,P.z,0);
   P.vx=P.vy=P.vz=0; P.onGround=true; P.alive=true; P.punch=0; P.crouch=0; P.prone=0; P.tagUntil=0;
@@ -10312,10 +10206,14 @@ var el = {
   timer: $('#timer'), scy: $('#sc-you'), scb: $('#sc-bot'), scbl: $('#sc-bot-label'), alive: $('#alive'), objective: $('#objective-status'), feed: $('#feed'), xh: $('#xh'), hitm: $('#hitm'), flash: $('#dmgflash'),
   ring: $('#dmgring'), msg: $('#msg'), scope: $('#scope'), ret: $('#reticle'), stance: $('#stance'), rel: $('#relbar'), relf: $('#relbar i'), radar: $('#radar')
 };
-var rctx = el.radar.getContext('2d'), hitTimer = null, msgTimer = null, flashTimer = null;
+var rctx = el.radar.getContext('2d'), hitTimer = null, msgTimer = null, flashTimer = null, damageDirTimer = null;
 function setT(n, v) { if (n._v !== v) { n._v = v; n.textContent = v; } }
 function setCls(n, cls, on) { var k = '_c' + cls; if (n[k] !== on) { n[k] = on; n.classList.toggle(cls, on); } }
 function scoreOtherLabel() { return MP.on ? (MP.mode === 'ffa' ? 'TOP' : 'ENEMY') : 'BOTS'; }
+function showDamageDirection(a) {
+  el.ring.style.transform = 'rotate(' + a + 'rad)'; el.ring.classList.add('on');
+  clearTimeout(damageDirTimer); damageDirTimer = setTimeout(function () { el.ring.classList.remove('on'); damageDirTimer = null; }, 80);
+}
 function updateHud() {
   var a = ammo[cur], i;
   setT(el.hp, Math.max(0, Math.ceil(P.hp))); setT(el.ar, Math.ceil(P.armor));
@@ -10359,7 +10257,8 @@ function updateHud() {
 }
 function showHit(kill) {
   if (!G.hitMarker) return;
-  el.hitm.className = 'on' + (kill ? ' kill' : '');
+  var showKill = kill || (touchMode && el.hitm.classList.contains('kill'));
+  el.hitm.className = 'on' + (showKill ? ' kill' : '');
   clearTimeout(hitTimer); hitTimer = setTimeout(function () { el.hitm.className = ''; }, 110);
 }
 function showMsg(t, s, ms) {
@@ -10373,6 +10272,21 @@ function addFeed(text, dead) {
   el.feed.appendChild(d); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 4200);
   while (el.feed.children.length > 4) el.feed.removeChild(el.feed.firstChild);
 }
+// OBST is replaced on map changes. Cache a conservative ordered set per
+// eight-unit cell; drawRadar still applies its original exact visibility test.
+var radarNearbyCache = { source: null, x: 0, z: 0, items: [] };
+function radarNearbyObstacles(px, pz) {
+  var cellX = Math.floor(px / 8), cellZ = Math.floor(pz / 8), cache = radarNearbyCache;
+  if (cache.source === OBST && cache.x === cellX && cache.z === cellZ) return cache.items;
+  var centerX = cellX * 8 + 4, centerZ = cellZ * 8 + 4, items = [];
+  for (var i = 0; i < OBST.length; i++) {
+    var o = OBST[i];
+    if (Math.abs(o.x - centerX) > 40.000001 + o.w / 2 || Math.abs(o.z - centerZ) > 40.000001 + o.d / 2) continue;
+    items.push(o);
+  }
+  cache.source = OBST; cache.x = cellX; cache.z = cellZ; cache.items = items;
+  return items;
+}
 function drawRadar() {
   var W = el.radar.width, c = W / 2, s = 3.6, px = P.x, pz = P.z, py = P.yaw, i;
   if (!P.alive && specCur) { px = specCur.x; pz = specCur.z; py = specCur.yaw; }
@@ -10381,7 +10295,8 @@ function drawRadar() {
   var cy = Math.cos(py), sy = Math.sin(py);
   rctx.setTransform(s * cy, s * sy, -s * sy, s * cy, c - s * (px * cy - pz * sy), c - s * (px * sy + pz * cy));
   rctx.fillStyle = 'rgba(241,234,210,0.75)';
-  for (i = 0; i < OBST.length; i++) { var o = OBST[i]; if (o.x - px > 36 + o.w / 2 || px - o.x > 36 + o.w / 2 || o.z - pz > 36 + o.d / 2 || pz - o.z > 36 + o.d / 2) continue; rctx.fillRect(o.x - o.w / 2, o.z - o.d / 2, o.w, o.d); }
+  var nearby = radarNearbyObstacles(px, pz);
+  for (i = 0; i < nearby.length; i++) { var o = nearby[i]; if (o.x - px > 36 + o.w / 2 || px - o.x > 36 + o.w / 2 || o.z - pz > 36 + o.d / 2 || pz - o.z > 36 + o.d / 2) continue; rctx.fillRect(o.x - o.w / 2, o.z - o.d / 2, o.w, o.d); }
   rctx.fillStyle = TEAMS[ME.team].color;
   for (i = 0; i < mates.length; i++) { var m = mates[i]; if (m.alive) { rctx.beginPath(); rctx.arc(m.x, m.z, 1.3, 0, 6.3); rctx.fill(); } }
   rctx.fillStyle = markerColor();
@@ -10414,6 +10329,7 @@ function startReload() {
   legendCancelInspect();
   if (cur === 'longbow') cancelLongbowCycle();
   reloading = w.reload; scoped = false; reloadStage=0; shellStage=-1; pumpSnd=false;
+  if (touchMode) updateTouchActions();
   if (MP.on) mpSend({ t: 'rl', w: cur, ep: MP.ep });
   sfxTone(400, 300, 0.06, 0.2, 'square');
 }
@@ -10515,11 +10431,11 @@ function hurtPlayer(dmg, from) {
   if (from && G.dmgDir) {
     var dx = from.x - P.x, dz = from.z - P.z, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
     var a = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz);
-    el.ring.style.transform = 'rotate(' + a + 'rad)'; el.ring.classList.add('on'); setTimeout(function () { el.ring.classList.remove('on'); }, 80);
+    showDamageDirection(a);
   }
   sfxTone(220, 110, 0.12, 0.4, 'sawtooth');
   if (P.hp <= 0) {
-    P.hp = 0; P.alive = false; M.stats.deaths++; fireHeld = false; scoped = false;
+    P.hp = 0; P.alive = false; if (touchMode) { resetTouchMotion(); jumpQ = false; } M.stats.deaths++; fireHeld = false; scoped = false;
     Object.keys(guns).forEach(function (n) { guns[n].visible = false; }); el.scope.hidden = true;
     addFeed((from && from.op ? from.op.name : 'Enemy') + '  ▸  You', true);
     if (from && from.op) ost(from.op.id).k++;
@@ -11063,7 +10979,7 @@ function pause() {
   if (state !== 'live') return;
   if(cur==='longbow')cancelLongbowCycle();
   if (MP.on) { mpPause(); return; }
-  resetTouchMotion();
+  resetTouchMotion(); if (touchMode) mobileGuide.hide();
   state = 'paused'; fireHeld = false; scoped = false; el.scope.hidden = true;
   $('#ov-title').textContent = 'Paused';
   $('#ov-text').textContent = 'Round ' + M.round + ' is on hold. Resume when you are ready.';
@@ -11398,11 +11314,26 @@ stage.addEventListener('wheel', function (e) {
 }, { passive: false });
 
 /* Touch controls: separate fingers for moving, looking and actions. No pointer-lock needed. */
+/* Optional coaching tracks actual inputs without blocking gameplay. */
+var mobileGuide = (function () {
+  var key='sl-mobile-guide-v1', done=false, started=false, timer=0, lookDistance=0, bound=false, completed={move:false,look:false,fire:false};
+  function element(){return document.getElementById('touch-guide');}
+  function cancelTimer(){if(timer){clearTimeout(timer);timer=0;}}
+  function hide(){cancelTimer();var el=element();if(el)el.hidden=true;}
+  function finish(){done=true;hide();try{localStorage.setItem(key,'1');}catch(e){}}
+  function step(){return !completed.move?'move':!completed.look?'look':!completed.fire?'fire':'goal';}
+  function render(){var el=element(),label=document.getElementById('touch-guide-text');if(!el||!label||done)return;var leftHand=mobileHud.hand==='left',mode=MP.on?MP.mode:R.mode,goal=mode==='bomb'?'Plant or defuse':mode==='outbreak'?'Survive the waves':mode==='infection'?'Survive or infect':mode==='ffa'?'Eliminate opponents':'Support your team',messages={move:'MOVE · Drag '+(leftHand?'right':'left'),look:'LOOK · Drag '+(leftHand?'left':'right'),fire:'FIRE · Tap FIRE',goal:'RELOAD · Tap RELOAD  |  OBJECTIVE · '+goal};label.textContent=messages[step()];el.hidden=false;}
+  function schedule(){cancelTimer();timer=setTimeout(finish,step()==='goal'?7000:45000);}
+  function start(){if(done)return;if(!started){try{if(localStorage.getItem(key)==='1'){done=true;return;}}catch(e){}started=true;}var skip=document.getElementById('touch-guide-skip');if(skip&&!bound){skip.addEventListener('click',function(e){e.stopPropagation();finish();});bound=true;}render();schedule();}
+  function action(kind,distance){if(done||!started||!Object.prototype.hasOwnProperty.call(completed,kind))return;if(kind==='look'){lookDistance+=distance||0;if(lookDistance<12)return;}if(completed[kind])return;completed[kind]=true;render();if(step()==='goal')schedule();}
+  function replay(){hide();done=false;started=false;lookDistance=0;completed={move:false,look:false,fire:false};try{localStorage.removeItem(key);}catch(e){}}
+  return {start:start,action:action,hide:hide,replay:replay};
+})();
 function touchById(list, id) { for (var i = 0; i < list.length; i++) if (list[i].identifier === id) return list[i]; return null; }
 var tzm = $('#tz-move'), tzl = $('#tz-look'), joy = $('#touch-joystick'), joyKnob = joy.querySelector('i');
 function resetTouchMotion() {
   stick.id = null; stick.x = stick.y = 0; lookTouch.id = null;
-  joy.classList.remove('active'); joyKnob.style.transform = 'translate(0px,0px)';
+  joy.classList.remove('active'); joyKnob.style.transform = 'translate(0px,0px)'; joyKnob._stickX = joyKnob._stickY = null;
   for (var i = 0; i < touchButtonResets.length; i++) touchButtonResets[i]();
   fireHeld = false; touchFireOwners.clear();
 }
@@ -11413,19 +11344,26 @@ function setStick(t) {
     var clamp = Math.min(1, dist / radius);
     stick.x = (dx / dist) * clamp; stick.y = (dy / dist) * clamp;
   }
-  joyKnob.style.transform = 'translate(' + Math.round(stick.x * radius) + 'px,' + Math.round(stick.y * radius) + 'px)';
+  if (Math.hypot(stick.x, stick.y) > 0.25) mobileGuide.action('move');
+  var knobX = Math.round(stick.x * radius), knobY = Math.round(stick.y * radius);
+  if (joyKnob._stickX !== knobX || joyKnob._stickY !== knobY) {
+    joyKnob.style.transform = 'translate(' + knobX + 'px,' + knobY + 'px)';
+    joyKnob._stickX = knobX; joyKnob._stickY = knobY;
+  }
 }
 tzm.addEventListener('touchstart', function (e) {
   if (stick.id !== null || state !== 'live' || (MP.on && MP.menu)) return;
   var t = e.changedTouches[0]; stick.id = t.identifier; stick.ox = t.clientX; stick.oy = t.clientY;
-  var r = tzm.getBoundingClientRect();
-  joy.style.left = (t.clientX - r.left) + 'px'; joy.style.top = (t.clientY - r.top) + 'px';
+  var r = tzm.getBoundingClientRect(), halfW = joy.offsetWidth / 2, halfH = joy.offsetHeight / 2;
+  var visualX = Math.max(Math.min(halfW, r.width / 2), Math.min(r.width - Math.min(halfW, r.width / 2), t.clientX - r.left));
+  var visualY = Math.max(Math.min(halfH, r.height / 2), Math.min(r.height - Math.min(halfH, r.height / 2), t.clientY - r.top));
+  joy.style.left = visualX + 'px'; joy.style.top = visualY + 'px';
   joy.classList.add('active'); setStick(t); e.preventDefault();
 }, { passive: false });
 tzm.addEventListener('touchmove', function (e) {
   var t = touchById(e.changedTouches, stick.id); if (t) { setStick(t); e.preventDefault(); }
 }, { passive: false });
-function endStick(e) { if (touchById(e.changedTouches, stick.id)) { stick.id = null; stick.x = stick.y = 0; joy.classList.remove('active'); joyKnob.style.transform = 'translate(0px,0px)'; } }
+function endStick(e) { if (touchById(e.changedTouches, stick.id)) { stick.id = null; stick.x = stick.y = 0; joy.classList.remove('active'); joyKnob.style.transform = 'translate(0px,0px)'; joyKnob._stickX = joyKnob._stickY = null; } }
 tzm.addEventListener('touchend', endStick); tzm.addEventListener('touchcancel', endStick);
 tzl.addEventListener('touchstart', function (e) {
   if (lookTouch.id !== null || state !== 'live' || (MP.on && MP.menu)) return;
@@ -11434,6 +11372,7 @@ tzl.addEventListener('touchstart', function (e) {
 tzl.addEventListener('touchmove', function (e) {
   var t = touchById(e.changedTouches, lookTouch.id);
   if (t && state === 'live' && P.alive && !(MP.on && MP.menu)) {
+    mobileGuide.action('look', Math.hypot(t.clientX - lookTouch.x, t.clientY - lookTouch.y));
     var ratio = G.touchSens / 100 * MobileProjection.scale(camera.fov, 72), fine = scoped ? G.touchAdsSens / 100 : 1;
     P.yaw -= (t.clientX - lookTouch.x) * 0.006 * ratio * fine;
     P.pitch -= (t.clientY - lookTouch.y) * 0.006 * ratio * fine * (S.invertY ? -1 : 1);
@@ -11479,9 +11418,10 @@ function tbtn(id, down, up, options) {
     b.addEventListener('lostpointercapture', finish);
   } else {
     b.addEventListener('touchstart', function (e) {
-      var t = e.changedTouches[0]; if (!t) return;
-      var id = 'touch:' + t.identifier;
-      begin(id, { pointerId: id, pointerType: 'touch', originalEvent: e }, e);
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var id = 'touch:' + e.changedTouches[i].identifier;
+        begin(id, { pointerId: id, pointerType: 'touch', originalEvent: e }, e);
+      }
     }, { passive: false });
     function finishTouch(e) {
       for (var i = 0; i < e.changedTouches.length; i++) {
@@ -11500,13 +11440,21 @@ function updateTouchActions() {
   $('#tb-aim').classList.toggle('selected', scoped);
   $('#tb-prone').setAttribute('aria-pressed', String(proneOn));
   $('#tb-prone').classList.toggle('selected', proneOn);
-  $('#tb-nade').disabled = !Object.keys(NADES).some(function (k) { return inv[k] > 0; });
-  $('#tb-nsel').disabled = Object.keys(NADES).filter(function (k) { return inv[k] > 0; }).length < 2;
+  var reloadButton = $('#tb-rel'), touchWeapon = WEAPONS[cur], touchAmmo = ammo[cur];
+  var isReloading = !!(P.alive && reloading > 0), needsReload = !!(P.alive && touchWeapon && !touchWeapon.melee && touchAmmo && touchAmmo.res > 0 && touchAmmo.mag <= Math.max(3, Math.ceil((touchWeapon.mag || 1) * 0.15)));
+  setCls(reloadButton, 'reload-active', isReloading); setCls(reloadButton, 'reload-needed', !isReloading && needsReload);
+  var reloadLabel = isReloading ? 'Reloading weapon' : needsReload ? 'Reload weapon, ammunition low' : 'Reload weapon';
+  if (reloadButton.getAttribute('aria-label') !== reloadLabel) reloadButton.setAttribute('aria-label', reloadLabel);
+  var grenadeTypes = Object.keys(NADES), availableGrenades = 0;
+  for (var i = 0; i < grenadeTypes.length && availableGrenades < 2; i++) if (inv[grenadeTypes[i]] > 0) availableGrenades++;
+  $('#tb-nade').disabled = availableGrenades === 0;
+  $('#tb-nsel').disabled = availableGrenades < 2;
   $('#tb-inspect').disabled = !selectedLegendaryFinish(cur) || !SightlineWeaponSkins.legend.prototype(cur);
   var bombLive=MP.on&&MP.mode==='bomb'&&state==='live',obj=MP.objective,team=MP.myTeam,id=MP.id;
-  var usePrompt=bombLive?(obj&&obj.phase==='planted'&&team!==obj.attackTeam?'DEFUSE':obj&&obj.phase==='carried'&&obj.carrierId===id?'PLANT':obj&&obj.phase==='dropped'&&team===obj.attackTeam?'PICK UP':'USE'):'';
+  var mpAction=bombLive?mpBombAction():null;
+  var usePrompt=bombLive?(obj&&obj.use&&obj.use.actorId===id?(obj.use.action==='plant'?'PLANTING · HOLD':'DEFUSING · HOLD'):mpAction==='plant'?'HOLD TO PLANT':mpAction==='defuse'?'HOLD TO DEFUSE':mpAction==='pickup'?'PICK UP BOMB':''):'';
   var useButton=$('#tb-objective'),dropButton=$('#tb-dropbomb');
-  if(useButton){useButton.hidden=!bombLive;useButton.disabled=!P.alive||!usePrompt;useButton.textContent=usePrompt||'USE';useButton.setAttribute('aria-label',usePrompt||'Bomb objective');}
+  if(useButton){var showUse=!!(bombLive&&P.alive&&usePrompt);useButton.hidden=!showUse;useButton.disabled=!showUse;var useLabel=usePrompt||'Bomb objective';if(useButton.textContent!==useLabel)useButton.textContent=useLabel;if(useButton.getAttribute('aria-label')!==useLabel)useButton.setAttribute('aria-label',useLabel);}
   if(dropButton){var hasBomb=!!(bombLive&&obj&&obj.phase==='carried'&&obj.carrierId===id);dropButton.hidden=!hasBomb;dropButton.disabled=!hasBomb;}
 }
 function setTouchTray(open) {
@@ -11518,16 +11466,19 @@ function setTouchTray(open) {
 function enterTouchSession() {
   if (!touchMode) return;
   document.documentElement.classList.add('touch-session');
-  setTouchTray(false); resetTouchMotion(); applyHud(); updateTouchActions();
+  setTouchTray(false); resetTouchMotion(); applyHud(); updateTouchActions(); mobileGuide.start();
   try { window.scrollTo({top:0,behavior:'instant'}); } catch (e) { window.scrollTo(0,0); }
 }
 function leaveTouchSession() {
-  resetTouchMotion(); setTouchTray(false);
+  resetTouchMotion(); setTouchTray(false); mobileGuide.hide();
   document.documentElement.classList.remove('touch-session');
 }
 window.addEventListener('blur', resetTouchMotion);
-document.addEventListener('visibilitychange', function () { if (document.hidden) resetTouchMotion(); });
-function touchFireDown(e) { if (state !== 'live' || (MP.on && MP.menu) || !e || e.pointerId === undefined) return; var alreadyHeld=touchFireOwners.size>0; touchFireOwners.add(e.pointerId); fireHeld = true; if(!alreadyHeld)tryFire(true); }
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) { resetTouchMotion(); if (touchMode) mobileGuide.hide(); }
+  else if (touchMode && state === 'live' && !(MP.on && MP.menu) && ['#ov-start','#ov-buy','#ov-end','#ov-set'].every(function(id){return $(id).hidden;})) mobileGuide.start();
+});
+function touchFireDown(e) { if (state !== 'live' || (MP.on && MP.menu) || !e || e.pointerId === undefined) return; mobileGuide.action('fire'); var alreadyHeld=touchFireOwners.size>0; touchFireOwners.add(e.pointerId); fireHeld = true; if(!alreadyHeld)tryFire(true); }
 function touchFireUp(e) { touchFireOwners.delete(e&&e.pointerId); fireHeld=touchFireOwners.size>0; }
 tbtn('#tb-fire', touchFireDown, touchFireUp, { perPointer: true });
 tbtn('#tb-fire-alt', touchFireDown, touchFireUp, { perPointer: true });
@@ -11863,6 +11814,7 @@ function panelHtml(t) {
     h = hd('Settings', 'Saved in this browser') + '<div class="subtabs" role="tablist" aria-label="Settings category">' + SET_TABS.map(function (s) { return '<button type="button" role="tab" data-sub="' + s[0] + '" aria-selected="' + (s[0] === setTab) + '" tabindex="' + (s[0] === setTab ? '0' : '-1') + '">' + sl83SettingsGlyph(s[0]) + '<span>' + s[1] + '</span></button>'; }).join('') + '</div>' + (setTab==='controls'?[].concat(SPEC.crosshair||[],SPEC.hud||[],SPEC.touch||[]).map(rowHtml).join('')+mobileHudSettingsHtml()+'<div class="setfoot"><button class="btn ghost" type="button" data-act="open-binds">Edit keyboard bindings</button></div>' : (SPEC[setTab]||[]).map(rowHtml).join('')) +
        (setTab === 'video' ? '<div class="setfoot"><button class="btn" type="button" data-act="p1157-clear">Balanced · 60 FPS cap</button><button class="btn ghost" type="button" data-act="p1157-report">Show performance report</button><button class="btn ghost" type="button" data-act="p1156-fast">Low-resolution GPU fallback</button><a class="btn ghost" href="fps-lab.html" target="_blank" rel="noopener">Open independent FPS Lab</a><pre id="p1157-report" hidden style="width:100%;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;font-size:11px;color:#b6f0d8;max-height:340px;overflow:auto;"></pre><span class="small">Applies a 60 FPS cap, adaptive quality, full selected scale, shadows off and low effects. A cap does not guarantee the device can sustain 60 FPS; measure during a live match. Fog horizon changes visibility only, not draw calls. Low-resolution fallback is optional; the independent lab excludes game AI and drawing.</span></div>' : '') +
       (setTab === 'video' ? '<div class="setfoot"><button class="btn" type="button" data-act="p111-fullscreen">' + (document.fullscreenElement ? 'Exit browser fullscreen' : 'Enter browser fullscreen') + '</button><span class="small">Android app gameplay automatically uses immersive fullscreen.</span></div>' : '') +
+      (touchMode && setTab === 'controls' ? '<div class="setfoot"><button class="btn ghost" type="button" data-act="mobile-guide-replay">Replay control guide</button></div>' : '') +
       (setTab === 'audio' ? '<div class="setfoot"><button class="btn ghost" type="button" data-act="p111-mute" aria-pressed="' + (!soundOn) + '">' + (soundOn ? 'Mute game sound' : 'Unmute game sound') + '</button></div>' : '') +
       '<div class="setfoot"><button class="btn ghost" type="button" data-act="page-reset">Reset this page</button><button class="btn ghost" type="button" data-act="all-reset">Reset all settings</button></div>' +
       '<details class="srow wide"><summary class="lnk">Share or restore settings code</summary><div style="display:grid;gap:6px;margin-top:6px"><textarea id="code-box" class="code" spellcheck="false" aria-label="Settings code"></textarea><div class="setfoot" style="padding:0"><button class="btn ghost" type="button" data-act="code-make">Make code</button><button class="btn ghost" type="button" data-act="code-apply">Apply code</button></div><div class="note2" id="code-note" role="status"></div></div></details>';
@@ -12223,6 +12175,7 @@ $('.mn-main').addEventListener('click', function (e) {
   }
   if ((b = t.closest('[data-act]'))) {
     var a = b.getAttribute('data-act');
+    if(a==='mobile-guide-replay'){mobileGuide.replay();b.textContent='Guide ready for gameplay';return;}
     if(a==='rules-back'){sl82ReturnFromRules();return;} 
     if(a==='confirm-operator'){setOp(pendingOpId);return;}
     if(a==='mobile-hud-reset'){mobileHud={style:MOBILE_HUD_DEFAULT.style,opacity:MOBILE_HUD_DEFAULT.opacity,fire2:MOBILE_HUD_DEFAULT.fire2,hand:'right',editing:false,positions:{}};G.touchSize=100;G.touchLayout='simple';saveObj(G_KEY,G);saveMobileHud();applyHud();renderBody(true);uiTick(true);return;} if(a==='mobile-hud-edit'){if(!touchMode||state!=='paused')return;mobileHud.editing=true;saveMobileHud();resume();return;} if(a==='mobile-hud-position-reset'){mobileHud.positions={};saveMobileHud();uiTick(true);return;}
@@ -12342,14 +12295,16 @@ function mpSend(o) {
     MP.sock.send(JSON.stringify(packet));
   } catch (e) {}
 }
-function mpBombUse() {
-  var o=MP.objective;if(!MP.on||MP.mode!=='bomb'||!o||!P.alive||o.use&&o.use.actorId===MP.id)return false;
+function mpBombAction() {
+  var o=MP.objective;if(!MP.on||MP.mode!=='bomb'||!o||!P.alive||o.use&&o.use.actorId===MP.id)return null;
   var team=MP.myTeam,attack=o.attackTeam,action=null,dist;
   if(o.phase==='dropped'&&team===attack&&Number.isFinite(o.x+o.z)&&Math.hypot(P.x-o.x,P.z-o.z)<2.6)action='pickup';
   else if(o.phase==='carried'&&o.carrierId===MP.id&&o.sites){var a=o.sites.A,b=o.sites.B,da=a?Math.hypot(P.x-a.x,P.z-a.z):Infinity,db=b?Math.hypot(P.x-b.x,P.z-b.z):Infinity;dist=Math.min(da,db);if(dist<2.7)action='plant';}
   else if(o.phase==='planted'&&team!==attack&&Number.isFinite(o.x+o.z)&&Math.hypot(P.x-o.x,P.z-o.z)<2.7)action='defuse';
-  if(action)mpSend({t:'obj',action:action});return !!action;
+  return action;
 }
+function mpBombUse() { var action=mpBombAction(); if(action)mpSend({t:'obj',action:action}); return !!action; }
+
 var BOMB_WORLD_VIS=null;
 function bombProgressFraction(stateObj) {
   var use=stateObj&&stateObj.use;if(!use)return 0;
@@ -12785,7 +12740,7 @@ function mpCleanup() {
 
 /* ---- in-match menu (does not pause the match) ---- */
 function mpPause() {
-  if (MP.menu) return; resetTouchMotion(); MP.menu = true; fireHeld = false; scoped = false; el.scope.hidden = true;
+  if (MP.menu) return; resetTouchMotion(); if (touchMode) mobileGuide.hide(); MP.menu = true; fireHeld = false; scoped = false; el.scope.hidden = true;
   $('#ov-title').textContent = 'Menu'; $('#ov-text').textContent = 'The match keeps running while this is open.';
   $('#btn-start').textContent = 'Resume'; $('#btn-quit').textContent = 'Leave match'; $('#ov-note').textContent = touchMode ? 'Tap Resume to return to the match.' : 'Click Resume to recapture your mouse.';
   menuTab = 'play'; exitLock(); showOverlay('#ov-start');
@@ -12833,6 +12788,7 @@ function mpPhase(m) {
   } else if (m.ph === 'matchend') mpMatchEnd(m);
 }
 function mpSpawn(m) {
+  if (touchMode && (!P.alive || (Number.isFinite(m.ep) && m.ep !== MP.ep))) { resetTouchMotion(); jumpQ = false; }
   P.x = m.x; P.y = m.y; P.z = m.z; P.yaw = m.yaw; P.pitch = 0; P.vx = P.vz = P.vy = 0; P.hp = m.hp || 100; P.tagUntil=0; P.alive = true; P.punch = 0; bloom = 0; proneOn = false; sliding = false; P.prone = 0; P.crouch = 0; P.armor = m.armor;
   MP.ep = m.ep; owned = {}; m.owned.forEach(function (k) { owned[k] = true; }); cur = m.cur; M.money = m.money; fillAmmo(); reloading = 0; crouchTog = false; mel.t = 0; mel.hit = true; specCur = null;
   decals.forEach(function (o) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }); decals = [];
@@ -13120,11 +13076,11 @@ function mpHurt(m) {
   el.flash.classList.add('on'); clearTimeout(flashTimer); flashTimer = setTimeout(function () { el.flash.classList.remove('on'); }, 60);
   if (G.dmgDir) {
     var dx = m.x - P.x, dz = m.z - P.z, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw), a = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz);
-    el.ring.style.transform = 'rotate(' + a + 'rad)'; el.ring.classList.add('on'); setTimeout(function () { el.ring.classList.remove('on'); }, 80);
+    showDamageDirection(a);
   }
   sfxTone(220, 110, 0.12, 0.4, 'sawtooth');
   if (P.hp <= 0) {
-    P.hp = 0; P.alive = false; M.stats.deaths++; fireHeld = false; scoped = false; Object.keys(guns).forEach(function (n) { guns[n].visible = false; }); el.scope.hidden = true;
+    P.hp = 0; P.alive = false; if (touchMode) { resetTouchMotion(); jumpQ = false; } M.stats.deaths++; fireHeld = false; scoped = false; Object.keys(guns).forEach(function (n) { guns[n].visible = false; }); el.scope.hidden = true;
     specCur = null; var s = specUnit(); showMsg('You are down', s ? 'Spectating your team. Click to switch.' : '', 2800);
   }
   updateHud();
@@ -13523,7 +13479,9 @@ function updatePlayer(dt) {
   if(cur==='longbow'&&reloading<=0)updateLongbowCycle(g);
   legendTick(g,dt,rf,reloading>0);
   legendInspectionTick(g,dt);
-  el.rel.hidden = !(reloading > 0); el.relf.style.width = Math.round(rf * 100) + '%';
+  var reloadHidden = !(reloading > 0), reloadWidth = Math.round(rf * 100) + '%';
+  if (el.rel.hidden !== reloadHidden) el.rel.hidden = reloadHidden;
+  if (el.relf.style.width !== reloadWidth) el.relf.style.width = reloadWidth;
   // Real open reflex/holo housings stay visible through ADS; their frames
   // provide a physical aperture around the calibrated, center-screen reticle.
   // Telescopic scopes still rely on their separate full-screen scope overlay.
@@ -14251,46 +14209,9 @@ body[data-sl-route=net] #ov-start #pn-dyn .setfoot{display:flex;align-items:cent
 /* Touch-only tactical HUD system. Desktop and gameplay rules remain unchanged. */
 html.touch-device{--mh-panel:rgba(9,16,20,.84);--mh-panel-soft:rgba(12,21,25,.72);--mh-edge:rgba(237,232,216,.22);--mh-ivory:#f3f0e6;--mh-muted:#bac3bd;--mh-teal:#77d8ca;--mh-amber:#e2ad62;--mh-red:#eb786e;-webkit-text-size-adjust:100%;}
 html.touch-device #stage{touch-action:none;overscroll-behavior:none;}
-html.touch-device #touch{z-index:12;isolation:isolate;--touch-scale:1;--hud-safe-left:env(safe-area-inset-left,0px);--hud-safe-right:env(safe-area-inset-right,0px);--hud-safe-top:env(safe-area-inset-top,0px);--hud-safe-bottom:env(safe-area-inset-bottom,0px);touch-action:none;user-select:none;-webkit-user-select:none;}
-html.touch-device #tz-move,html.touch-device #tz-look{z-index:1;touch-action:none;}
-html.touch-device #tz-move{left:0;right:auto;top:24%;bottom:0;width:44%;}
-html.touch-device #tz-look{left:auto;right:0;top:0;bottom:0;width:56%;}
-html.touch-device #touch-joystick{position:absolute;left:18%;top:74%;width:clamp(88px,26dvh,112px);height:clamp(88px,26dvh,112px);box-sizing:border-box;transform:translate(-50%,-50%);pointer-events:none;border:1px solid rgba(224,239,225,.46);border-radius:50%;background:radial-gradient(circle,rgba(33,70,68,.23) 0 40%,rgba(7,17,20,.47) 72%);box-shadow:inset 0 0 0 5px rgba(9,20,23,.24),0 8px 22px rgba(0,0,0,.22);opacity:.52;transition:opacity .12s;}
-html.touch-device #touch-joystick::before{content:"";position:absolute;inset:11px;border:1px solid rgba(232,230,210,.13);border-radius:50%;}
-html.touch-device #touch-joystick i{position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21%;box-sizing:border-box;border:1px solid rgba(235,246,230,.75);border-radius:50%;background:radial-gradient(circle at 34% 28%,rgba(182,226,206,.78),rgba(51,113,103,.7) 68%,rgba(15,39,40,.84));box-shadow:0 4px 14px rgba(0,0,0,.38);}
-html.touch-device #touch-joystick span{position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;background:#f5f4e9;transform:translate(-50%,-50%);}
-html.touch-device #touch-joystick.active{opacity:.98;}
-html.touch-device .tb{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;min-width:48px;min-height:48px;width:max(48px,calc(clamp(54px,14dvh,62px) * var(--touch-scale,1)));height:max(48px,calc(clamp(54px,14dvh,62px) * var(--touch-scale,1)));padding:4px 3px;appearance:none;border:1px solid rgba(239,236,219,.42);border-radius:50%;background:rgba(11,20,24,var(--touch-opacity,.88));color:var(--mh-ivory);font:700 clamp(9px,2.35dvh,11px)/1 var(--f-label);letter-spacing:.045em;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.7);box-shadow:inset 0 1px rgba(255,255,255,.07),0 5px 15px rgba(0,0,0,.27);touch-action:none;user-select:none;-webkit-user-select:none;transition:background-color .11s,border-color .11s,color .11s,box-shadow .11s,transform .11s;}
-html.touch-device .tb:focus-visible{outline:2px solid var(--mh-ivory);outline-offset:3px;}
-html.touch-device .tb:disabled{opacity:.42;filter:saturate(.45);}
-html.touch-device .tb.pressed{background:rgba(37,70,66,.98);border-color:rgba(203,239,223,.82);box-shadow:inset 0 1px rgba(255,255,255,.11),0 2px 7px rgba(0,0,0,.34);filter:brightness(1.12);}
-html.touch-device .tb.selected,html.touch-device #tb-aim[aria-pressed=true]{background:rgba(24,83,78,.96);border-color:var(--mh-teal);color:#dffff5;box-shadow:inset 0 0 0 1px rgba(119,216,202,.18),0 0 12px rgba(77,185,167,.17);}
-html.touch-device .tb-icon{display:grid;place-items:center;width:25px;height:25px;color:#e7ece0;}
-html.touch-device .tb-icon svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-html.touch-device .tb-label{display:block;max-width:100%;font-size:clamp(8px,2.1dvh,10px);line-height:1.05;white-space:nowrap;}
-html.touch-device #tb-fire{right:calc(4vw + env(safe-area-inset-right,0px));bottom:calc(18dvh + env(safe-area-inset-bottom,0px));width:max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1)));height:max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1)));min-width:62px;min-height:62px;border:1px solid rgba(255,231,191,.8);background:rgba(153,91,37,calc(var(--touch-opacity,.88) * .94));color:#fff3df;box-shadow:inset 0 1px rgba(255,255,255,.17),0 6px 18px rgba(0,0,0,.38);}
-html.touch-device #tb-fire .tb-icon{width:31px;height:31px;color:#ffe5bc;}
-html.touch-device #tb-fire .tb-label{font-size:clamp(9px,2.35dvh,11px);letter-spacing:.09em;}
-html.touch-device #tb-fire.pressed{background:rgba(202,126,51,.98);border-color:#ffe6bb;transform:scale(.96);}
-html.touch-device #tb-fire-alt{left:calc(4vw + env(safe-area-inset-left,0px));right:auto;bottom:calc(18dvh + 72px + env(safe-area-inset-bottom,0px));width:58px;height:58px;min-width:52px;min-height:52px;background:rgba(19,58,60,.91);border-color:rgba(119,216,202,.58);}
-html.touch-device #tb-aim{right:calc(4vw + clamp(74px,20dvh,88px) + 14px + env(safe-area-inset-right,0px));bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-rel{right:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-right,0px));bottom:calc(8dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-swap{right:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-right,0px));bottom:calc(8dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-jump{right:calc(4vw + env(safe-area-inset-right,0px));bottom:calc(18dvh + clamp(74px,20dvh,88px) + 12px + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-slide{right:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-right,0px));bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-more{right:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-right,0px));bottom:calc(42dvh + env(safe-area-inset-bottom,0px));width:54px;height:54px;min-width:54px;min-height:54px;}
-html.touch-device #tb-menu{right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));bottom:auto;left:auto;width:46px;height:46px;min-width:46px;min-height:46px;border-radius:13px;background:rgba(10,17,21,.9);font-size:18px;z-index:7;}
-html.touch-device #tb-menu small{font:700 8px var(--f-label);letter-spacing:.07em;}
-html.touch-device #tb-prone{right:calc(4vw + 30px + env(safe-area-inset-right,0px));bottom:calc(48dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-buy{right:calc(4vw + 102px + env(safe-area-inset-right,0px));bottom:calc(48dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-nade{right:calc(4vw + 30px + env(safe-area-inset-right,0px));bottom:calc(34dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-nsel{right:calc(4vw + 102px + env(safe-area-inset-right,0px));bottom:calc(34dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-inspect{right:calc(4vw + 174px + env(safe-area-inset-right,0px));bottom:calc(34dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #tb-objective{right:calc(4vw + 174px + env(safe-area-inset-right,0px));bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px));border-color:rgba(226,173,98,.72);background:rgba(86,55,27,.94);}
+html.touch-device #tb-objective{right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-right,0px));bottom:calc(42dvh + 68px + env(safe-area-inset-bottom,0px));border-color:rgba(226,173,98,.72);background:rgba(86,55,27,.94);}
 html.touch-device #tb-dropbomb{right:calc(4vw + 246px + env(safe-area-inset-right,0px));bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px));}
-html.touch-device .tb-utility{display:none;}
-html.touch-device #touch.tray-open .tb-utility,html.touch-device #touch.advanced .tb-utility{display:flex;}
-html.touch-device #touch.advanced #tb-more{display:flex;}
+html.touch-device #touch #tb-objective:not([hidden]):not(:disabled){display:flex;}
 html.touch-device #touch.advanced:not(.hand-left) #tb-fire{right:calc(4vw + env(safe-area-inset-right,0px));bottom:calc(31dvh + env(safe-area-inset-bottom,0px));}
 html.touch-device #touch.advanced:not(.hand-left) #tb-aim{right:calc(4vw + 72px + env(safe-area-inset-right,0px));bottom:calc(18dvh + env(safe-area-inset-bottom,0px));}
 html.touch-device #touch.hand-left #tz-move{left:auto;right:0;width:44%;}
@@ -14298,41 +14219,23 @@ html.touch-device #touch.hand-left #tz-look{left:0;right:auto;width:56%;}
 html.touch-device #touch.hand-left #touch-joystick{left:82%;}
 html.touch-device #touch.hand-left #tb-fire{left:calc(4vw + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-fire-alt{left:auto;right:calc(4vw + env(safe-area-inset-right,0px));}
-html.touch-device #touch.hand-left #tb-aim{left:calc(4vw + clamp(74px,20dvh,88px) + 14px + env(safe-area-inset-left,0px));right:auto;}
-html.touch-device #touch.hand-left #tb-rel{left:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-left,0px));right:auto;}
-html.touch-device #touch.hand-left #tb-swap{left:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-left,0px));right:auto;}
+html.touch-device #touch.hand-left #tb-aim{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 14px + env(safe-area-inset-left,0px));right:auto;}
+html.touch-device #touch.hand-left #tb-rel{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-left,0px));right:auto;}
+html.touch-device #touch.hand-left #tb-swap{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-jump{left:calc(4vw + env(safe-area-inset-left,0px));right:auto;}
-html.touch-device #touch.hand-left #tb-slide{left:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-left,0px));right:auto;}
-html.touch-device #touch.hand-left #tb-more{left:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-left,0px));right:auto;}
+html.touch-device #touch.hand-left #tb-slide{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px));right:auto;}
+html.touch-device #touch.hand-left #tb-more{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-prone,html.touch-device #touch.hand-left #tb-nade{left:calc(4vw + 30px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-buy,html.touch-device #touch.hand-left #tb-nsel{left:calc(4vw + 102px + env(safe-area-inset-left,0px));right:auto;}
-html.touch-device #touch.hand-left #tb-inspect,html.touch-device #touch.hand-left #tb-objective{left:calc(4vw + 174px + env(safe-area-inset-left,0px));right:auto;}
+html.touch-device #touch.hand-left #tb-inspect{left:calc(4vw + 174px + env(safe-area-inset-left,0px));right:auto;}
+html.touch-device #touch.hand-left #tb-objective{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-dropbomb{left:calc(4vw + 246px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left.advanced #tb-fire{bottom:calc(31dvh + env(safe-area-inset-bottom,0px));}
 html.touch-device #touch.hand-left.advanced #tb-aim{bottom:calc(18dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #ammo{box-sizing:border-box;border:1px solid rgba(239,236,219,.2);border-radius:9px;background:linear-gradient(145deg,rgba(16,25,28,.91),rgba(7,13,16,.9));box-shadow:0 5px 16px rgba(0,0,0,.25);}
-html.touch-device #ammo{right:calc(8px + env(safe-area-inset-right,0px));left:auto;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));min-width:112px;padding:6px 10px 5px;}
-html.touch-device #ammo .l{font-size:9px;letter-spacing:.09em;color:#d5d8cb;}
-html.touch-device #ammo b{font-size:clamp(20px,5dvh,27px);}
-html.touch-device #ammo .r{font-size:12px;color:#aeb9b1;}
-html.touch-device #ammo.low-ammo{border-color:rgba(235,120,110,.72);}
-html.touch-device #ammo.low-ammo b{color:#ffc0a7;}
-html.touch-device #ammo.reloading{border-color:rgba(226,173,98,.72);}
-html.touch-device #radar{left:auto;right:calc(10px + env(safe-area-inset-right,0px));top:calc(60px + env(safe-area-inset-top,0px));width:clamp(58px,16dvh,72px);height:clamp(58px,16dvh,72px);border:1px solid rgba(232,234,214,.55);background:rgba(7,14,17,.68);box-shadow:0 5px 16px rgba(0,0,0,.26);--rb:72px;--rs:1;}
-html.touch-device #vitals{left:calc(10px + env(safe-area-inset-left,0px));right:auto;top:calc(8px + env(safe-area-inset-top,0px));bottom:auto;gap:5px;}
 html.touch-device .v{min-width:58px;grid-template-columns:auto auto;align-items:center;gap:0 6px;padding:5px 8px;border:1px solid rgba(232,234,214,.19);border-radius:8px;background:linear-gradient(145deg,rgba(16,25,28,.9),rgba(7,13,16,.88));box-shadow:0 5px 14px rgba(0,0,0,.22);}
 html.touch-device .v .l{grid-column:1/-1;font-size:8px;letter-spacing:.08em;color:#c4cec4;}
-html.touch-device .v b{font-size:clamp(17px,4.6dvh,22px);line-height:1.05;}
-html.touch-device #money{left:calc(10px + env(safe-area-inset-left,0px));top:calc(55px + env(safe-area-inset-top,0px));font-size:12px;color:#efc56d;text-shadow:0 1px 3px #000;}
-html.touch-device #topbar{left:50%;right:auto;top:calc(8px + env(safe-area-inset-top,0px));width:max-content;max-width:calc(100vw - 220px);transform:translateX(-50%);align-items:center;gap:0;border:1px solid rgba(227,233,217,.18);border-radius:9px;background:rgba(7,14,18,.83);box-shadow:0 5px 16px rgba(0,0,0,.2);font-size:clamp(9px,2.5dvh,12px);letter-spacing:.035em;}
-html.touch-device #topbar span,html.touch-device #topbar b{padding:4px 7px;white-space:nowrap;}
-html.touch-device #topbar .you{border-bottom:2px solid #73c7df;}
-html.touch-device #topbar .bots{border-bottom:2px solid var(--mh-amber);}
 html.touch-device #timer{min-width:3.5ch;font-size:clamp(13px,3.4dvh,17px);line-height:1.5;}
-html.touch-device #alive{left:50%;top:calc(43px + env(safe-area-inset-top,0px));max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(8px,2dvh,10px);letter-spacing:.045em;text-align:center;line-height:1.2;}
 html.touch-device #objective-status{left:50%;top:calc(59px + env(safe-area-inset-top,0px));max-width:min(48vw,420px);padding:3px 8px;border:1px solid rgba(226,173,98,.23);border-radius:7px;background:rgba(7,14,18,.72);font-size:clamp(8px,1.9dvh,10px);letter-spacing:.035em;}
-html.touch-device #feed{top:calc(140px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));gap:3px;max-width:28vw;font-size:clamp(9px,2.1dvh,11px);}
-html.touch-device #feed div{padding:3px 6px;border-right-width:2px;border-radius:5px;background:rgba(7,14,18,.76);}
 html.touch-device #relbar{top:calc(50% + 34px);width:118px;font-size:10px;letter-spacing:.12em;}
 html.touch-device #relbar::after,html.touch-device #relbar i{height:3px;}
 html.touch-device #msg.objective-toast{top:24%;width:min(84%,400px);padding:7px 10px;border-color:rgba(119,216,202,.5);border-radius:8px;background:rgba(7,15,18,.9);}
@@ -14341,7 +14244,6 @@ html.touch-device #msg.objective-toast span{font-size:clamp(9px,2dvh,11px);}
 html.touch-device .tb[data-hud-custom="true"]{left:var(--hud-x)!important;top:var(--hud-y)!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%);}
 html.touch-device #touch.hud-editing .tb:not(#tb-menu){outline:1px dashed rgba(226,173,98,.62);outline-offset:2px;}
 html.touch-device #touch.hud-editing #tz-move,html.touch-device #touch.hud-editing #tz-look{pointer-events:none;}
-html.touch-device .tb:not(#tb-menu){touch-action:none;}
 html.touch-device #touch.hud-editing:not(.hand-left)::after,html.touch-device #touch.hand-left.hud-editing::after{content:"HUD LAYOUT  ·  DRAG BUTTONS  ·  MENU TO FINISH";position:absolute;z-index:8;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:6px 9px;border:1px solid rgba(226,173,98,.48);border-radius:7px;background:rgba(7,14,18,.9);color:#f3d7a5;font:700 8px var(--f-label);letter-spacing:.08em;white-space:nowrap;pointer-events:none;}
 html.touch-device #touch.hud-editing .tb:not(#tb-menu){outline:1px dashed rgba(226,173,98,.62);outline-offset:2px;}
 html.touch-device.touch-session #stage .finish-quickpick{top:calc(140px + env(safe-area-inset-top,0px))!important;right:calc(8px + env(safe-area-inset-right,0px))!important;max-width:clamp(118px,24vw,160px)!important;min-height:38px!important;padding:6px 8px!important;border-radius:8px!important;font-size:10px!important;}
@@ -14432,18 +14334,7 @@ html.touch-device .hud-edit-toggle span{font-size:12px;line-height:1.3;}
  html.touch-device #ov-start #pn-dyn .subtabs{grid-template-columns:repeat(3,minmax(0,1fr));}
 }
 @media(max-width:700px) and (orientation:portrait){
- html.touch-device #touch-joystick{left:26%;top:77%;width:clamp(90px,18vw,118px);height:clamp(90px,18vw,118px);}
  html.touch-device #touch.hand-left #touch-joystick{left:74%;}
- html.touch-device #tb-fire{right:calc(4vw + env(safe-area-inset-right,0px));bottom:calc(12dvh + env(safe-area-inset-bottom,0px));}
- html.touch-device #tb-jump{right:calc(4vw + env(safe-area-inset-right,0px));bottom:calc(12dvh + clamp(74px,20dvh,88px) + 12px + env(safe-area-inset-bottom,0px));}
- html.touch-device #tb-aim{right:calc(4vw + clamp(74px,20dvh,88px) + 16px + env(safe-area-inset-right,0px));bottom:calc(12dvh + 18px + env(safe-area-inset-bottom,0px));}
- html.touch-device #tb-rel{right:calc(4vw + clamp(74px,20dvh,88px) + 32px + env(safe-area-inset-right,0px));bottom:calc(5dvh + env(safe-area-inset-bottom,0px));}
- html.touch-device #tb-swap{right:calc(4vw + clamp(74px,20dvh,88px) + 104px + env(safe-area-inset-right,0px));bottom:calc(5dvh + env(safe-area-inset-bottom,0px));}
- html.touch-device #tb-more{right:calc(4vw + clamp(74px,20dvh,88px) + 32px + env(safe-area-inset-right,0px));bottom:calc(35dvh + env(safe-area-inset-bottom,0px));}
- html.touch-device #ammo{right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(8px + env(safe-area-inset-bottom,0px));}
- html.touch-device #radar{top:calc(59px + env(safe-area-inset-top,0px));width:58px;height:58px;}
- html.touch-device #topbar{max-width:calc(100vw - 174px);}
- html.touch-device #vitals{gap:3px;}
  html.touch-device .v{min-width:51px;padding:4px 6px;}
  html.touch-device #ov-start .mn{grid-template-rows:minmax(0,1fr) auto;}
  html.touch-device #ov-start .mn-context{display:flex;}
@@ -14454,35 +14345,32 @@ html.touch-device .hud-edit-toggle span{font-size:12px;line-height:1.3;}
 /* Android's older safe-area rules are !important; these equally explicit
    scoped overrides ensure the new HUD is the layout users actually receive. */
 @supports (padding-top:env(safe-area-inset-top)){
- html.p11-game.touch-device #stage #radar{left:auto!important;right:calc(10px + env(safe-area-inset-right,0px))!important;top:calc(60px + env(safe-area-inset-top,0px))!important;width:clamp(58px,16dvh,72px)!important;height:clamp(58px,16dvh,72px)!important;}
- html.p11-game.touch-device #stage #vitals{left:calc(10px + env(safe-area-inset-left,0px))!important;right:auto!important;top:calc(8px + env(safe-area-inset-top,0px))!important;bottom:auto!important;}
- html.p11-game.touch-device #stage #money{left:calc(10px + env(safe-area-inset-left,0px))!important;top:calc(55px + env(safe-area-inset-top,0px))!important;}
- html.p11-game.touch-device #stage #topbar{left:50%!important;right:auto!important;top:calc(8px + env(safe-area-inset-top,0px))!important;transform:translateX(-50%)!important;max-width:calc(100vw - 220px)!important;}
- html.p11-game.touch-device #stage #alive{left:50%!important;top:calc(43px + env(safe-area-inset-top,0px))!important;max-width:45vw!important;}
  html.p11-game.touch-device #stage #objective-status{left:50%!important;top:calc(59px + env(safe-area-inset-top,0px))!important;}
- html.p11-game.touch-device #stage #ammo{left:auto!important;right:calc(8px + env(safe-area-inset-right,0px))!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #ammo b{font-size:clamp(20px,5dvh,27px)!important;}
- html.p11-game.touch-device #stage #touch #tb-menu{left:auto!important;right:calc(10px + env(safe-area-inset-right,0px))!important;top:calc(8px + env(safe-area-inset-top,0px))!important;bottom:auto!important;}
  html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-fire{left:auto!important;right:calc(4vw + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + env(safe-area-inset-bottom,0px))!important;}
  html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-fire-alt{left:calc(4vw + env(safe-area-inset-left,0px))!important;right:auto!important;bottom:calc(18dvh + 72px + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-jump{left:auto!important;right:calc(4vw + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + clamp(74px,20dvh,88px) + 12px + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-aim{left:auto!important;right:calc(4vw + clamp(74px,20dvh,88px) + 14px + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-rel{left:auto!important;right:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-right,0px))!important;bottom:calc(8dvh + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-swap{left:auto!important;right:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-right,0px))!important;bottom:calc(8dvh + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-slide{left:auto!important;right:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-more{left:auto!important;right:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-right,0px))!important;bottom:calc(42dvh + env(safe-area-inset-bottom,0px))!important;}
+ html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-jump{left:auto!important;right:calc(4vw + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 12px + env(safe-area-inset-bottom,0px))!important;}
+ html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-aim{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 14px + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px))!important;}
+ html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-rel{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-right,0px))!important;bottom:calc(8dvh + env(safe-area-inset-bottom,0px))!important;}
+ html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-swap{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-right,0px))!important;bottom:calc(8dvh + env(safe-area-inset-bottom,0px))!important;}
+ html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-slide{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px))!important;}
+ html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-more{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-right,0px))!important;bottom:calc(42dvh + env(safe-area-inset-bottom,0px))!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-fire{left:calc(4vw + env(safe-area-inset-left,0px))!important;right:auto!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-fire-alt{left:auto!important;right:calc(4vw + env(safe-area-inset-right,0px))!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-jump{left:calc(4vw + env(safe-area-inset-left,0px))!important;right:auto!important;}
- html.p11-game.touch-device #stage #touch.hand-left #tb-aim{left:calc(4vw + clamp(74px,20dvh,88px) + 14px + env(safe-area-inset-left,0px))!important;right:auto!important;}
- html.p11-game.touch-device #stage #touch.hand-left #tb-rel{left:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-left,0px))!important;right:auto!important;}
- html.p11-game.touch-device #stage #touch.hand-left #tb-swap{left:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-left,0px))!important;right:auto!important;}
- html.p11-game.touch-device #stage #touch.hand-left #tb-slide{left:calc(4vw + clamp(74px,20dvh,88px) + 102px + env(safe-area-inset-left,0px))!important;right:auto!important;}
- html.p11-game.touch-device #stage #touch.hand-left #tb-more{left:calc(4vw + clamp(74px,20dvh,88px) + 30px + env(safe-area-inset-left,0px))!important;right:auto!important;}
+ html.p11-game.touch-device #stage #touch.hand-left #tb-aim{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 14px + env(safe-area-inset-left,0px))!important;right:auto!important;}
+ html.p11-game.touch-device #stage #touch.hand-left #tb-rel{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-left,0px))!important;right:auto!important;}
+ html.p11-game.touch-device #stage #touch.hand-left #tb-swap{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px))!important;right:auto!important;}
+ html.p11-game.touch-device #stage #touch.hand-left #tb-slide{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px))!important;right:auto!important;}
+ html.p11-game.touch-device #stage #touch.hand-left #tb-more{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-left,0px))!important;right:auto!important;}
  html.p11-game.touch-device #stage #touch .tb[data-hud-custom="true"]{left:var(--hud-x)!important;top:var(--hud-y)!important;right:auto!important;bottom:auto!important;}
  html.p11-game.touch-device #stage #touch .tb[data-hud-custom="true"]{transform:translate(-50%,-50%)!important;}
  html.p11-game.touch-device #stage #touch #tb-fire[data-hud-custom="true"].pressed{transform:translate(-50%,-50%) scale(.96)!important;}
 }
+html.touch-device #tb-rel.reload-needed{border-color:rgba(245,188,102,.9);color:#ffe3b0;}
+html.touch-device #tb-rel.reload-active{border-color:rgba(121,222,201,.9);background:rgba(24,83,78,.96);color:#e2fff4;}
+#touch-guide[hidden]{display:none!important;}
+#touch-guide{display:flex;align-items:center;gap:8px;position:absolute;z-index:6;left:50%;bottom:calc(8px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(48vw,340px);padding:6px 10px;border:1px solid rgba(141,215,200,.45);border-radius:6px;background:rgba(8,22,24,.88);color:#eaf5ee;font:700 clamp(10px,2.7dvh,13px)/1.2 system-ui,sans-serif;text-align:center;pointer-events:none;white-space:normal;}
+#touch-guide-skip{pointer-events:auto;touch-action:manipulation;min-width:44px;min-height:36px;border:1px solid rgba(180,224,211,.5);border-radius:5px;background:#16312e;color:#f4f8f2;font:700 11px system-ui,sans-serif;}
 @media(prefers-reduced-motion:reduce){html.touch-device .tb,html.touch-device #touch-joystick,html.touch-device #ov-start .mn-tab,html.touch-device #ov-start .mode-choice,html.touch-device #ov-start .btn{transition:none!important;animation:none!important;}}
 
 </style>
@@ -15265,4 +15153,79 @@ setTimeout(function(){
  open();
 },900);
 })();
-</script></body></html>
+</script><style id="android51-restored-hud">
+/* Visual source: Android 5.1 v4 APK; current input and gameplay retained. */
+html.touch-device #touch { --touch-scale:1; touch-action:none; user-select:none; -webkit-user-select:none; }
+html.touch-device #tz-move { left:0; width:42%;top:28%;bottom:0; touch-action:none; }
+html.touch-device #tz-look { right:0;width:58%;top:0;bottom:0;touch-action:none; }
+html.touch-device #touch-joystick { position:absolute;left:34%;top:70%;width:104px;height:104px;transform:translate(-50%,-50%);pointer-events:none;border:2px solid rgba(184,237,224,.66);border-radius:50%;background:radial-gradient(circle,rgba(71,133,124,.14),rgba(15,32,40,.48));box-shadow:0 0 0 7px #0c263124;opacity:.65; }
+html.touch-device #touch-joystick i { position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px;border-radius:50%;border:2px solid #c1f6e8;background:rgba(102,201,185,.58);box-shadow:0 4px 18px #0711168c; }
+html.touch-device #touch-joystick span {position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);}
+html.touch-device #touch-joystick.active { opacity:1; }
+html.touch-device .tb { --ts:clamp(48px,13dvh,62px); width:max(48px,calc(var(--ts) * var(--touch-scale)));height:max(48px,calc(var(--ts) * var(--touch-scale)));padding:0 3px;appearance:none;box-sizing:border-box;border:1px solid rgba(241,234,210,.7);border-radius:50%;background-color:rgba(12,32,41,calc(var(--touch-opacity,.9) * .8));color:var(--hud-fg);font:700 clamp(10px,2.5dvh,13px)/1.15 var(--f-label);letter-spacing:.04em;text-shadow:0 1px 2px #07121b;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none;transition:background-color .1s; }
+html.touch-device .tb.pressed,html.touch-device .tb.selected { background-color:rgba(29,89,99,calc(var(--touch-opacity,.9) * .85)); }
+html.touch-device .tb:disabled { opacity:.45; }
+html.touch-device #tb-fire { width:calc(clamp(66px,18dvh,86px)*var(--touch-scale));height:calc(clamp(66px,18dvh,86px)*var(--touch-scale));right:3%;bottom:30%;background-color:rgba(217,121,31,calc(var(--touch-opacity,.9) * .93));font-size:clamp(14px,3.3dvh,18px); }
+html.touch-device #tb-fire.pressed { background-color:rgba(236,154,71,calc(var(--touch-opacity,.9) * 1)); }
+html.touch-device #tb-fire-alt { left:2%;top:32%;width:calc(clamp(48px,13dvh,62px)*var(--touch-scale));height:calc(clamp(48px,13dvh,62px)*var(--touch-scale));background-color:rgba(29,89,99,calc(var(--touch-opacity,.9) * .85));font-size:clamp(9px,2.2dvh,12px); }
+html.touch-device #tb-fire-alt.pressed { background-color:rgba(57,148,143,calc(var(--touch-opacity,.9) * 1)); }
+@media (prefers-reduced-motion:reduce) { html.touch-device .tb {transition:none!important;transform:none!important;} }
+html.touch-device #tb-aim { right:17%;bottom:54%; }
+html.touch-device #tb-jump { right:2%;bottom:7%; }
+html.touch-device #tb-rel { right:14%;bottom:5%; }
+html.touch-device #tb-swap { right:28%;bottom:7%;width:max(48px,calc(var(--ts) * var(--touch-scale)));height:max(48px,calc(var(--ts) * var(--touch-scale))); }
+html.touch-device #tb-slide { right:30%;bottom:32%; }
+html.touch-device #tb-more { right:2%;bottom:59%;width:max(48px,calc(clamp(48px,11dvh,54px)*var(--touch-scale)));height:max(48px,calc(clamp(48px,11dvh,54px)*var(--touch-scale))); }
+html.touch-device #tb-menu { right:2%;top:3%;width:clamp(48px,13dvh,58px);height:clamp(48px,13dvh,58px);border-radius:11px;background:rgba(11,25,32,.85);font-size:22px;z-index:4; }
+html.touch-device #tb-menu small {font:700 9px var(--f-label);letter-spacing:.06em;}
+html.touch-device #tb-prone { right:29%;bottom:62%; }
+html.touch-device #tb-buy { right:39%;bottom:68%; }
+html.touch-device #tb-nade { right:39%;bottom:46%; }
+html.touch-device #tb-nsel { right:49%;bottom:60%; }
+html.touch-device #tb-inspect { right:49%;bottom:46%; }
+html.touch-device .tb-utility { display:none; }
+html.touch-device #hud { --rb:92px; }
+html.touch-device #radar {left:8px;top:8px;opacity:.84;}
+html.touch-device #money {left:11px;top:calc(var(--rb,92px)*var(--rs,1)*var(--hs,1) + 12px);font-size:1rem;}
+html.touch-device #topbar {top:4px;font-size:clamp(10px,2.7dvh,13px);border-radius:6px;white-space:nowrap;}
+html.touch-device #topbar span,html.touch-device #topbar b {padding:3px 6px;}
+html.touch-device #timer {font-size:1.05rem;line-height:1.8;}
+html.touch-device #alive {top:43px;font-size:clamp(10px,2dvh,12px);letter-spacing:0;max-width:54%;text-align:center;line-height:1.2;}
+html.touch-device #feed {top:58px;right:3px;font-size:11px;max-width:30%;}
+html.touch-device #vitals {left:44%;bottom:2%;transform:translateX(-50%);gap:3px;}
+html.touch-device .v,html.touch-device .vv {min-width:0;padding:3px 6px;border-radius:6px;}
+html.touch-device .v b,html.touch-device .vv b,html.touch-device #ammo b {font-size:clamp(16px,4dvh,23px);}
+html.touch-device .v .l,html.touch-device .vv .l,html.touch-device #ammo .l {font-size:10px;letter-spacing:.04em;}
+html.touch-device #ammo {bottom:auto;top:8%;right:11%;padding:4px 8px;border-radius:7px;}
+html.touch-device #ammo .r {font-size:12px;}
+html.touch-device #nade {right:11%;bottom:auto;top:28%;font-size:10px;max-width:32%;}
+html.touch-device #supply {bottom:43%;font-size:13px;padding:10px;max-width:50%;}
+html.touch-device #stance {bottom:13%;left:48%;font-size:12px;}
+html.touch-device #msg {top:24%;}
+html.touch-device #msg b {font-size:clamp(18px,4.5dvh,27px);}
+html.touch-device #msg span {font-size:clamp(10px,2.5dvh,14px);}
+
+@supports (right: env(safe-area-inset-right)) {
+ html.touch-device #tb-menu {right:calc(2% + env(safe-area-inset-right));top:calc(3% + env(safe-area-inset-top));}
+ html.touch-device #tb-fire {right:calc(3% + env(safe-area-inset-right));}
+ html.touch-device #tb-jump {right:calc(2% + env(safe-area-inset-right));}
+ html.touch-device #tb-more {right:calc(2% + env(safe-area-inset-right));}
+ html.touch-device #tb-rel {right:calc(14% + env(safe-area-inset-right));}
+ html.touch-device #tb-aim {right:calc(17% + env(safe-area-inset-right));}
+ html.touch-device #tb-swap {right:calc(28% + env(safe-area-inset-right));}
+ html.touch-device #tb-slide {right:calc(30% + env(safe-area-inset-right));}
+ @media (max-width:700px) and (orientation:portrait) {
+  html.touch-device #tb-aim {right:calc(21% + env(safe-area-inset-right));}
+  html.touch-device #tb-slide {right:calc(43% + env(safe-area-inset-right));}
+  html.touch-device #tb-swap {right:calc(40% + env(safe-area-inset-right));}
+  html.touch-device #tb-rel {right:calc(20% + env(safe-area-inset-right));}
+ }
+}
+@media (max-height:440px) and (orientation:landscape) {
+ html.touch-device #touch-joystick {width:86px;height:86px;}
+ html.touch-device #touch-joystick i {width:38px;height:38px;margin:-19px;}
+ html.touch-device #feed {display:none;}
+ html.touch-device #radar {opacity:.66;}
+}
+</style>
+</body></html>

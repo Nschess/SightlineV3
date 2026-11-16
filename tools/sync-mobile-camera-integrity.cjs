@@ -9,6 +9,13 @@ if(!java.includes('RECOVERY_HOST_BUNDLE_SHA256')){
  java=java.replaceAll('HOST_BUNDLE_SHA256.equals(status.optString("bundle"))','acceptsHostBundle(status.optString("bundle"))');
 }
 fs.writeFileSync(native,java);
+// Approved HUD51 hosts remain explicit known inputs, not a wildcard policy.
+java=fs.readFileSync(native,'utf8');
+if(!java.includes('HUD51_HOST_BUNDLE_SHA256')){
+ java=java.replace('    private static boolean acceptsHostBundle', '    private static final String HUD51_HOST_BUNDLE_SHA256 = "1be6c08ca8ef0460971f47c6f2986634003d22197c1b0b6e6dcd824a76a30b23";\r\n    private static boolean acceptsHostBundle');
+ java=java.replace('HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle);','HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);');
+ fs.writeFileSync(native,java);
+}
 const sums=path.join(host,'SHA256SUMS');fs.writeFileSync(sums,fs.readFileSync(sums,'utf8').replace(/^[a-f0-9]{64}(  index.html\r?)$/m,bundle+'$1'));
 const current=path.join(root,'CURRENT-SOURCE-SHA256.txt');
 fs.writeFileSync(current,fs.readFileSync(current,'utf8').replace(/^([a-f0-9]{64})  (.+?)(\r?)$/gm,(row,old,rel,cr)=>hash(path.join(root,rel))+'  '+rel+cr));
