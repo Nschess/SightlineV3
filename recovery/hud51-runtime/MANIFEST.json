@@ -1,0 +1,824 @@
+{
+  "provenance": "Exact packaged runtime bytes from the hash-verified owner-approved APK. Not reconstructed source.",
+  "apkSha256": "acea893bb7689a207a46834b58b3dc0e60e8f4e68e06101b566b312c80b617f2",
+  "existingSourceCommit": "77b2b6645df120c76a334c8a5ac2157feae68c2d",
+  "limitation": "APK runtime assets are recoverable. Original editable workspace, native Java source, Gradle configuration and signing key are not recovered from compiled APK contents.",
+  "assets": [
+    {
+      "entry": "assets/phone-host/bot-tactics.js",
+      "bytes": 12123,
+      "sha256": "19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/bot-tactics.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/character-poses.js",
+      "bytes": 2613,
+      "sha256": "322ff2d84dca709a148b29d92c02961536792bfb8a2d5c7cf11daf0bf3887dce",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/character-poses.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/character-prototypes.js",
+      "bytes": 35267,
+      "sha256": "65729dfd6250893cf511a3e87b78563c139d78880551042b6e32c32f670ca9ee",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/character-prototypes.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/character-realism-v12.js",
+      "bytes": 151101,
+      "sha256": "774e760019533b365c49e65f525e4c6c8fb34f73d23065d8dc3c664193f49619",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/character-realism-v12.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/character-realism.js",
+      "bytes": 47498,
+      "sha256": "47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/character-realism.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/character-skins.js",
+      "bytes": 2948,
+      "sha256": "545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/character-skins.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/data.json",
+      "bytes": 106512,
+      "sha256": "bd06e35c6042a5274e381bd55812109d105d57667a70e410fa4ba299e7f1586b",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/data.json",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/deathmatch-rules.js",
+      "bytes": 2174,
+      "sha256": "ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/deathmatch-rules.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/fps-lab.html",
+      "bytes": 8528,
+      "sha256": "4cb6dc325fbc66308c9ff267a066f4e0854e79b285e77ab7d3bd203d110269d2",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/fps-lab.html",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/gameplay-mode-rules.js",
+      "bytes": 10939,
+      "sha256": "facadd16e6a46c2389c7b7cd77b2ba703dc14c6bd9fd06fcc178ce6779fe354b",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/gameplay-mode-rules.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/host-transport-config.js",
+      "bytes": 9839,
+      "sha256": "38fdf19ccb118802fbdf18ed38792f20df685418c4eaf936000dd1ff070bbea4",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/host-transport-config.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/index.html",
+      "bytes": 1371406,
+      "sha256": "1be6c08ca8ef0460971f47c6f2986634003d22197c1b0b6e6dcd824a76a30b23",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/index.html",
+      "matchesParent": false,
+      "storedOriginal": "recovery/hud51-runtime/assets/phone-host/index.html"
+    },
+    {
+      "entry": "assets/phone-host/infection-evasion.js",
+      "bytes": 2937,
+      "sha256": "73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/infection-evasion.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/legend-overlay.js",
+      "bytes": 48142,
+      "sha256": "d0d8c2a9dcb5c2d58031d498979cab5b4de6b33e893d57504577db358e3a626f",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/legend-overlay.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/legendary-packs.js",
+      "bytes": 276947,
+      "sha256": "db86107d00dc84f9de86ac29eca14d2f7259e04859e86f2db4513df9fcfda7ef",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/legendary-packs.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/mp-transport-policy.js",
+      "bytes": 2551,
+      "sha256": "239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/mp-transport-policy.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/navigation.js",
+      "bytes": 20777,
+      "sha256": "3603b9bdbbc15f17e5c04c3c15cee97e95524836456a26d7ca343cfe40261c4e",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/navigation.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/optics-v1.js",
+      "bytes": 8975,
+      "sha256": "7b18105a84b03b2bc17f1e634852128e1e3399bad043063ddee8e4cdbc266d51",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/optics-v1.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_coated_gunmetal_albedo.png",
+      "bytes": 52509,
+      "sha256": "1f020cd8614df61afd829674713927d3d43b76b4f58aba80e69a7753bafecfcb",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_coated_gunmetal_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_coated_gunmetal_normal.png",
+      "bytes": 144141,
+      "sha256": "e14732148515c3a2ffd890189277eecb7b5beed77b9c514d1d14406b11df399b",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_coated_gunmetal_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_coated_gunmetal_roughness.png",
+      "bytes": 74958,
+      "sha256": "32f282e9a22b6663f5f382f06c8f66d4625355a63fdf4cdabf7212f9ebd6482d",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_coated_gunmetal_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_graphite_polymer_albedo.png",
+      "bytes": 59382,
+      "sha256": "5bd64030e31c0fb60f92761615434285175baefe619095a72a47d3150931211e",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_graphite_polymer_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_graphite_polymer_normal.png",
+      "bytes": 181966,
+      "sha256": "fc31f9e7213675a457613a02c34985ab9b673cbf24aa57a89520153c94b9e0c7",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_graphite_polymer_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_graphite_polymer_roughness.png",
+      "bytes": 71444,
+      "sha256": "0e6b6b9c62c655e2a982989802b4cd6b084761d6cd609a5c8dcd0387901b105b",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_graphite_polymer_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_parkerized_steel_albedo.png",
+      "bytes": 52478,
+      "sha256": "740bcd1bb9c3948e9b272f2ba92f55b1e4e3b30e7606f069f739be0a298fcd84",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_parkerized_steel_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_parkerized_steel_normal.png",
+      "bytes": 143815,
+      "sha256": "28c599e3f4820f9c216ce9d415b8b76841f7d000141aaa0ab5681c5ceaf7e711",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_parkerized_steel_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_parkerized_steel_roughness.png",
+      "bytes": 74996,
+      "sha256": "924bdd5bd50776c162d17cec96a3d6cf17ac7ac546d50ba290d64aad580344fb",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_parkerized_steel_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_recess_albedo.png",
+      "bytes": 59720,
+      "sha256": "017132d95c6171074c083a748ae362715ba257922ff42986fbd51326f31f2eba",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recess_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_recess_normal.png",
+      "bytes": 181876,
+      "sha256": "e3c6f9405fe7186fe49402aa802b15c7138d51eea21036b8fc63d08507604330",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recess_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_recess_roughness.png",
+      "bytes": 71453,
+      "sha256": "7a43522212650bcd009ecc96a458c4a5f497639a112e57f112a4536a8031b0a5",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recess_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_recoil_rubber_albedo.png",
+      "bytes": 59768,
+      "sha256": "a47f0f3839e995e2117e32b40df5922d0aa1149fdd72a9154a93650ad7edb474",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recoil_rubber_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_recoil_rubber_normal.png",
+      "bytes": 181767,
+      "sha256": "8856a11534519dfda32a6a147107a76aeaf79dca5072e241824aebe11597b607",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recoil_rubber_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_recoil_rubber_roughness.png",
+      "bytes": 71303,
+      "sha256": "7e6a623be03024f3b0707eec47687c06cdb767590a109a013dd55fe80316a7f4",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_recoil_rubber_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_sight_steel_albedo.png",
+      "bytes": 52606,
+      "sha256": "e9a1f7060435afd9626903865d953976c95fe1c46f969e793ec8a879642dbe5e",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_sight_steel_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_sight_steel_normal.png",
+      "bytes": 144119,
+      "sha256": "d191e9488a9784c10142aaa63b66f423392faf2143c3568fe887b50ab85d42f9",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_sight_steel_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117_sight_steel_roughness.png",
+      "bytes": 74947,
+      "sha256": "610a397247442cd7f49cd6ce2b616698baf3795c659aed010938bd08326badce",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117_sight_steel_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/rook117/rook117-model.js",
+      "bytes": 3211107,
+      "sha256": "6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/rook117/rook117-model.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/server.js",
+      "bytes": 195313,
+      "sha256": "31527fbbe7a5e1f9c7a91dae9dc7e97c2bef4a2de463d23c37be30044845d29d",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/server.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/SHA256SUMS",
+      "bytes": 4557,
+      "sha256": "944a3c97262dfc140104ec18307b91cc19e4acf6d8bb45f55c15dbf2cd507c39",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/SHA256SUMS",
+      "matchesParent": false,
+      "storedOriginal": "recovery/hud51-runtime/assets/phone-host/SHA256SUMS"
+    },
+    {
+      "entry": "assets/phone-host/sightline-theme.mp3",
+      "bytes": 2951831,
+      "sha256": "76745c37a6183c826a2e844225cdfc07fce8fb5ad46322c903565e0d27f89e90",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/sightline-theme.mp3",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/squad-loadout.js",
+      "bytes": 4809,
+      "sha256": "8936f0875708df045563db447d1f73dc13565a42bb3cef91e541b21f067a2043",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/squad-loadout.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/squad-tactics.js",
+      "bytes": 2061,
+      "sha256": "63e013e63134787f08ab656b94f16eacfe42cedf158cd4e04176a9af5cb8c533",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/squad-tactics.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/thirdperson-hands.js",
+      "bytes": 12575,
+      "sha256": "632c693dd3834fcbeea8036b2df8d9fb336d5774c276b7fc79b2dbdbf91cdde7",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/thirdperson-hands.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/three.min.js",
+      "bytes": 603445,
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/three.min.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/threejs-license.txt",
+      "bytes": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/threejs-license.txt",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/THREEJS-MIT-LICENSE.txt",
+      "bytes": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/THREEJS-MIT-LICENSE.txt",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/vr18-v31.js",
+      "bytes": 28947,
+      "sha256": "c71af92d3225b6cbffd94e4626aab39104ef9bd2695c9dee7049d13366068e12",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/vr18-v31.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/weapon-realism.js",
+      "bytes": 58105,
+      "sha256": "964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/weapon-realism.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/weapon-skins.js",
+      "bytes": 80338,
+      "sha256": "d05277319eec398ba49f1610175f339c8b19603371f90f2068b7a580da296ee1",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/weapon-skins.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/zombie-counterplay.js",
+      "bytes": 785,
+      "sha256": "f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/zombie-counterplay.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/phone-host/zombie-hunt.js",
+      "bytes": 10186,
+      "sha256": "d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c",
+      "existingSource": "AndroidProject/app/src/main/assets/phone-host/zombie-hunt.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/bot-tactics.js",
+      "bytes": 12123,
+      "sha256": "19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17",
+      "existingSource": "AndroidProject/app/src/main/assets/www/bot-tactics.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/character-poses.js",
+      "bytes": 2613,
+      "sha256": "322ff2d84dca709a148b29d92c02961536792bfb8a2d5c7cf11daf0bf3887dce",
+      "existingSource": "AndroidProject/app/src/main/assets/www/character-poses.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/character-prototypes.js",
+      "bytes": 35267,
+      "sha256": "65729dfd6250893cf511a3e87b78563c139d78880551042b6e32c32f670ca9ee",
+      "existingSource": "AndroidProject/app/src/main/assets/www/character-prototypes.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/character-realism-v12.js",
+      "bytes": 151101,
+      "sha256": "774e760019533b365c49e65f525e4c6c8fb34f73d23065d8dc3c664193f49619",
+      "existingSource": "AndroidProject/app/src/main/assets/www/character-realism-v12.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/character-realism.js",
+      "bytes": 47498,
+      "sha256": "47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11",
+      "existingSource": "AndroidProject/app/src/main/assets/www/character-realism.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/character-skins.js",
+      "bytes": 2948,
+      "sha256": "545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f",
+      "existingSource": "AndroidProject/app/src/main/assets/www/character-skins.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/combat-foundation.js",
+      "bytes": 873,
+      "sha256": "e49ec0b3d6d8d87e14626c833686996793232bb82bc3d42c00341bcee5b4894a",
+      "existingSource": "AndroidProject/app/src/main/assets/www/combat-foundation.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/deathmatch-rules.js",
+      "bytes": 2174,
+      "sha256": "ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272",
+      "existingSource": "AndroidProject/app/src/main/assets/www/deathmatch-rules.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/fps-lab.html",
+      "bytes": 8528,
+      "sha256": "4cb6dc325fbc66308c9ff267a066f4e0854e79b285e77ab7d3bd203d110269d2",
+      "existingSource": "AndroidProject/app/src/main/assets/www/fps-lab.html",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/gameplay-mode-rules.js",
+      "bytes": 10939,
+      "sha256": "facadd16e6a46c2389c7b7cd77b2ba703dc14c6bd9fd06fcc178ce6779fe354b",
+      "existingSource": "AndroidProject/app/src/main/assets/www/gameplay-mode-rules.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/index.html",
+      "bytes": 1389271,
+      "sha256": "1e2281f407808f57ccc2b39ff5a3509c44054bf4ff4617bd32678cb5a21cf5b9",
+      "existingSource": "AndroidProject/app/src/main/assets/www/index.html",
+      "matchesParent": false,
+      "storedOriginal": "recovery/hud51-runtime/assets/www/index.html"
+    },
+    {
+      "entry": "assets/www/infection-evasion.js",
+      "bytes": 2937,
+      "sha256": "73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec",
+      "existingSource": "AndroidProject/app/src/main/assets/www/infection-evasion.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/legend-overlay.js",
+      "bytes": 48142,
+      "sha256": "d0d8c2a9dcb5c2d58031d498979cab5b4de6b33e893d57504577db358e3a626f",
+      "existingSource": "AndroidProject/app/src/main/assets/www/legend-overlay.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/legendary-packs.js",
+      "bytes": 276947,
+      "sha256": "db86107d00dc84f9de86ac29eca14d2f7259e04859e86f2db4513df9fcfda7ef",
+      "existingSource": "AndroidProject/app/src/main/assets/www/legendary-packs.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/mp-transport-policy.js",
+      "bytes": 2551,
+      "sha256": "239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b",
+      "existingSource": "AndroidProject/app/src/main/assets/www/mp-transport-policy.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/navigation.js",
+      "bytes": 20952,
+      "sha256": "442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888",
+      "existingSource": "AndroidProject/app/src/main/assets/www/navigation.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/optics-v1.js",
+      "bytes": 8975,
+      "sha256": "7b18105a84b03b2bc17f1e634852128e1e3399bad043063ddee8e4cdbc266d51",
+      "existingSource": "AndroidProject/app/src/main/assets/www/optics-v1.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_coated_gunmetal_albedo.png",
+      "bytes": 52509,
+      "sha256": "1f020cd8614df61afd829674713927d3d43b76b4f58aba80e69a7753bafecfcb",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_coated_gunmetal_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_coated_gunmetal_normal.png",
+      "bytes": 144141,
+      "sha256": "e14732148515c3a2ffd890189277eecb7b5beed77b9c514d1d14406b11df399b",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_coated_gunmetal_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_coated_gunmetal_roughness.png",
+      "bytes": 74958,
+      "sha256": "32f282e9a22b6663f5f382f06c8f66d4625355a63fdf4cdabf7212f9ebd6482d",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_coated_gunmetal_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_graphite_polymer_albedo.png",
+      "bytes": 59382,
+      "sha256": "5bd64030e31c0fb60f92761615434285175baefe619095a72a47d3150931211e",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_graphite_polymer_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_graphite_polymer_normal.png",
+      "bytes": 181966,
+      "sha256": "fc31f9e7213675a457613a02c34985ab9b673cbf24aa57a89520153c94b9e0c7",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_graphite_polymer_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_graphite_polymer_roughness.png",
+      "bytes": 71444,
+      "sha256": "0e6b6b9c62c655e2a982989802b4cd6b084761d6cd609a5c8dcd0387901b105b",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_graphite_polymer_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_parkerized_steel_albedo.png",
+      "bytes": 52478,
+      "sha256": "740bcd1bb9c3948e9b272f2ba92f55b1e4e3b30e7606f069f739be0a298fcd84",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_parkerized_steel_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_parkerized_steel_normal.png",
+      "bytes": 143815,
+      "sha256": "28c599e3f4820f9c216ce9d415b8b76841f7d000141aaa0ab5681c5ceaf7e711",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_parkerized_steel_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_parkerized_steel_roughness.png",
+      "bytes": 74996,
+      "sha256": "924bdd5bd50776c162d17cec96a3d6cf17ac7ac546d50ba290d64aad580344fb",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_parkerized_steel_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_recess_albedo.png",
+      "bytes": 59720,
+      "sha256": "017132d95c6171074c083a748ae362715ba257922ff42986fbd51326f31f2eba",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_recess_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_recess_normal.png",
+      "bytes": 181876,
+      "sha256": "e3c6f9405fe7186fe49402aa802b15c7138d51eea21036b8fc63d08507604330",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_recess_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_recess_roughness.png",
+      "bytes": 71453,
+      "sha256": "7a43522212650bcd009ecc96a458c4a5f497639a112e57f112a4536a8031b0a5",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_recess_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_recoil_rubber_albedo.png",
+      "bytes": 59768,
+      "sha256": "a47f0f3839e995e2117e32b40df5922d0aa1149fdd72a9154a93650ad7edb474",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_recoil_rubber_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_recoil_rubber_normal.png",
+      "bytes": 181767,
+      "sha256": "8856a11534519dfda32a6a147107a76aeaf79dca5072e241824aebe11597b607",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_recoil_rubber_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_recoil_rubber_roughness.png",
+      "bytes": 71303,
+      "sha256": "7e6a623be03024f3b0707eec47687c06cdb767590a109a013dd55fe80316a7f4",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_recoil_rubber_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_sight_steel_albedo.png",
+      "bytes": 52606,
+      "sha256": "e9a1f7060435afd9626903865d953976c95fe1c46f969e793ec8a879642dbe5e",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_sight_steel_albedo.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_sight_steel_normal.png",
+      "bytes": 144119,
+      "sha256": "d191e9488a9784c10142aaa63b66f423392faf2143c3568fe887b50ab85d42f9",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_sight_steel_normal.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117_sight_steel_roughness.png",
+      "bytes": 74947,
+      "sha256": "610a397247442cd7f49cd6ce2b616698baf3795c659aed010938bd08326badce",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117_sight_steel_roughness.png",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/rook117/rook117-model.js",
+      "bytes": 3211107,
+      "sha256": "6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53",
+      "existingSource": "AndroidProject/app/src/main/assets/www/rook117/rook117-model.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/sightline-theme.mp3",
+      "bytes": 2951831,
+      "sha256": "76745c37a6183c826a2e844225cdfc07fce8fb5ad46322c903565e0d27f89e90",
+      "existingSource": "AndroidProject/app/src/main/assets/www/sightline-theme.mp3",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/squad-loadout.js",
+      "bytes": 4809,
+      "sha256": "8936f0875708df045563db447d1f73dc13565a42bb3cef91e541b21f067a2043",
+      "existingSource": "AndroidProject/app/src/main/assets/www/squad-loadout.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/squad-tactics.js",
+      "bytes": 2061,
+      "sha256": "63e013e63134787f08ab656b94f16eacfe42cedf158cd4e04176a9af5cb8c533",
+      "existingSource": "AndroidProject/app/src/main/assets/www/squad-tactics.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/survivor-evasion.js",
+      "bytes": 2747,
+      "sha256": "e295d8386da013cdecb83b99892684aca350e72220c1ebeec0b0fe4cbde04c5e",
+      "existingSource": "AndroidProject/app/src/main/assets/www/survivor-evasion.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/thirdperson-hands.js",
+      "bytes": 12575,
+      "sha256": "632c693dd3834fcbeea8036b2df8d9fb336d5774c276b7fc79b2dbdbf91cdde7",
+      "existingSource": "AndroidProject/app/src/main/assets/www/thirdperson-hands.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/three.min.js",
+      "bytes": 603445,
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2",
+      "existingSource": "AndroidProject/app/src/main/assets/www/three.min.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/threejs-license.txt",
+      "bytes": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f",
+      "existingSource": "AndroidProject/app/src/main/assets/www/threejs-license.txt",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/threejs-mit-license.txt",
+      "bytes": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f",
+      "existingSource": "AndroidProject/app/src/main/assets/www/threejs-mit-license.txt",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/vr18-v31.js",
+      "bytes": 28947,
+      "sha256": "c71af92d3225b6cbffd94e4626aab39104ef9bd2695c9dee7049d13366068e12",
+      "existingSource": "AndroidProject/app/src/main/assets/www/vr18-v31.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/weapon-qa.html",
+      "bytes": 915,
+      "sha256": "af6a3253f1fb068abc6e1e135f084cd1f38bd0f1151c22d9342ac7abe8de0b56",
+      "existingSource": "AndroidProject/app/src/main/assets/www/weapon-qa.html",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/weapon-realism.js",
+      "bytes": 58105,
+      "sha256": "964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee",
+      "existingSource": "AndroidProject/app/src/main/assets/www/weapon-realism.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/weapon-skins.js",
+      "bytes": 80338,
+      "sha256": "d05277319eec398ba49f1610175f339c8b19603371f90f2068b7a580da296ee1",
+      "existingSource": "AndroidProject/app/src/main/assets/www/weapon-skins.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/zombie-balance.js",
+      "bytes": 1082,
+      "sha256": "5196acceff0c4e4fd440371671660bce1c46a43e94305f22bc72532538937227",
+      "existingSource": "AndroidProject/app/src/main/assets/www/zombie-balance.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/zombie-counterplay.js",
+      "bytes": 785,
+      "sha256": "f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493",
+      "existingSource": "AndroidProject/app/src/main/assets/www/zombie-counterplay.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    },
+    {
+      "entry": "assets/www/zombie-hunt.js",
+      "bytes": 10186,
+      "sha256": "d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c",
+      "existingSource": "AndroidProject/app/src/main/assets/www/zombie-hunt.js",
+      "matchesParent": true,
+      "storedOriginal": null
+    }
+  ]
+}
