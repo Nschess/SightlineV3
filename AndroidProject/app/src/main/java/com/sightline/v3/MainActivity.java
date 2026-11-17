@@ -52,7 +52,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "674de272f9b1be3157e80ceced075d122a355ee160a8d235e3cfe6f1d0ab0576";
+    private static final String HOST_BUNDLE_SHA256 = "9da7490ac9dc68536646aa19d274311414cf553d3cc58b3dc898b2404d302005";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
@@ -285,6 +285,7 @@ public final class MainActivity extends Activity {
         }
     }
     private String selectedLanAddress;
+    private volatile int phoneHostGeneration;
     private void chooseLanNetwork(Runnable action) {
         java.util.Map<String,String> networks=LanHostService.lanAddresses();
         if(networks.isEmpty()){selectedLanAddress=null;toast("Connect to Wi-Fi and try again.");return;}
@@ -304,6 +305,7 @@ public final class MainActivity extends Activity {
         toast("Starting your match…");
         activePhoneHostIp=ip;
         phoneHostStarting=true;
+        final int hostGeneration=++phoneHostGeneration;
         try {
             Intent start=new Intent(this,LanHostService.class);
             start.putExtra("lan-address",ip);
@@ -311,7 +313,7 @@ public final class MainActivity extends Activity {
         } catch(Exception e) {activePhoneHostIp=null;phoneHostStarting=false;toast("Hosting could not start: "+e.getMessage());return;}
         new Thread(()->{
             boolean ready=false;
-            for(int i=0;i<51;i++) {
+            for(int i=0;i<51 && hostGeneration==phoneHostGeneration;i++) {
                 try {
                     java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL("http://"+ip+":8080/status").openConnection();
                     c.setConnectTimeout(400);c.setReadTimeout(400);
@@ -332,7 +334,7 @@ public final class MainActivity extends Activity {
             }
             final boolean available=ready;
             runOnUiThread(()->{
-                if(isFinishing()||isDestroyed())return;
+                if(isFinishing()||isDestroyed()||hostGeneration!=phoneHostGeneration)return;
                 phoneHostStarting=false;
                 if(!ip.equals(activePhoneHostIp))return;
                 if(available) {
@@ -363,7 +365,7 @@ public final class MainActivity extends Activity {
         if (clipboard!=null) clipboard.setPrimaryClip(ClipData.newPlainText("Sightline LAN address", "http://"+ip+":8080"));
         toast("Join address copied. Share it only on your trusted LAN.");
     }
-    private void stopPhoneHost() { phoneHostStarting=false;
+    private void stopPhoneHost() { phoneHostGeneration++; phoneHostStarting=false;
         stopService(new Intent(this,LanHostService.class));
         activePhoneHostIp=null;
         showHome();

@@ -12758,10 +12758,10 @@ function mpConnect() {
   var to = setTimeout(function () { if (MP.sock === ws && !MP.id && !MP.err) { MP.err = 'Connection timed out — check that both devices use the same Wi-Fi.'; MP.status = ''; try { ws.close(); } catch (e) {} mpRefreshPanel(); } }, 5000);
   ws.onopen = function () { if (MP.sock !== ws) return; MP.status = 'Joining lobby…'; mpRefreshPanel(); ws.send(JSON.stringify({ t: 'hello', v: MP_PROTOCOL, features: MP_FEATURES, name: MP.name })); };
   ws.onmessage = function (ev) { if (MP.sock !== ws) return; var m; MP.net.lastRx = performance.now(); try { m = JSON.parse(ev.data); } catch (e) { return; } if (!MP.id && (m.t === 'welcome' || m.t === 'err')) clearTimeout(to); mpMsg(m); };
-  ws.onerror = function () { if (MP.sock === ws && !MP.id) { MP.err = 'Host unavailable — try again.'; MP.status = ''; } };
+  ws.onerror = function () { if (MP.sock === ws && !MP.id) { if(!MP.err)MP.err = 'Host unavailable — try again.'; MP.status = ''; try{ws.close();}catch(e){} mpRefreshPanel(); } };
   ws.onclose = function () {
     clearTimeout(to); if (MP.sock !== ws) return;
-    var was = MP.id; MP.sock = null; MP.id = 0; MP.lobby = null; MP.status = '';
+    var was = MP.id; MP.sock = null; MP.id = 0; MP.session=''; MP.actionSeq=0; MP.lobby = null; MP.status = '';
     if (MP.on) { mpCleanup(); MP.err = 'Connection lost — reconnect or return to lobby.'; menuTab = 'net'; showOverlay('#ov-start'); renderMenu(false); }
     else { if (was) MP.err = 'Connection lost — reconnect or return to lobby.'; mpRefreshPanel(); renderNav(); }
     if (G.autoRe && !MP.userLeft && (was || MP.retryN)) { if (was) MP.retryN = 0; mpRetry(MP.retryN); }
@@ -12775,6 +12775,7 @@ function mpRetry(n) {
 }
 setInterval(function () { if (MP.sock && MP.sock.readyState === 1 && MP.id && MP.net.lastRx && performance.now() - MP.net.lastRx > 8000) { try { MP.sock.close(); } catch (e) {} } }, 1000);      /* the host pings every 2 s: silence means the link is dead */
 function mpLeave() {
+  if(typeof mpCancelLanScan==='function')mpCancelLanScan();
   MP.userLeft = true; clearTimeout(MP.retryT); MP.retryN = 0;
   var ws = MP.sock; MP.sock = null; MP.id = 0; MP.lobby = null; MP.status = ''; MP.err = '';
   if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} }
@@ -12786,7 +12787,7 @@ function mpLeave() {
 function mpMsg(m) {
   switch (m.t) {
     case 'welcome':
-      if(m.protocol!==MP_PROTOCOL||typeof m.session!=='string'||m.session.length<16||!Array.isArray(m.features)||MP_FEATURES.some(function(f){return m.features.indexOf(f)<0;})){
+      if(!Number.isSafeInteger(m.id)||m.id<=0||m.protocol!==MP_PROTOCOL||typeof m.session!=='string'||m.session.length<16||!Array.isArray(m.features)||MP_FEATURES.some(function(f){return m.features.indexOf(f)<0;})){
         MP.err='Host protocol mismatch. Update the host and game page, then reconnect.';MP.userLeft=true;MP.retryN=0;try{if(MP.sock)MP.sock.close();}catch(e){}mpRefreshPanel();break;
       }
       MP.session=m.session;MP.actionSeq=0;MP.initialCosmeticsSent=false;MP.retryN=0;MP.id=m.id;MP.host=m.host;MP.status='Ready';MP.err='';mpSendCosmetics();renderNav();mpRefreshPanel();break;

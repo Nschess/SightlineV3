@@ -6,15 +6,18 @@ class LocalLanHost {
   constructor({root=path.resolve(__dirname,'..'),addressProvider=()=>{const addresses=[...new Set(Object.entries(os.networkInterfaces()).filter(([name])=>!/loopback|virtual|vethernet|docker|vpn|tun/i.test(name)).flatMap(([,rows])=>rows||[]).filter(r=>r.family==='IPv4'&&!r.internal&&Discovery.isPrivateIPv4(r.address)).map(r=>r.address))];return addresses.length===1?addresses[0]:null;},allowLoopbackForTests=false,testPort=8080}={}){
     if(!Number.isInteger(testPort)||testPort<1||testPort>65535||(!allowLoopbackForTests&&testPort!==8080))throw Error('Only isolated loopback tests may override the fixed host port');
     this.port=testPort;
-    this.root=root;this.addressProvider=addressProvider;this.allowLoopbackForTests=allowLoopbackForTests;this.child=null;this.pending=null;this.room=null;
+    this.root=root;this.addressProvider=addressProvider;this.allowLoopbackForTests=allowLoopbackForTests;this.child=null;this.pending=null;this.stopping=null;this.generation=0;this.room=null;
   }
   async start(){
+    if(this.stopping)await this.stopping;
     if(this.pending)return this.pending;
     if(this.child&&this.room){const alive=await this.probe(this.room.address);if(alive)return this.room;await this.stop();}
-    this.pending=this.boot().finally(()=>{this.pending=null;});return this.pending;
+    if(this.child)throw Error('The previous local match has not stopped. Try again after it exits.');
+    const generation=++this.generation;
+    this.pending=this.boot(generation).finally(()=>{this.pending=null;});return this.pending;
   }
   probe(address){return new Promise(resolve=>{const req=http.get({host:address,port:this.port,path:'/status',timeout:350},res=>{let s='';res.on('data',d=>{s+=d;if(s.length>4096)req.destroy();});res.on('end',()=>{try{let j=JSON.parse(s);resolve(res.statusCode===200&&j.ok&&j.game===GAME&&j.protocol===2&&j.bundle===this.bundle&&j.instanceId===this.instance?j:null);}catch(_){resolve(null);}});});req.on('timeout',()=>req.destroy());req.on('error',()=>resolve(null));});}
-  async boot(){
+  async boot(generation){
     const address=this.addressProvider();
     if(this.port!==8080&&address!=='127.0.0.1')throw Error('Test ports require a loopback listener');
     if(!Discovery.isPrivateIPv4(address)&&!(this.allowLoopbackForTests&&address==='127.0.0.1'))throw Error('Connect this PC to the same private Wi-Fi/LAN as the other players.');
@@ -30,12 +33,18 @@ class LocalLanHost {
     this.child=child;
     const collect=d=>{fault=(fault+d.toString()).slice(-2500);};child.stdout.on('data',collect);child.stderr.on('data',collect);
     child.once('error',e=>{fault=e.message;exited=true;});child.once('exit',()=>{exited=true;if(this.child===child){if(this.networkWatch){clearInterval(this.networkWatch);this.networkWatch=null;}this.child=null;this.room=null;}});
-    for(let i=0;i<60&&!exited;i++){const status=await this.probe(address);if(status){this.room={address,port:this.port,protocol:2,verified:true,name:status.name,maxPlayers:status.maxPlayers};this.networkWatch=setInterval(()=>{if(this.addressProvider()!==address){console.warn('Selected LAN network disappeared; stopping host.');this.stop().catch(e=>console.error('LAN host shutdown:',e.message));}},3000);this.networkWatch.unref();return this.room;}await new Promise(r=>setTimeout(r,125));}
+    for(let i=0;i<60&&!exited&&generation===this.generation;i++){const status=await this.probe(address);if(generation!==this.generation)break;if(status){this.room={address,port:this.port,protocol:2,verified:true,name:status.name,maxPlayers:status.maxPlayers};this.networkWatch=setInterval(()=>{if(this.addressProvider()!==address){console.warn('Selected LAN network disappeared; stopping host.');this.stop().catch(e=>console.error('LAN host shutdown:',e.message));}},3000);this.networkWatch.unref();return this.room;}await new Promise(r=>setTimeout(r,125));}
     await this.stop();throw Error(/EADDRINUSE/.test(fault)?'Another app is already using the local match port. Close the old host and retry.':'The local match server could not start. '+fault.slice(-300));
   }
   async stop(){
+    this.generation++;
+    if(this.stopping)return this.stopping;
+    this.stopping=this.stopChild().finally(()=>{this.stopping=null;});
+    return this.stopping;
+  }
+  async stopChild(){
     if(this.networkWatch){clearInterval(this.networkWatch);this.networkWatch=null;}
-    const child=this.child;this.child=null;this.room=null;if(!child||child.exitCode!==null)return;
+    const child=this.child;this.room=null;if(!child||child.exitCode!==null){if(this.child===child)this.child=null;return;}
     const waitForExit=ms=>new Promise(resolve=>{
       if(child.exitCode!==null)return resolve(true);
       let settled=false;
