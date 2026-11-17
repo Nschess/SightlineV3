@@ -52,7 +52,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "b7c19bca8fe2c0075ebde2aed27ff41d560f07dfbfb6b870664448e61fceb7b3";
+    private static final String HOST_BUNDLE_SHA256 = "45fc7e691aab2d4b047b700e219b62683e0324175b2cf38dca2145fa4292dd1a";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";

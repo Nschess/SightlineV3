@@ -12506,6 +12506,7 @@ $('#supply').addEventListener('click', function (e) { e.stopPropagation(); mpBuy
 
 /* ---- connection ---- */
 function mpConnect() {
+  if(MP.sock)return;clearTimeout(MP.retryT);if(typeof mpCancelLanScan==='function')mpCancelLanScan();
   if (mpNativeLan()) { location.href='sightlinelan://join?host='+encodeURIComponent(String(MP.addr||'').trim()); return; }
   if (MP.sock) return;
   var securePage = location.protocol === 'https:';
@@ -12557,7 +12558,7 @@ function mpMsg(m) {
         MP.err='Host protocol mismatch. Update the host and game page, then reconnect.';MP.userLeft=true;MP.retryN=0;try{if(MP.sock)MP.sock.close();}catch(e){}mpRefreshPanel();break;
       }
       MP.session=m.session;MP.actionSeq=0;MP.initialCosmeticsSent=false;MP.retryN=0;MP.id=m.id;MP.host=m.host;MP.status='Ready';MP.err='';mpSendCosmetics();renderNav();mpRefreshPanel();break;
-    case 'err': MP.err = m.msg || ''; if(m.code==='protocol_upgrade_required'||m.code==='protocol_unsupported'||m.code==='protocol_capabilities_required'){MP.userLeft=true;MP.retryN=0;clearTimeout(MP.retryT);} if (MP.on) showMsg(m.msg || 'Error', '', 2500); mpRefreshPanel(); break;
+    case 'err': MP.err = !MP.id ? (/full/i.test(String(m.msg||'')) ? 'Match full — choose another room.' : 'Host unavailable — try again.') : (m.msg || ''); console.warn('LAN host rejected request',m.code||'',m.msg||''); if(!MP.id && MP.sock){MP.userLeft=true;try{MP.sock.close();}catch(e){}}  if(m.code==='protocol_upgrade_required'||m.code==='protocol_unsupported'||m.code==='protocol_capabilities_required'){MP.userLeft=true;MP.retryN=0;clearTimeout(MP.retryT);} if (MP.on) showMsg(m.msg || 'Error', '', 2500); mpRefreshPanel(); break;
     case 'ping': mpSend({ t: 'pong', s: m.s }); break;
     case 'lobby': {
       var renderKey = mpLobbyRenderKey(m), lobbyNeedsRender = renderKey !== MP.lobbyRenderKey;
@@ -13218,7 +13219,7 @@ function mpPanel(head) {
       '<div class="srow"><label class="lb" for="mp-name">Your name</label><input id="mp-name" class="mp-in" maxlength="16" autocomplete="off" value="' + esc(MP.name || ME.name) + '"></div>' +
       '<details><summary>Advanced · join by address</summary><div class="srow"><label class="lb" for="mp-addr">' + (mpCurrentPageHost() ? 'Host serving this page' : 'Host address') + '<small>' + (mpCurrentPageHost() ? 'Detected from this LAN-host page; edit only to use another host.' : 'For example 192.168.1.20:8080') + '</small></label><input id="mp-addr" class="mp-in" autocomplete="off" placeholder="192.168.1.20:8080" value="' + esc(MP.addr) + '"></div>' +
       '<div class="setfoot"><button class="btn" type="button" data-net="connect"' + (MP.sock ? ' disabled' : '') + '>' + (MP.sock ? 'Connecting...' : (mpCurrentPageHost() ? 'Join this host' : 'Connect')) + '</button></div>' +
-      '</details>' + (MP.status ? '<p class="small">' + esc(MP.status) + '</p>' : '') + (MP.err ? '<p class="small mp-err" role="alert">' + esc(MP.err) + '</p>' : '') +
+      '</details>' + (MP.status ? '<p class="small">' + esc(MP.status) + '</p>' : '') + (MP.err ? '<p class="small mp-err" role="alert">' + esc(MP.err) + '</p><button type="button" class="btn ghost" data-net="'+(MP.hostStartFailed?'create-local':'retry-connect')+'">Retry</button>' : '') +
       '<p class="small">Single player still works exactly as before from the Play tab. Customization remains under Settings → Customization.</p>';
     if (mpLanDiscoveryBridge()) setTimeout(function () { mpScanLanHosts(false); }, 0);
     return h;
@@ -13282,11 +13283,11 @@ function mpCreateLocalHost() {
   if(mpNativeLan()){location.href='sightlinelan://create';return;}
   if(!mpLanDiscoveryBridge()||mpLocalHostPending)return;
   var n=$('#mp-name');if(n)MP.name=n.value;
-  mpLocalHostPending=true;MP.status='Starting your match…';MP.err='';renderOps();
+  mpLocalHostPending=true;MP.hostStartFailed=false;MP.status='Starting your match…';MP.err='';renderOps();
   fetch('/__sightline/lan/create',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json();}).then(function(result){
     if(!result.ok||!result.room||!mpLanPrivateIp(result.room.address)||result.room.port!==8080||result.room.verified!==true)throw Error(result.error||'Local host did not become ready.');
     mpLocalHostOwned=true;MP.addr=result.room.address+':8080';MP.status='Joining your match…';mpConnect();
-  }).catch(function(e){console.warn('LAN host startup failed',e);MP.err='Unable to host — check your network connection.';}).finally(function(){mpLocalHostPending=false;renderOps();});
+  }).catch(function(e){console.warn('LAN host startup failed',e);MP.hostStartFailed=true;MP.err='Unable to host — check your network connection.';}).finally(function(){mpLocalHostPending=false;renderOps();});
 }
 function mpStopLocalHost() {if(!mpLocalHostOwned)return;fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){if(!r.ok)throw Error('Host shutdown failed');mpLocalHostOwned=false;mpLeave();renderOps();}).catch(function(e){MP.err=e.message;renderOps();});}
 window.addEventListener('pagehide',function(){if(mpLocalHostOwned)fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',keepalive:true}).catch(function(){});});
@@ -13343,7 +13344,8 @@ function mpAction(b) {
   if(a==='create-local'){mpCreateLocalHost();return;}
   if(a==='find-local'){if(mpNativeLan())location.href='sightlinelan://find';else mpScanLanHosts(true);return;}
   if(a==='stop-local'){mpStopLocalHost();return;}
-  if (a === 'connect') { var n = $('#mp-name'), d = $('#mp-addr'); if (n) MP.name = n.value; if (d) MP.addr = d.value; mpConnect(); }
+  if (a === 'retry-connect') { if(!MP.sock){MP.userLeft=false;MP.retryN=0;MP.err='';mpConnect();} }
+  else if (a === 'connect') { var n = $('#mp-name'), d = $('#mp-addr'); if (n) MP.name = n.value; if (d) MP.addr = d.value; mpConnect(); }
   else if (a === 'discover') mpScanLanHosts(true);
   else if (a === 'join-discovered') { mpCancelLanScan();var ip=b.getAttribute('data-host'); if(!mpLanPrivateIp(ip))return; MP.addr=ip+':8080';var d=$('#mp-addr');if(d)d.value=MP.addr;MP.status='Joining verified LAN host…';mpConnect(); }
   else if (a === 'leave') mpLeave();
