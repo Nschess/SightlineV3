@@ -52,7 +52,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "eb769c3e5665fa03624b84a024467f409cc8a48079602f6f59dc34cfa991e91e";
+    private static final String HOST_BUNDLE_SHA256 = "6587530880ce2386f92ab96126b1ab9005cf8c36b83a023caafffa17a8420f63";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
@@ -377,7 +377,7 @@ public final class MainActivity extends Activity {
         int[] n=new int[4];
         try { for(int i=0;i<4;i++){if(p[i].isEmpty()||p[i].length()>3)return false;n[i]=Integer.parseInt(p[i]);if(n[i]<0||n[i]>255)return false;} }
         catch(NumberFormatException e) { return false; }
-        return n[3]>0&&n[3]<255&&(n[0]==10||(n[0]==172&&n[1]>=16&&n[1]<=31)||(n[0]==192&&n[1]==168));
+        return n[0]==10||(n[0]==172&&n[1]>=16&&n[1]<=31)||(n[0]==192&&n[1]==168);
     }
     private static boolean validPrivateBroadcast(InetAddress address) {
         return address instanceof java.net.Inet4Address && HostPolicy.isPrivateNetworkIPv4(address.getHostAddress());
@@ -393,28 +393,41 @@ public final class MainActivity extends Activity {
         try{return InetAddress.getByAddress(out);}catch(java.net.UnknownHostException ignored){return null;}
     }
     private void discoverLanHosts() {
-        final AlertDialog searching=new AlertDialog.Builder(this).setTitle("Searching for nearby matches…")
-            .setMessage("Looking for phone and PC matches on this Wi-Fi.")
-            .setPositiveButton("Manual IP",(d,w)->showManualHostEntry())
-            .setNegativeButton("Cancel",null).create();
-        searching.show();
+        final java.util.concurrent.atomic.AtomicBoolean cancelled=new java.util.concurrent.atomic.AtomicBoolean(false);
+        final java.util.List<LanHostCandidate> hosts=new java.util.ArrayList<>();
+        final android.widget.ArrayAdapter<String> rows=new android.widget.ArrayAdapter<>(this,android.R.layout.simple_list_item_1,new java.util.ArrayList<>());
+        final android.widget.ListView list=new android.widget.ListView(this); list.setAdapter(rows);
+        final android.widget.LinearLayout content=new android.widget.LinearLayout(this);content.setOrientation(android.widget.LinearLayout.VERTICAL);
+        final android.widget.TextView state=new android.widget.TextView(this);state.setText("Searching for nearby matches…");
+        int inset=(int)(16*getResources().getDisplayMetrics().density);content.setPadding(inset,inset,inset,inset);content.addView(state);content.addView(list);
+        final AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find LAN Match").setView(content)
+            .setPositiveButton("Refresh",(d,w)->discoverLanHosts()).setNeutralButton("Advanced",(d,w)->showManualHostEntry())
+            .setNegativeButton("Back",null).create();
+        dialog.setOnDismissListener(d->cancelled.set(true));
+        list.setOnItemClickListener((parent,view,position,id)->{
+            if(position<0||position>=hosts.size())return;LanHostCandidate host=hosts.get(position);
+            if(host.full()){toast("Match full — choose another room.");return;}
+            cancelled.set(true);dialog.dismiss();getPreferences(Context.MODE_PRIVATE).edit().putString("lan-ip",host.address).apply();openGame(host.address,true);
+        });
+        dialog.show();
         new Thread(()->{
-            java.util.List<LanHostCandidate> found;
-            String error="";
             android.net.wifi.WifiManager.MulticastLock multicast=null;
-            try { android.net.wifi.WifiManager wifi=(android.net.wifi.WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wifi!=null){multicast=wifi.createMulticastLock("sightline-discovery");multicast.setReferenceCounted(false);multicast.acquire();} found=scanLanHosts(); }
-            catch(Exception e) { found=new java.util.ArrayList<>(); error="Unable to search — check your network connection."; }
-            finally { if(multicast!=null&&multicast.isHeld())multicast.release(); }
-            final java.util.List<LanHostCandidate> hosts=found; final String scanError=error;
-            runOnUiThread(()->{
-                if(isFinishing()||isDestroyed())return;
-                if(!searching.isShowing())return;
-                try { searching.dismiss(); } catch(Exception ignored) { }
-                showLanHostResults(hosts,scanError);
-            });
+            try {
+                android.net.wifi.WifiManager wifi=(android.net.wifi.WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                if(wifi!=null){multicast=wifi.createMulticastLock("sightline-discovery");multicast.setReferenceCounted(false);multicast.acquire();}
+                scanLanHosts(cancelled,host->runOnUiThread(()->{
+                    if(cancelled.get()||!dialog.isShowing()||isFinishing()||isDestroyed())return;
+                    for(LanHostCandidate existing:hosts)if(existing.id.equals(host.id))return;
+                    hosts.add(host);rows.add(host.label());state.setText("Select a match to join.");
+                }));
+                runOnUiThread(()->{if(!cancelled.get()&&dialog.isShowing()&&hosts.isEmpty())state.setText("No matches found on this Wi-Fi.");});
+            } catch(Exception e) {
+                Log.w("SightlineLAN","Discovery failed",e);
+                runOnUiThread(()->{if(!cancelled.get()&&dialog.isShowing())state.setText("Unable to search — check your network connection.");});
+            } finally {if(multicast!=null&&multicast.isHeld())multicast.release();}
         },"sightline-lan-discovery").start();
     }
-    private java.util.List<LanHostCandidate> scanLanHosts() throws Exception {
+    private java.util.List<LanHostCandidate> scanLanHosts(java.util.concurrent.atomic.AtomicBoolean cancelled, java.util.function.Consumer<LanHostCandidate> onVerified) throws Exception {
         byte[] nonceBytes=new byte[16]; new java.security.SecureRandom().nextBytes(nonceBytes);
         StringBuilder nonce=new StringBuilder(32); for(byte b:nonceBytes)nonce.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
         org.json.JSONObject probe=new org.json.JSONObject(); probe.put("service","sightline-v3-lan");probe.put("kind","probe");probe.put("version",1);probe.put("nonce",nonce.toString());
@@ -438,7 +451,7 @@ public final class MainActivity extends Activity {
             for(String target:targets){request.setAddress(InetAddress.getByName(target));request.setPort(DISCOVERY_PORT);socket.send(request);}
             long deadline=android.os.SystemClock.elapsedRealtime()+1250;
             byte[] buffer=new byte[1024];
-            while(android.os.SystemClock.elapsedRealtime()<deadline) {
+            while(!cancelled.get() && android.os.SystemClock.elapsedRealtime()<deadline) {
                 int left=(int)Math.max(40,Math.min(250,deadline-android.os.SystemClock.elapsedRealtime()));
                 try { socket.setSoTimeout(left);java.net.DatagramPacket reply=new java.net.DatagramPacket(buffer,buffer.length);socket.receive(reply);
                     String source=reply.getAddress().getHostAddress();if(!privateLanAddress(source))continue;
@@ -447,24 +460,11 @@ public final class MainActivity extends Activity {
                     String id=offer.optString("id");if(!id.matches("(?i)[a-f0-9-]{16,64}"))continue;
                     LanHostCandidate c=new LanHostCandidate();c.address=source;c.id=id;c.name=offer.optString("name","Sightline Match");c.players=offer.optInt("players",0);c.maxPlayers=offer.optInt("maxPlayers",0);c.mode=offer.optString("mode","lobby");c.map=offer.optString("map","map");c.phase=offer.optString("phase","lobby");
                     if(c.players<0||c.maxPlayers<2||c.players>c.maxPlayers||c.maxPlayers>32)continue;
-                    LanHostCandidate prior=candidates.get(id);if(prior==null&&candidates.size()<32)candidates.put(id,c);
+                    LanHostCandidate prior=candidates.get(id);if(prior==null&&candidates.size()<32){ candidates.put(id,c); LanHostCandidate verified=verifyLanHost(c); if(verified!=null&&!cancelled.get())onVerified.accept(verified); }
                 } catch(java.net.SocketTimeoutException ignored) { }
             }
         }
-        java.util.concurrent.ExecutorService pool=java.util.concurrent.Executors.newFixedThreadPool(8);
-        try {
-            java.util.concurrent.CountDownLatch done=new java.util.concurrent.CountDownLatch(candidates.size());
-            java.util.List<java.util.concurrent.FutureTask<LanHostCandidate>> checks=new java.util.ArrayList<>();
-            for(LanHostCandidate candidate:candidates.values()) {
-                java.util.concurrent.FutureTask<LanHostCandidate> task=new java.util.concurrent.FutureTask<LanHostCandidate>(()->verifyLanHost(candidate)) { @Override protected void done(){done.countDown();} };
-                checks.add(task);pool.execute(task);
-            }
-            java.util.List<LanHostCandidate> verified=new java.util.ArrayList<>();
-            done.await(900,java.util.concurrent.TimeUnit.MILLISECONDS);
-            for(java.util.concurrent.Future<LanHostCandidate> check:checks)if(check.isDone()&&!check.isCancelled())try{LanHostCandidate host=check.get();if(host!=null)verified.add(host);}catch(Exception ignored){}
-            for(java.util.concurrent.Future<LanHostCandidate> check:checks)if(!check.isDone())check.cancel(true);
-            verified.sort((a,b)->a.address.compareTo(b.address));return verified;
-        } finally { pool.shutdownNow(); }
+        return new java.util.ArrayList<>(candidates.values());
     }
     private LanHostCandidate verifyLanHost(LanHostCandidate candidate) {
         java.net.HttpURLConnection connection=null;

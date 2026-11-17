@@ -28,9 +28,7 @@ function isRfc1918IPv4(value) {
 }
 
 function isPrivateIPv4(value) {
-  if (!isRfc1918IPv4(value)) return false;
-  const last = Number(value.split('.')[3]);
-  return last > 0 && last < 255;
+  return isRfc1918IPv4(value);
 }
 
 function ipv4Number(value) {
