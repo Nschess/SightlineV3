@@ -96,9 +96,12 @@
       if(N.floorComponents[id]!==component||N.reachable&&!N.reachable[id])return;
       const n=N.nodes[id],ax=n.x-anchor.x,az=n.z-anchor.z,ds=ax*ax+az*az;
       if(ds<2.25||ds>18*18)return;
-      for(const other of used){const dx=n.x-other.x,dz=n.z-other.z;if(dx*dx+dz*dz<1.44)return;}
       const wx=n.x-wish.x,wz=n.z-wish.z,value=wx*wx+wz*wz+ds*.03;
-      if(value<score){score=value;best=n;}
+      // A candidate that cannot improve the winner needs no reservation scan.
+      // Keep strict comparison so tie selection and NaN behavior are unchanged.
+      if(!(value<score))return;
+      for(const other of used){const dx=n.x-other.x,dz=n.z-other.z;if(dx*dx+dz*dz<1.44)return;}
+      score=value;best=n;
     }
     function scan(x,z,r){
       const i=Math.floor(x-N.x0),j=Math.floor(z-N.z0),x0=Math.max(0,i-r),x1=Math.min(N.w-1,i+r),z0=Math.max(0,j-r),z1=Math.min(N.h-1,j+r);
