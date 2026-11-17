@@ -2579,7 +2579,12 @@ server.on('upgrade', (req, sock) => {
       !connectionTokens.includes('upgrade') ||
       String(req.headers['sec-websocket-version'] || '') !== '13' ||
       !validWebSocketKey(key)) { sock.destroy(); return; }
-  if (humanCount() >= MAX_PLAYERS) { sock.end('HTTP/1.1 503 Server full\r\nConnection: close\r\n\r\n'); return; }
+  if (humanCount() >= MAX_PLAYERS) {
+    const accept=crypto.createHash('sha1').update(key+GUID).digest('base64');
+    const close=Buffer.alloc(2);close.writeUInt16BE(4403);
+    sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+accept+'\r\n\r\n');
+    sock.end(frame(8,close));return;
+  }
   const releasePending=reservePendingHandshake(sock.remoteAddress);
   if(!releasePending){sock.end('HTTP/1.1 429 Too Many Connections\r\nConnection: close\r\n\r\n');return;}
   const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');

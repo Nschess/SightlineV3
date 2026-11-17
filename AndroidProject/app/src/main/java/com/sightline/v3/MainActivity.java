@@ -52,7 +52,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "9da7490ac9dc68536646aa19d274311414cf553d3cc58b3dc898b2404d302005";
+    private static final String HOST_BUNDLE_SHA256 = "b1416d0df9e10d2c5e987edb719ffbacb6a1e8c6336836a7fe5436698b4eea4c";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
@@ -288,6 +288,7 @@ public final class MainActivity extends Activity {
     private volatile int phoneHostGeneration;
     private void chooseLanNetwork(Runnable action) {
         java.util.Map<String,String> networks=LanHostService.lanAddresses();
+        if(selectedLanAddress!=null&&!networks.containsKey(selectedLanAddress)){selectedLanAddress=null;lanJoinGeneration++;lanJoinPending=false;phoneHostGeneration++;phoneHostStarting=false;if(activePhoneHostIp!=null){stopService(new Intent(this,LanHostService.class));activePhoneHostIp=null;}new AlertDialog.Builder(this).setTitle("Network changed").setMessage("Select a network to continue.").setPositiveButton("Choose network",(d,w)->chooseLanNetwork(()->{})).setNegativeButton("Back",null).show();return;}
         if(networks.isEmpty()){selectedLanAddress=null;toast("Connect to Wi-Fi and try again.");return;}
         if(networks.size()==1){selectedLanAddress=networks.keySet().iterator().next();action.run();return;}
         if(selectedLanAddress!=null&&networks.containsKey(selectedLanAddress)){action.run();return;}
@@ -607,13 +608,14 @@ public final class MainActivity extends Activity {
                 Log.e("SightlineLAN","Host readiness failed before opening bundled LAN client",e);
                 if (e instanceof java.net.ConnectException) failure="Host unavailable — try again.";
                 else if (e instanceof java.net.SocketTimeoutException) failure="Connection timed out — check that both devices use the same Wi-Fi.";
-                else if ("MATCH_FULL".equals(e.getMessage())) failure="Match full — choose another room.";
+                else if ("MATCH_FULL".equals(e.getMessage())) failure="Match is full. Choose another room.";
                 else failure="Host unavailable — try again.";
             }
             final String error=failure;
             runOnUiThread(() -> {
                 if (generation!=lanJoinGeneration || isFinishing() || isDestroyed()) return;
                 lanJoinPending=false;
+                if ("Match is full. Choose another room.".equals(error)) { toast(error); discoverLanHosts(); return; }
                 if (error==null) openVerifiedGame(target,autoJoin);
                 else new AlertDialog.Builder(this).setTitle("Could not join match")
                     .setMessage(error+" Your game remains open.")
