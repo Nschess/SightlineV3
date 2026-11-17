@@ -334,8 +334,13 @@ public final class MainActivity extends Activity {
                             reason=new String(buf,java.nio.charset.StandardCharsets.UTF_8);
                         }
                     } catch(Exception ignored) { }
-                    toast(reason + ". No room opened.");
-                    stopPhoneHost();
+                    Log.w("SightlineLAN", "Host startup failed: " + reason);
+                    stopService(new Intent(this,LanHostService.class));
+                    activePhoneHostIp=null;
+                    new AlertDialog.Builder(this).setTitle("Unable to host")
+                        .setMessage("Check your network connection and try again.")
+                        .setPositiveButton("Retry",(d,w)->startPhoneHost())
+                        .setNegativeButton("Back",null).show();
                 }
             });
         },"sightline-lan-ready").start();
@@ -587,6 +592,7 @@ public final class MainActivity extends Activity {
                 Log.e("SightlineLAN","Host readiness failed before opening bundled LAN client",e);
                 if (e instanceof java.net.ConnectException) failure="Host unavailable — try again.";
                 else if (e instanceof java.net.SocketTimeoutException) failure="Connection timed out — check that both devices use the same Wi-Fi.";
+                else if ("MATCH_FULL".equals(e.getMessage())) failure="Match full — choose another room.";
                 else failure="Host unavailable — try again.";
             }
             final String error=failure;
@@ -619,7 +625,8 @@ public final class MainActivity extends Activity {
                 status.optInt("protocol")!=2 || !(BuildConfig.SECURE_LAN_RELEASE?"release":"dev").equals(status.optString("transport")) ||
                 !acceptsHostBundle(status.optString("bundle"))) throw new java.io.IOException("This host is not a compatible Sightline build");
             int players=status.optInt("players",-1),max=status.optInt("maxPlayers",-1);
-            if(players<0||max<2||max>32||players>=max)throw new java.io.IOException("Host is full or returned invalid capacity");
+            if(players<0||max<2||max>32||players>max)throw new java.io.IOException("Invalid host capacity");
+            if(players==max)throw new java.io.IOException("MATCH_FULL");
             return status;
         } finally { c.disconnect(); }
     }

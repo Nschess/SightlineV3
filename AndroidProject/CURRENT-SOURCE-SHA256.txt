@@ -32,7 +32,7 @@ f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493  app/src/main/a
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/www/zombie-hunt.js
 58b0a316706ef5936e8ed02bce27842620d0e17d1ec154362028a22600d98b62  app/src/main/java/com/sightline/v3/HostPolicy.java
 c9809063129f858a7f6b0ba3c11e6e2e5583e065e7e7683487d1177943da05fb  app/src/main/java/com/sightline/v3/LanHostService.java
-47b6f84441960435f87d802e03bd8c552502de4566eca1bc3ab0b5a348f59539  app/src/main/java/com/sightline/v3/MainActivity.java
+7fa4c336888206d12ff5010e50013e98986e078d76f642c7bf49c8a1b346455e  app/src/main/java/com/sightline/v3/MainActivity.java
 8f010cdfea8ff723672eb33c22ea2a5d86f0892600a4ab390b27c48767d2b914  app/src/main/java/com/sightline/v3/UpdateManager.java
 bdcf6b4a260bf2517d77b83e967e8abaa48171f11e0de305daff2585cc642028  app/src/main/java/com/sightline/v3/UpdatePolicy.java
 ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847  app/src/main/res/drawable-nodpi/ic_sightline_foreground.png
