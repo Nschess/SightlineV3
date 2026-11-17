@@ -12765,6 +12765,7 @@ function mpConnect() {
     var was = MP.id; MP.sock = null; MP.id = 0; MP.session=''; MP.actionSeq=0; MP.lobby = null; MP.status = '';
     if (MP.on) { mpCleanup(); MP.err = 'Connection lost — reconnect or return to lobby.'; menuTab = 'net'; showOverlay('#ov-start'); renderMenu(false); }
     else { if (was) MP.err = 'Connection lost — reconnect or return to lobby.'; mpRefreshPanel(); renderNav(); }
+    if(full&&navigator.userAgent.indexOf('SightlineAndroid')>=0)console.info('SL_LAN_MATCH_FULL');
     if(full&&mpLanDiscoveryBridge())mpScanLanHosts(true);
     if (G.autoRe && !MP.userLeft && (was || MP.retryN)) { if (was) MP.retryN = 0; mpRetry(MP.retryN); }
   };
@@ -13388,7 +13389,7 @@ function mpPanel(head) {
       '<div class="setfoot"><button class="btn" type="button" data-net="connect"' + (MP.sock ? ' disabled' : '') + '>' + (MP.sock ? 'Connecting...' : (mpCurrentPageHost() ? 'Join this host' : 'Connect')) + '</button></div>' +
       '</details>' + (MP.status ? '<p class="small">' + esc(MP.status) + '</p>' : '') + (MP.err ? '<p class="small mp-err" role="alert">' + esc(MP.err) + '</p><button type="button" class="btn ghost" data-net="find-local">Find LAN Match</button><button type="button" class="btn ghost" data-net="'+(MP.hostStartFailed?'create-local':'retry-connect')+'">Retry</button>' : '') +
       '<p class="small">Single player still works exactly as before from the Play tab.</p>';
-    if (mpLanDiscoveryBridge()) setTimeout(function () { mpScanLanHosts(false); }, 0);
+    if (mpLanDiscoveryBridge()&&!mpNetworks&&!mpNetworkChanging) setTimeout(function () { if(!mpNetworks&&!mpNetworkChanging)mpScanLanHosts(false); }, 0);
     h+=mpCosmeticHtml();return h;
   }
   if(mpLocalHostOwned)h+='<div class="setfoot"><button type="button" class="btn ghost" data-net="stop-local">Stop Hosting</button></div>';
@@ -13434,20 +13435,44 @@ function mpPanel(head) {
 }
 var MP_LAN_DISCOVERY = { busy:false, hosts:[], error:'', scannedAt:0, timer:0 };
 function mpCancelLanScan(){clearTimeout(MP_LAN_DISCOVERY.timer);if(MP_LAN_DISCOVERY.abort){MP_LAN_DISCOVERY.abort.abort();MP_LAN_DISCOVERY.abort=null;}MP_LAN_DISCOVERY.generation=(MP_LAN_DISCOVERY.generation||0)+1;MP_LAN_DISCOVERY.busy=false;}
+window.slLanNetworkChanged=function(){
+  if(typeof mpCancelLanScan==='function')mpCancelLanScan();
+  MP.userLeft=true;clearTimeout(MP.retryT);MP.retryN=0;var old=MP.sock;MP.sock=null;MP.id=0;MP.session='';MP.actionSeq=0;MP.lobby=null;MP.status='';
+  if(old){try{old.onclose=null;old.close();}catch(e){}}
+  if(MP.on)mpCleanup();
+  menuTab='net';showOverlay('#ov-start');MP.err='Network changed. Select a network to continue.';renderMenu(false);
+};
 var mpLocalHostOwned=false, mpLocalHostPending=false;
 function mpNativeLan() { return navigator.userAgent.indexOf('SightlineAndroid')>=0 && location.hostname==='appassets.androidplatform.net'; }
 var mpNetworks=null,mpNetworkNext='';
+var mpSelectedLanAddress=null,mpNetworkChanging=false,mpNetworkPollBusy=false,mpHostGeneration=0,mpNetworkGeneration=0;
+function mpNetworkLost(data){
+  if(mpNetworkChanging)return;mpNetworkChanging=true;mpHostGeneration++;mpNetworkGeneration++;
+  mpSelectedLanAddress=null;mpNetworks=Array.isArray(data.networks)?data.networks:[];mpNetworkNext='';
+  window.slLanNetworkChanged();
+  var stop=(mpLocalHostOwned||mpLocalHostPending)?fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){if(!r.ok)throw Error('Host could not be stopped');mpLocalHostOwned=false;}):Promise.resolve();
+  stop.then(function(){if(!mpLocalHostPending&&mpNetworks&&mpNetworks.length===1)mpChooseNetwork(mpNetworks[0].address);}).catch(function(e){console.warn('LAN shutdown after network change',e);MP.err='Network changed. Host shutdown could not be confirmed.';}).finally(function(){mpNetworkChanging=false;renderOps();});
+}
+setInterval(function(){
+  if(!mpLanDiscoveryBridge()||!mpSelectedLanAddress||mpNetworkChanging||mpNetworkPollBusy)return;
+  mpNetworkPollBusy=true;var previous=mpSelectedLanAddress;
+  fetch('/__sightline/lan/networks',{cache:'no-store'}).then(function(r){if(!r.ok)throw Error('network status');return r.json();}).then(function(data){if(previous===mpSelectedLanAddress&&(data.missing||data.selected!==previous))mpNetworkLost(data);}).catch(function(e){console.warn('LAN network status unavailable',e);}).finally(function(){mpNetworkPollBusy=false;});
+},3000);
+
 function mpEnsureNetwork(action){
+  var selectionGeneration=mpNetworkGeneration;
   fetch('/__sightline/lan/networks',{cache:'no-store'}).then(function(r){if(!r.ok)throw Error('Network lookup failed');return r.json();}).then(function(data){
+    if(selectionGeneration!==mpNetworkGeneration)return;
     if(data.missing){MP.err='Network changed. Select a network to continue.';mpNetworks=Array.isArray(data.networks)?data.networks:[];mpNetworkNext='';renderOps();return;}
-    if(data.selected){mpNetworks=null;action==='create'?mpCreateLocalHost(true):mpScanLanHosts(true);return;}
+    if(data.selected){mpSelectedLanAddress=data.selected;mpNetworks=null;action==='create'?mpCreateLocalHost(true):mpScanLanHosts(true);return;}
     if(!Array.isArray(data.networks)||!data.networks.length)throw Error('Connect to a private Wi-Fi or LAN and try again.');
     mpNetworks=data.networks;mpNetworkNext=action;renderOps();
-  }).catch(function(e){console.warn('LAN network selection',e);MP.err=e.message||'Network unavailable.';renderOps();});
+  }).catch(function(e){if(selectionGeneration!==mpNetworkGeneration)return;console.warn('LAN network selection',e);MP.err=e.message||'Network unavailable.';renderOps();});
 }
 function mpChooseNetwork(address){
+  var selectionGeneration=mpNetworkGeneration;
   if(!mpNetworks||!mpNetworks.some(function(n){return n.address===address;}))return;
-  fetch('/__sightline/lan/network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:address})}).then(function(r){if(!r.ok)throw Error('Network unavailable. Refresh and choose again.');return r.json();}).then(function(){var action=mpNetworkNext;mpNetworks=null;mpNetworkNext='';MP.err='';renderOps();if(action==='create')mpCreateLocalHost(true);else if(action==='find')mpScanLanHosts(true);}).catch(function(e){console.warn('LAN network selection',e);MP.err=e.message;mpNetworks=null;renderOps();});
+  fetch('/__sightline/lan/network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:address})}).then(function(r){if(!r.ok)throw Error('Network unavailable. Refresh and choose again.');return r.json();}).then(function(){if(selectionGeneration!==mpNetworkGeneration)return;mpSelectedLanAddress=address;var action=mpNetworkNext;mpNetworks=null;mpNetworkNext='';if(action)MP.err='';renderOps();if(action==='create')mpCreateLocalHost(true);else if(action==='find')mpScanLanHosts(true);}).catch(function(e){if(selectionGeneration!==mpNetworkGeneration)return;console.warn('LAN network selection',e);MP.err=e.message;mpNetworks=null;renderOps();});
 }
 function mpPlatformLanMarkup() {
   if(!mpNativeLan()&&!mpLanDiscoveryBridge())return '';
@@ -13459,11 +13484,12 @@ function mpCreateLocalHost(networkReady) {
   if(!mpLanDiscoveryBridge()||mpLocalHostPending)return;
   if(!networkReady){mpEnsureNetwork('create');return;}
   var n=$('#mp-name');if(n)MP.name=n.value;
-  mpLocalHostPending=true;MP.hostStartFailed=false;MP.status='Starting your match…';MP.err='';renderOps();
+  mpLocalHostPending=true;var hostGeneration=++mpHostGeneration;MP.hostStartFailed=false;MP.status='Starting your match…';MP.err='';renderOps();
   fetch('/__sightline/lan/create',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json();}).then(function(result){
+    if(hostGeneration!==mpHostGeneration){if(result&&result.ok)fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(function(){});return;}
     if(!result.ok||!result.room||!mpLanPrivateIp(result.room.address)||result.room.port!==8080||result.room.verified!==true)throw Error(result.error||'Local host did not become ready.');
     mpLocalHostOwned=true;MP.addr=result.room.address+':8080';MP.status='Joining your match…';mpConnect();
-  }).catch(function(e){console.warn('LAN host startup failed',e);MP.hostStartFailed=true;MP.err='Unable to host — check your network connection.';}).finally(function(){mpLocalHostPending=false;renderOps();});
+  }).catch(function(e){if(hostGeneration!==mpHostGeneration)return;console.warn('LAN host startup failed',e);MP.hostStartFailed=true;MP.err='Unable to host — check your network connection.';}).finally(function(){mpLocalHostPending=false;renderOps();});
 }
 function mpStopLocalHost() {if(!mpLocalHostOwned)return;fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){if(!r.ok)throw Error('Host shutdown failed');mpLocalHostOwned=false;mpLeave();renderOps();}).catch(function(e){MP.err=e.message;renderOps();});}
 window.addEventListener('pagehide',function(){if(mpLocalHostOwned)fetch('/__sightline/lan/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',keepalive:true}).catch(function(){});});

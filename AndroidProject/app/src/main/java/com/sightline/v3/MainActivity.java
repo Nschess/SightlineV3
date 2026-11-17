@@ -52,7 +52,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "b1416d0df9e10d2c5e987edb719ffbacb6a1e8c6336836a7fe5436698b4eea4c";
+    private static final String HOST_BUNDLE_SHA256 = "94bb8ce724496ef2fc14369ced4e729d8eecfad33d8fd5e972297295a7f23736";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
@@ -80,7 +80,11 @@ public final class MainActivity extends Activity {
     private WebView web;
     private String chosenLanHost;
     private volatile boolean phoneHostStarting;
-    private int lanJoinGeneration;
+    private volatile int lanJoinGeneration;
+    private final java.util.concurrent.atomic.AtomicReference<java.net.HttpURLConnection> lanJoinConnection=new java.util.concurrent.atomic.AtomicReference<>();
+    private void cancelLanJoin(){lanJoinGeneration++;lanJoinPending=false;java.net.HttpURLConnection old=lanJoinConnection.getAndSet(null);if(old!=null)new Thread(old::disconnect,"sightline-cancel-join").start();}
+    private final java.util.concurrent.atomic.AtomicReference<java.net.HttpURLConnection> phoneHostProbeConnection=new java.util.concurrent.atomic.AtomicReference<>();
+    private void cancelPhoneHostProbe(){java.net.HttpURLConnection old=phoneHostProbeConnection.getAndSet(null);if(old!=null)new Thread(old::disconnect,"sightline-cancel-host-probe").start();}
     private boolean lanJoinPending;
     private WebViewAssetLoader assetLoader;
     private FrameLayout root;
@@ -163,7 +167,7 @@ public final class MainActivity extends Activity {
         return b;
     }
     private void showHome() {
-        lanJoinGeneration++; lanJoinPending=false;
+        cancelLanJoin();
         showingGame = false;
         chosenLanHost = null;
         disposeWeb();
@@ -285,10 +289,81 @@ public final class MainActivity extends Activity {
         }
     }
     private String selectedLanAddress;
+    private java.util.concurrent.atomic.AtomicBoolean activeLanScan;
+    private AlertDialog activeLanDialog;
+    private final android.os.Handler lanWatchHandler=new android.os.Handler(android.os.Looper.getMainLooper());
+    private int lanWatchGeneration;
+    private void startLanWatch() {
+        final int generation=++lanWatchGeneration;
+        Runnable check=new Runnable(){public void run(){
+            if(generation!=lanWatchGeneration||isFinishing()||isDestroyed())return;
+            final String selected=selectedLanAddress;
+            if(selected!=null)new Thread(()->{
+                final boolean present=LanHostService.hasLanAddress(selected);
+                if(!present)runOnUiThread(()->{if(generation==lanWatchGeneration&&selected.equals(selectedLanAddress))handleLanNetworkChanged();});
+            },"sightline-lan-interface-check").start();
+            lanWatchHandler.postDelayed(this,3000);
+        }};lanWatchHandler.post(check);
+    }
+    private void handleLanNetworkChanged() {
+        if(selectedLanAddress==null)return;
+        selectedLanAddress=null;cancelLanJoin();phoneHostGeneration++;cancelPhoneHostProbe();phoneHostStarting=false;
+        if(activeLanScan!=null)activeLanScan.set(true);
+        if(activeLanDialog!=null&&activeLanDialog.isShowing())activeLanDialog.dismiss();
+        if(activePhoneHostIp!=null)shutdownPhoneHost(null);
+        if(web!=null)web.evaluateJavascript("if(window.slLanNetworkChanged)window.slLanNetworkChanged();",null);
+        java.util.Map<String,String> available=LanHostService.lanAddresses();
+        if(available.size()==1)selectedLanAddress=available.keySet().iterator().next();
+        new AlertDialog.Builder(this).setTitle("Network changed").setMessage("Network changed. Select a network to continue.")
+            .setPositiveButton("Choose network",(d,w)->chooseLanNetwork(()->{})).setNegativeButton("Back",null).show();
+    }
     private volatile int phoneHostGeneration;
+    private boolean phoneHostStopping,phoneHostShutdownUnconfirmed;
+    private Boolean isPhoneHostAlive() {
+        android.app.ActivityManager manager=(android.app.ActivityManager)getSystemService(ACTIVITY_SERVICE);
+        if(manager==null)return null;
+        java.util.List<android.app.ActivityManager.RunningAppProcessInfo> processes=manager.getRunningAppProcesses();
+        java.util.List<android.app.ActivityManager.RunningServiceInfo> services=manager.getRunningServices(1000);
+        if(processes==null||services==null)return null;
+        for(android.app.ActivityManager.RunningAppProcessInfo process:processes)if((getPackageName()+":lanhost").equals(process.processName))return true;
+        for(android.app.ActivityManager.RunningServiceInfo service:services)if(service.service!=null&&getPackageName().equals(service.service.getPackageName())&&LanHostService.class.getName().equals(service.service.getClassName()))return true;
+        return false;
+    }
+    private void shutdownPhoneHost(Runnable onStopped) {
+        phoneHostGeneration++;cancelPhoneHostProbe();phoneHostStarting=false;
+        if(phoneHostStopping){toast("Stopping the previous match…");return;}
+        phoneHostStopping=true;phoneHostShutdownUnconfirmed=true;
+        try { stopService(new Intent(this,LanHostService.class)); }
+        catch(RuntimeException e) {
+            phoneHostStopping=false;phoneHostShutdownUnconfirmed=true;
+            Log.e("SightlineLAN","Unable to request host shutdown",e);
+            new AlertDialog.Builder(this).setTitle("Unable to stop host")
+                .setMessage("The previous match may still be running. Retry stopping it before hosting again.")
+                .setPositiveButton("Retry",(d,w)->shutdownPhoneHost(onStopped)).setNegativeButton("Back",null).show();
+            return;
+        }
+        new Thread(()->{
+            boolean confirmed=false;int absent=0;
+            for(int i=0;i<24;i++){
+                Boolean alive;
+                try{alive=isPhoneHostAlive();}catch(Exception e){alive=null;Log.w("SightlineLAN","Cannot confirm host shutdown",e);}
+                if(Boolean.FALSE.equals(alive)){if(++absent>=2){confirmed=true;break;}}else absent=0;
+                try{Thread.sleep(250);}catch(InterruptedException e){Thread.currentThread().interrupt();break;}
+            }
+            final boolean stopped=confirmed;
+            runOnUiThread(()->{
+                phoneHostStopping=false;phoneHostShutdownUnconfirmed=!stopped;
+                if(isFinishing()||isDestroyed())return;
+                if(stopped){activePhoneHostIp=null;if(onStopped!=null)onStopped.run();}
+                else new AlertDialog.Builder(this).setTitle("Host shutdown not confirmed")
+                    .setMessage("The previous match may still be running. Retry stopping it before hosting again.")
+                    .setPositiveButton("Retry",(d,w)->shutdownPhoneHost(onStopped)).setNegativeButton("Back",null).show();
+            });
+        },"sightline-host-shutdown").start();
+    }
     private void chooseLanNetwork(Runnable action) {
         java.util.Map<String,String> networks=LanHostService.lanAddresses();
-        if(selectedLanAddress!=null&&!networks.containsKey(selectedLanAddress)){selectedLanAddress=null;lanJoinGeneration++;lanJoinPending=false;phoneHostGeneration++;phoneHostStarting=false;if(activePhoneHostIp!=null){stopService(new Intent(this,LanHostService.class));activePhoneHostIp=null;}new AlertDialog.Builder(this).setTitle("Network changed").setMessage("Select a network to continue.").setPositiveButton("Choose network",(d,w)->chooseLanNetwork(()->{})).setNegativeButton("Back",null).show();return;}
+        if(selectedLanAddress!=null&&!networks.containsKey(selectedLanAddress)){handleLanNetworkChanged();return;}
         if(networks.isEmpty()){selectedLanAddress=null;toast("Connect to Wi-Fi and try again.");return;}
         if(networks.size()==1){selectedLanAddress=networks.keySet().iterator().next();action.run();return;}
         if(selectedLanAddress!=null&&networks.containsKey(selectedLanAddress)){action.run();return;}
@@ -299,8 +374,18 @@ public final class MainActivity extends Activity {
     private void startPhoneHost() { chooseLanNetwork(this::startPhoneHostOnNetwork); }
     private void startPhoneHostOnNetwork() {
         if (!BuildConfig.LAN_HOST_ENABLED) { toast("This build does not contain the phone host runtime."); return; }
+        if(phoneHostStopping){toast("Stopping the previous match…");return;}
         if (phoneHostStarting) { toast("Your match is still starting…"); return; }
-        if (activePhoneHostIp != null && !new File(getFilesDir(),"phone-host-last-error.txt").exists()) { openGame(activePhoneHostIp,true); return; }
+        if(phoneHostShutdownUnconfirmed){shutdownPhoneHost(this::startPhoneHost);return;}
+        Boolean hostAlive;
+        try { hostAlive=isPhoneHostAlive(); }
+        catch(Exception e) { hostAlive=null;Log.w("SightlineLAN","Cannot inspect host status",e); }
+        if(hostAlive==null){phoneHostShutdownUnconfirmed=true;toast("Cannot confirm the previous host stopped.");return;}
+        if(hostAlive){
+            if(activePhoneHostIp!=null&&!new File(getFilesDir(),"phone-host-last-error.txt").exists()){openGame(activePhoneHostIp,true);return;}
+            shutdownPhoneHost(this::startPhoneHost);return;
+        }
+        activePhoneHostIp=null;
         String ip=selectedLanAddress;
         if(ip==null) {toast("Connect to private Wi-Fi or activate a hotspot first");return;}
         toast("Starting your match…");
@@ -317,6 +402,8 @@ public final class MainActivity extends Activity {
             for(int i=0;i<51 && hostGeneration==phoneHostGeneration;i++) {
                 try {
                     java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL("http://"+ip+":8080/status").openConnection();
+                    if(hostGeneration!=phoneHostGeneration || !phoneHostProbeConnection.compareAndSet(null,c)){c.disconnect();break;}
+                    if(hostGeneration!=phoneHostGeneration){phoneHostProbeConnection.compareAndSet(c,null);c.disconnect();break;}
                     c.setConnectTimeout(400);c.setReadTimeout(400);
                     try {ready=c.getResponseCode()==200; if(ready) {
                         java.io.ByteArrayOutputStream buffer=new java.io.ByteArrayOutputStream();
@@ -328,7 +415,7 @@ public final class MainActivity extends Activity {
                                 "sightline-v12-host-prototype".equals(status.optString("game")) &&
                                 acceptsHostBundle(status.optString("bundle"));
                         } catch(org.json.JSONException error) { ready=false; }
-                    }} finally {c.disconnect();}
+                    }} finally {phoneHostProbeConnection.compareAndSet(c,null);c.disconnect();}
                     if(ready)break;
                 } catch(Exception ignored) { }
                 try {Thread.sleep(160);}catch(InterruptedException e){Thread.currentThread().interrupt();break;}
@@ -350,12 +437,10 @@ public final class MainActivity extends Activity {
                         }
                     } catch(Exception ignored) { }
                     Log.w("SightlineLAN", "Host startup failed: " + reason);
-                    stopService(new Intent(this,LanHostService.class));
-                    activePhoneHostIp=null;
-                    new AlertDialog.Builder(this).setTitle("Unable to host")
+                    shutdownPhoneHost(()->new AlertDialog.Builder(this).setTitle("Unable to host")
                         .setMessage("Check your network connection and try again.")
                         .setPositiveButton("Retry",(d,w)->startPhoneHost())
-                        .setNegativeButton("Back",null).show();
+                        .setNegativeButton("Back",null).show());
                 }
             });
         },"sightline-lan-ready").start();
@@ -366,11 +451,7 @@ public final class MainActivity extends Activity {
         if (clipboard!=null) clipboard.setPrimaryClip(ClipData.newPlainText("Sightline LAN address", "http://"+ip+":8080"));
         toast("Join address copied. Share it only on your trusted LAN.");
     }
-    private void stopPhoneHost() { phoneHostGeneration++; phoneHostStarting=false;
-        stopService(new Intent(this,LanHostService.class));
-        activePhoneHostIp=null;
-        showHome();
-    }
+    private void stopPhoneHost() { shutdownPhoneHost(this::showHome); }
     private void askForHost() {
         if (BuildConfig.SECURE_LAN_RELEASE) {
             String host = BuildConfig.LAN_TLS_HOST;
@@ -415,6 +496,7 @@ public final class MainActivity extends Activity {
     private void discoverLanHosts() { chooseLanNetwork(this::discoverLanHostsOnNetwork); }
     private void discoverLanHostsOnNetwork() {
         final java.util.concurrent.atomic.AtomicBoolean cancelled=new java.util.concurrent.atomic.AtomicBoolean(false);
+        activeLanScan=cancelled;
         final java.util.List<LanHostCandidate> hosts=new java.util.ArrayList<>();
         final android.widget.ArrayAdapter<String> rows=new android.widget.ArrayAdapter<>(this,android.R.layout.simple_list_item_1,new java.util.ArrayList<>());
         final android.widget.ListView list=new android.widget.ListView(this); list.setAdapter(rows);
@@ -424,7 +506,8 @@ public final class MainActivity extends Activity {
         final AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Find LAN Match").setView(content)
             .setPositiveButton("Refresh",(d,w)->discoverLanHosts()).setNeutralButton("Advanced",(d,w)->showManualHostEntry())
             .setNegativeButton("Back",null).create();
-        dialog.setOnDismissListener(d->cancelled.set(true));
+        activeLanDialog=dialog;
+        dialog.setOnDismissListener(d->{cancelled.set(true);if(activeLanScan==cancelled)activeLanScan=null;if(activeLanDialog==dialog)activeLanDialog=null;});
         list.setOnItemClickListener((parent,view,position,id)->{
             if(position<0||position>=hosts.size())return;LanHostCandidate host=hosts.get(position);
             if(host.full()){toast("Match full — choose another room.");return;}
@@ -593,9 +676,10 @@ public final class MainActivity extends Activity {
             }
         }
         if (lanHost == null) {
-            lanJoinGeneration++; lanJoinPending=false;
+            cancelLanJoin();
             openVerifiedGame(null,false); return;
         }
+        if(selectedLanAddress==null||!LanHostService.hasLanAddress(selectedLanAddress)){final String pendingTarget=lanHost;chooseLanNetwork(()->openGame(pendingTarget,autoJoin));return;}
         if (lanJoinPending) { toast("Checking the selected match…"); return; }
         final String target=lanHost;
         final int generation=++lanJoinGeneration;
@@ -603,7 +687,7 @@ public final class MainActivity extends Activity {
         toast("Checking the match connection…");
         new Thread(() -> {
             String failure=null;
-            try { readLanStatus(target); }
+            try { readLanStatus(target,generation); }
             catch (Exception e) {
                 Log.e("SightlineLAN","Host readiness failed before opening bundled LAN client",e);
                 if (e instanceof java.net.ConnectException) failure="Host unavailable — try again.";
@@ -625,9 +709,11 @@ public final class MainActivity extends Activity {
             });
         },"sightline-lan-connect").start();
     }
-    private org.json.JSONObject readLanStatus(String host) throws Exception {
+    private org.json.JSONObject readLanStatus(String host,int generation) throws Exception {
         java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL(
             (BuildConfig.SECURE_LAN_RELEASE?"https://":"http://")+host+":8080/status").openConnection();
+        if(generation!=lanJoinGeneration || !lanJoinConnection.compareAndSet(null,c)){c.disconnect();throw new java.io.IOException("Join cancelled");}
+        if(generation!=lanJoinGeneration){lanJoinConnection.compareAndSet(c,null);c.disconnect();throw new java.io.IOException("Join cancelled");}
         c.setConnectTimeout(1800); c.setReadTimeout(1800); c.setUseCaches(false);
         c.setInstanceFollowRedirects(false);
         try {
@@ -645,7 +731,7 @@ public final class MainActivity extends Activity {
             if(players<0||max<2||max>32||players>max)throw new java.io.IOException("Invalid host capacity");
             if(players==max)throw new java.io.IOException("MATCH_FULL");
             return status;
-        } finally { c.disconnect(); }
+        } finally { lanJoinConnection.compareAndSet(c,null);c.disconnect(); }
     }
     private void openVerifiedGame(String lanHost, boolean autoJoin) {
         chosenLanHost = lanHost;
@@ -674,6 +760,7 @@ public final class MainActivity extends Activity {
         reportedWebErrors.clear();
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onConsoleMessage(ConsoleMessage message) {
+                if(message!=null && "SL_LAN_MATCH_FULL".equals(message.message()) && chosenLanHost!=null){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()){toast("Match is full. Choose another room.");discoverLanHosts();}});return true;}
                 if (BuildConfig.DEBUG && message != null) {
                     String text = message.message() + " @ " + message.sourceId() + ":" + message.lineNumber();
                     if (message.messageLevel() == ConsoleMessage.MessageLevel.ERROR ||
@@ -781,6 +868,7 @@ public final class MainActivity extends Activity {
     }
     @Override public void onBackPressed() { handleBack(); }
     @Override protected void onPause() {
+        lanWatchGeneration++;lanWatchHandler.removeCallbacksAndMessages(null);
         if (web!=null) {
             web.evaluateJavascript("window.dispatchEvent(new Event('blur'));", null);
             web.onPause();
@@ -788,7 +876,7 @@ public final class MainActivity extends Activity {
         super.onPause();
     }
     @Override protected void onResume() {
-        super.onResume(); immersive();
+        super.onResume(); immersive(); startLanWatch();
         if (web!=null) web.onResume();
         if (returnedFromInstallSettings && !showingGame && root != null) {
             returnedFromInstallSettings=false;
@@ -799,6 +887,7 @@ public final class MainActivity extends Activity {
         super.onConfigurationChanged(configuration); immersive();
     }
     @Override protected void onDestroy() {
+        lanWatchGeneration++;lanWatchHandler.removeCallbacksAndMessages(null);cancelLanJoin();phoneHostGeneration++;cancelPhoneHostProbe();
         if (updater!=null) updater.shutdown();
         disposeWeb(); super.onDestroy();
     }

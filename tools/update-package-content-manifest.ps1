@@ -3,6 +3,15 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'local-android-studio-metadata.ps1')
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $prefix = [IO.Path]::GetFullPath($root).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
+$publicEvidenceExclusions = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($relative in @(
+  'AndroidProject/DEVICE-UPDATE-ACCEPTANCE.md',
+  'AndroidProject/OWNER-ACCEPTANCE.md',
+  'AndroidProject/SAMSUNG-ACCEPTANCE.md',
+  'WIP-ACCEPTANCE-STATUS.txt',
+  'docs/EXPANSION-8.2-ACCEPTANCE-REPORT.md',
+  'docs/EXPANSION-8.3-ACCEPTANCE-REPORT.md'
+)) { [void]$publicEvidenceExclusions.Add($relative) }
 $paths = [System.Collections.Generic.List[string]]::new()
 $excludedDirectories = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 foreach ($name in @('.git','.gradle','.cxx','build','outputs','.tmp')) { [void]$excludedDirectories.Add($name) }
@@ -20,8 +29,10 @@ while ($pending.Count -gt 0) {
       continue
     }
     $relative = $entry.Substring($prefix.Length).Replace('\','/')
+    if ($relative -ieq '.git') { continue }
     if (Test-SightlineLocalAndroidStudioMetadata $relative) { continue }
     if ($relative -ieq 'PACKAGE-CONTENTS-SHA256.txt' -or
+        $relative -ieq 'PACKAGE-CONTENTS-SHA256.local.txt' -or
         $relative -ieq 'acceptance/RELEASE-READINESS.json' -or
         $relative -ieq 'acceptance/ENGINEERING-OUTCOMES.json') { continue }
     $paths.Add($relative)
@@ -33,8 +44,17 @@ $rows = foreach ($relative in $paths) {
   $hash = (Get-SightlineSha256 $absolute).ToUpperInvariant()
   "$hash  $relative"
 }
-$manifest = Join-Path $root 'PACKAGE-CONTENTS-SHA256.txt'
-[IO.File]::WriteAllText($manifest, (($rows -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
-$fingerprint = Get-SightlineSha256 $manifest
-Write-Output "Updated $manifest ($($paths.Count) files)"
-Write-Output "Candidate source fingerprint: $fingerprint"
+$fullManifest = Join-Path $root 'PACKAGE-CONTENTS-SHA256.local.txt'
+[IO.File]::WriteAllText($fullManifest, (($rows -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
+$publicRows = @($rows | Where-Object {
+  $relative = $_.Substring(66)
+  -not $publicEvidenceExclusions.Contains($relative)
+})
+$publicManifest = Join-Path $root 'PACKAGE-CONTENTS-SHA256.txt'
+[IO.File]::WriteAllText($publicManifest, (($publicRows -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
+$fingerprint = Get-SightlineSha256 $fullManifest
+$publicFingerprint = Get-SightlineSha256 $publicManifest
+Write-Output "Updated full local manifest $fullManifest ($($paths.Count) files)"
+Write-Output "Updated public source manifest $publicManifest ($($publicRows.Count) approved source files)"
+Write-Output "Full local fingerprint: $fingerprint"
+Write-Output "Public source fingerprint: $publicFingerprint"

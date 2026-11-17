@@ -2,11 +2,21 @@
 param(
   [string]$OutputPath,
   [switch]$VerifyOnly,
-  [switch]$SelfTest
+  [switch]$SelfTest,
+  [switch]$ManifestSelfTest
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'sha256.ps1')
 . (Join-Path $PSScriptRoot 'local-android-studio-metadata.ps1')
+
+$script:PublicManifestExcludedEvidence = @(
+  'AndroidProject/DEVICE-UPDATE-ACCEPTANCE.md',
+  'AndroidProject/OWNER-ACCEPTANCE.md',
+  'AndroidProject/SAMSUNG-ACCEPTANCE.md',
+  'WIP-ACCEPTANCE-STATUS.txt',
+  'docs/EXPANSION-8.2-ACCEPTANCE-REPORT.md',
+  'docs/EXPANSION-8.3-ACCEPTANCE-REPORT.md'
+)
 
 function Get-CandidateInventory([string]$Root) {
   $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\','/')
@@ -28,8 +38,10 @@ function Get-CandidateInventory([string]$Root) {
         continue
       }
       $relative = $entry.Substring($prefix.Length).Replace('\','/')
+      if ($relative -ieq '.git') { continue }
       if (Test-SightlineLocalAndroidStudioMetadata $relative) { continue }
       if ($relative -ieq 'PACKAGE-CONTENTS-SHA256.txt' -or
+          $relative -ieq 'PACKAGE-CONTENTS-SHA256.local.txt' -or
           $relative -ieq 'acceptance/RELEASE-READINESS.json' -or
           $relative -ieq 'acceptance/ENGINEERING-OUTCOMES.json') { continue }
       $items.Add($relative)
@@ -39,12 +51,15 @@ function Get-CandidateInventory([string]$Root) {
   return @($items)
 }
 
-function Test-CandidateManifest([string]$Root) {
+function Test-CandidateManifest([string]$Root,[switch]$PublicOnly) {
   $errors = [System.Collections.Generic.List[string]]::new()
   $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\','/')
+  $localManifestPath = Join-Path $rootFull 'PACKAGE-CONTENTS-SHA256.local.txt'
   $manifestPath = Join-Path $rootFull 'PACKAGE-CONTENTS-SHA256.txt'
+  $usingLocalFull = (-not $PublicOnly) -and (Test-Path -LiteralPath $localManifestPath -PathType Leaf)
+  if ($usingLocalFull) { $manifestPath = $localManifestPath }
   if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
-    $errors.Add('PACKAGE-CONTENTS-SHA256.txt is missing')
+    $errors.Add('Public source manifest is missing')
     return [pscustomobject]@{ Passed=$false; Errors=@($errors); Fingerprint='' }
   }
   $fingerprint = Get-SightlineSha256 $manifestPath
@@ -67,11 +82,21 @@ function Test-CandidateManifest([string]$Root) {
   }
   if (-not $map.ContainsKey('AGENTS.md')) { $errors.Add('Root AGENTS.md is absent from the source manifest') }
   $actual = @(Get-CandidateInventory $rootFull)
+  if (-not $usingLocalFull) {
+    foreach ($optional in $script:PublicManifestExcludedEvidence) { $actual = @($actual | Where-Object { $_ -ine $optional }) }
+    foreach ($listedPath in $map.Keys) {
+      if ($listedPath -iin $script:PublicManifestExcludedEvidence) { $errors.Add("Public manifest includes excluded historical evidence: $listedPath") }
+    }
+  }
   $listed = @($map.Keys | Sort-Object -CaseSensitive)
   $missing = @($actual | Where-Object { $_ -notin $map.Keys })
   $extra = @($listed | Where-Object { $_ -notin $actual })
   if ($missing.Count) { $errors.Add('Untracked candidate files: ' + ($missing -join ', ')) }
   if ($extra.Count) { $errors.Add('Manifest rows outside candidate inventory: ' + ($extra -join ', ')) }
+  if ($usingLocalFull) {
+    $publicCheck = Test-CandidateManifest $rootFull -PublicOnly
+    foreach ($problem in $publicCheck.Errors) { $errors.Add('Public manifest: ' + $problem) }
+  }
   return [pscustomobject]@{ Passed=($errors.Count -eq 0); Errors=@($errors); Fingerprint=$fingerprint }
 }
 
@@ -81,9 +106,15 @@ function Write-CandidateManifest([string]$Root) {
     $full = Join-Path $rootFull $relative.Replace('/',[IO.Path]::DirectorySeparatorChar)
     "$(Get-SightlineSha256 $full)  $relative"
   }
-  $path = Join-Path $rootFull 'PACKAGE-CONTENTS-SHA256.txt'
-  [IO.File]::WriteAllText($path,(($rows -join "`n") + "`n"),[Text.UTF8Encoding]::new($false))
-  return Get-SightlineSha256 $path
+  $localPath = Join-Path $rootFull 'PACKAGE-CONTENTS-SHA256.local.txt'
+  [IO.File]::WriteAllText($localPath,(($rows -join "`n") + "`n"),[Text.UTF8Encoding]::new($false))
+  $publicRows = @($rows | Where-Object {
+    $relative = $_.Substring(66)
+    $relative -notin $script:PublicManifestExcludedEvidence
+  })
+  $publicPath = Join-Path $rootFull 'PACKAGE-CONTENTS-SHA256.txt'
+  [IO.File]::WriteAllText($publicPath,(($publicRows -join "`n") + "`n"),[Text.UTF8Encoding]::new($false))
+  return Get-SightlineSha256 $localPath
 }
 
 function Assert-WipOutputPath([string]$Root,[string]$Path) {
@@ -201,6 +232,57 @@ function New-WipCheckpoint([string]$Root,[string]$Output) {
   } finally { Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue }
 }
 
+function Invoke-ManifestSelfTest {
+  $temp = Join-Path ([IO.Path]::GetTempPath()) ('sightline-public-manifest-' + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $temp | Out-Null
+  try {
+    [IO.File]::WriteAllText((Join-Path $temp 'AGENTS.md'),'test instructions',[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $temp 'game.js'),'test source',[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $temp '.git'),'gitdir: .git/worktrees/test',[Text.UTF8Encoding]::new($false))
+    if ('.git' -in (Get-CandidateInventory $temp)) { throw 'Linked-worktree Git pointer entered the source inventory' }
+    New-Item -ItemType Directory -Path (Join-Path $temp 'AndroidProject') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $temp 'tests') -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $temp 'AndroidProject\DEVICE-UPDATE-ACCEPTANCE.md'),'historical evidence',[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $temp 'tests\phase17-runtime-acceptance.cjs'),'active regression test',[Text.UTF8Encoding]::new($false))
+    [void](Write-CandidateManifest $temp)
+
+    $publicPath = Join-Path $temp 'PACKAGE-CONTENTS-SHA256.txt'
+    $publicText = Get-Content -LiteralPath $publicPath -Raw
+    if ($publicText -match 'DEVICE-UPDATE-ACCEPTANCE') { throw 'Public manifest disclosed an excluded historical evidence path' }
+    if ($publicText -notmatch 'tests/phase17-runtime-acceptance\.cjs') { throw 'Public manifest omitted an active acceptance test source file' }
+    $publicLines = $publicText -split "`n"
+    $publicLines[0] = ('0' * 64) + $publicLines[0].Substring(64)
+    [IO.File]::WriteAllText($publicPath,($publicLines -join "`n"),[Text.UTF8Encoding]::new($false))
+    if ((Test-CandidateManifest $temp).Passed) { throw 'Tampered public manifest passed while a full local manifest existed' }
+    [void](Write-CandidateManifest $temp)
+    Write-Output 'PASS: local full verification also enforces the committed public manifest'
+
+    Remove-Item -LiteralPath (Join-Path $temp 'PACKAGE-CONTENTS-SHA256.local.txt')
+    if (-not (Test-CandidateManifest $temp).Passed) { throw 'Sanitized public source manifest rejected a complete public checkout' }
+    Write-Output 'PASS: public manifest omits only optional historical evidence and verifies active source'
+
+    [IO.File]::WriteAllText((Join-Path $temp 'game.js'),'tampered source',[Text.UTF8Encoding]::new($false))
+    if ((Test-CandidateManifest $temp).Passed) { throw 'Tampered public source passed integrity verification' }
+    [IO.File]::WriteAllText((Join-Path $temp 'game.js'),'test source',[Text.UTF8Encoding]::new($false))
+    Write-Output 'PASS: public manifest rejects a modified protected source file'
+
+    [IO.File]::WriteAllText((Join-Path $temp 'unlisted.js'),'unlisted source',[Text.UTF8Encoding]::new($false))
+    if ((Test-CandidateManifest $temp).Passed) { throw 'Unmanifested public source passed integrity verification' }
+    Remove-Item -LiteralPath (Join-Path $temp 'unlisted.js')
+    Write-Output 'PASS: public manifest rejects unlisted source files'
+
+    [IO.File]::WriteAllText((Join-Path $temp 'AndroidProject\DEVICE-UPDATE-ACCEPTANCE.md'),'changed local historical evidence',[Text.UTF8Encoding]::new($false))
+    if (-not (Test-CandidateManifest $temp).Passed) { throw 'Optional evidence outside the public manifest blocked source verification' }
+    Write-Output 'PASS: public source verification excludes optional historical evidence'
+
+    [void](Write-CandidateManifest $temp)
+    [IO.File]::WriteAllText((Join-Path $temp 'AndroidProject\DEVICE-UPDATE-ACCEPTANCE.md'),'changed full-manifest evidence',[Text.UTF8Encoding]::new($false))
+    if ((Test-CandidateManifest $temp).Passed) { throw 'Full local manifest did not verify the complete source set' }
+    Write-Output 'PASS: full local manifest continues to verify the complete source set'
+    return 0
+  } finally { Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
 function Invoke-SelfTest {
   $script:WipSelfTestMode = $true
   $temp = Join-Path ([IO.Path]::GetTempPath()) ('sightline-wip-gate-' + [guid]::NewGuid().ToString('N'))
@@ -302,6 +384,7 @@ function Invoke-SelfTest {
   } finally { Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue; $script:WipSelfTestMode = $false }
 }
 
+if ($ManifestSelfTest) { Invoke-ManifestSelfTest | Out-Host; exit 0 }
 if ($SelfTest) { Invoke-SelfTest | Out-Host; exit 0 }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 if ($VerifyOnly) {
