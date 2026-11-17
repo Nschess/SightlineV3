@@ -52,13 +52,13 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "b618ebb0f2a56ee3e00c52943e48eb5db6ddb59117c689781d6fe755f5486c1b";
+    private static final String HOST_BUNDLE_SHA256 = "eb769c3e5665fa03624b84a024467f409cc8a48079602f6f59dc34cfa991e91e";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
     private static final String HUD51_HOST_BUNDLE_SHA256 = "1be6c08ca8ef0460971f47c6f2986634003d22197c1b0b6e6dcd824a76a30b23";
     private static boolean acceptsHostBundle(String bundle) {
-        return HOST_BUNDLE_SHA256.equals(bundle) || V17_HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);
+        return HOST_BUNDLE_SHA256.equals(bundle) || "b618ebb0f2a56ee3e00c52943e48eb5db6ddb59117c689781d6fe755f5486c1b".equals(bundle) || V17_HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);
     }
     private static final Set<String> FILES = new HashSet<>(Arrays.asList(
         "index.html", "three.min.js", "mp-transport-policy.js", "vr18-v31.js", "navigation.js", "squad-tactics.js", "bot-tactics.js", "character-poses.js", "zombie-counterplay.js", "thirdperson-hands.js", "character-prototypes.js", "character-realism.js", "character-realism-v12.js", "combat-foundation.js",
@@ -393,7 +393,7 @@ public final class MainActivity extends Activity {
         try{return InetAddress.getByAddress(out);}catch(java.net.UnknownHostException ignored){return null;}
     }
     private void discoverLanHosts() {
-        final AlertDialog searching=new AlertDialog.Builder(this).setTitle("Searching local network")
+        final AlertDialog searching=new AlertDialog.Builder(this).setTitle("Searching for nearby matches…")
             .setMessage("Looking for phone and PC matches on this Wi-Fi.")
             .setPositiveButton("Manual IP",(d,w)->showManualHostEntry())
             .setNegativeButton("Cancel",null).create();
@@ -403,7 +403,7 @@ public final class MainActivity extends Activity {
             String error="";
             android.net.wifi.WifiManager.MulticastLock multicast=null;
             try { android.net.wifi.WifiManager wifi=(android.net.wifi.WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wifi!=null){multicast=wifi.createMulticastLock("sightline-discovery");multicast.setReferenceCounted(false);multicast.acquire();} found=scanLanHosts(); }
-            catch(Exception e) { found=new java.util.ArrayList<>(); error="Local discovery could not run: "+(e.getMessage()==null?"network permission or Wi-Fi unavailable":e.getMessage()); }
+            catch(Exception e) { found=new java.util.ArrayList<>(); error="Unable to search — check your network connection."; }
             finally { if(multicast!=null&&multicast.isHeld())multicast.release(); }
             final java.util.List<LanHostCandidate> hosts=found; final String scanError=error;
             runOnUiThread(()->{
@@ -482,12 +482,12 @@ public final class MainActivity extends Activity {
         finally { if(connection!=null)connection.disconnect(); }
     }
     private void showLanHostResults(java.util.List<LanHostCandidate> hosts,String error) {
-        String message=hosts.isEmpty()?(error.isEmpty()?"No compatible host was found. Confirm both devices are on the same Wi-Fi and that the host is still running. Some routers block device discovery; manual IP remains available.":error):"Select a compatible Sightline V3 host to join. Full hosts are shown but cannot be selected.";
+        String message=hosts.isEmpty()?(error.isEmpty()?"No matches found on this Wi-Fi.":error):"Select a compatible Sightline V3 host to join. Full hosts are shown but cannot be selected.";
         String[] rows=new String[hosts.size()];for(int i=0;i<hosts.size();i++)rows[i]=hosts.get(i).label();
         AlertDialog.Builder builder=new AlertDialog.Builder(this).setTitle("Find LAN Match")
             .setPositiveButton("Refresh",(d,w)->discoverLanHosts())
             .setNeutralButton("Manual IP",(d,w)->showManualHostEntry())
-            .setNegativeButton("Close",null);
+            .setNegativeButton("Back",null);
         if(rows.length==0)builder.setMessage(message);
         if(rows.length>0)builder.setItems(rows,(d,which)->{
             LanHostCandidate host=hosts.get(which);if(host.full()){toast("That LAN host is full");return;}
@@ -574,9 +574,9 @@ public final class MainActivity extends Activity {
             try { readLanStatus(target); }
             catch (Exception e) {
                 Log.e("SightlineLAN","Host readiness failed before opening bundled LAN client",e);
-                if (e instanceof java.net.ConnectException) failure="No Sightline host is listening at that address. Create Match on the hosting device first.";
-                else if (e instanceof java.net.SocketTimeoutException) failure="The host did not respond. Confirm both players share the same Wi-Fi; guest networks or client isolation can block connections.";
-                else failure="The selected match is unavailable: "+e.getMessage();
+                if (e instanceof java.net.ConnectException) failure="Host unavailable — try again.";
+                else if (e instanceof java.net.SocketTimeoutException) failure="Connection timed out — check that both devices use the same Wi-Fi.";
+                else failure="Host unavailable — try again.";
             }
             final String error=failure;
             runOnUiThread(() -> {

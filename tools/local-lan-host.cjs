@@ -3,7 +3,7 @@ const {spawn}=require('node:child_process'),http=require('node:http'),fs=require
 const Discovery=require('./lan-discovery.cjs');
 const GAME='sightline-v12-host-prototype';
 class LocalLanHost {
-  constructor({root=path.resolve(__dirname,'..'),addressProvider=()=>Object.entries(os.networkInterfaces()).filter(([name])=>!/loopback|virtual|vethernet|docker|vpn|tun/i.test(name)).flatMap(([,rows])=>rows||[]).find(r=>r.family==='IPv4'&&!r.internal&&Discovery.isPrivateIPv4(r.address))?.address,allowLoopbackForTests=false,testPort=8080}={}){
+  constructor({root=path.resolve(__dirname,'..'),addressProvider=()=>{const addresses=[...new Set(Object.entries(os.networkInterfaces()).filter(([name])=>!/loopback|virtual|vethernet|docker|vpn|tun/i.test(name)).flatMap(([,rows])=>rows||[]).filter(r=>r.family==='IPv4'&&!r.internal&&Discovery.isPrivateIPv4(r.address)).map(r=>r.address))];return addresses.length===1?addresses[0]:null;},allowLoopbackForTests=false,testPort=8080}={}){
     if(!Number.isInteger(testPort)||testPort<1||testPort>65535||(!allowLoopbackForTests&&testPort!==8080))throw Error('Only isolated loopback tests may override the fixed host port');
     this.port=testPort;
     this.root=root;this.addressProvider=addressProvider;this.allowLoopbackForTests=allowLoopbackForTests;this.child=null;this.pending=null;this.room=null;

@@ -129,11 +129,11 @@ function createLanDiscoveryHost({ info, interfaces = os.networkInterfaces, socke
     if (!probe || !remote || !Number.isInteger(remote.port) || remote.port < 1 || remote.port > 65535) return;
     const at = now(), prior = responded.get(remote.address) || 0;
     if (at - prior < 300) return;
-    responded.set(remote.address, at);
     if (responded.size >= MAX_RESPONDED_ADDRESSES && !responded.has(remote.address)) {
       for (const [ip, stamp] of responded) if (at - stamp > 5000) responded.delete(ip);
       while(responded.size>=MAX_RESPONDED_ADDRESSES)responded.delete(responded.keys().next().value);
     }
+    responded.set(remote.address, at);
     let body;
     try { const details=info(); if(details.ready===false)return; body = makeOffer(details, probe.nonce); } catch (_) { return; }
     socket.send(body, 0, body.length, remote.port, remote.address, () => {});
