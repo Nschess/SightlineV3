@@ -14,7 +14,7 @@ const hash=b=>createHash('sha256').update(b).digest('hex');
 const manifest=readFileSync(join(host,'SHA256SUMS'),'utf8').trim().split(/\r?\n/).map(line=>{
   const m=line.match(/^([a-f0-9]{64})  (.+)$/);assert.ok(m,`bad manifest entry: ${line}`);return [m[2],m[1]];
 });
-assert.equal(manifest.length,49,'host staging count must match native host service');
+assert.equal(manifest.length,50,'host staging count must match native host service');
 for(const [name,expected] of manifest){
   assert.ok(!name.startsWith('/')&&!name.includes('\\')&&!name.split('/').some(p=>!p||p==='.'||p==='..'),`unsafe path: ${name}`);
   const data=readFileSync(join(host,name));assert.equal(hash(data),expected,`host hash mismatch: ${name}`);
@@ -64,7 +64,7 @@ for(const [label,html] of [['offline',offlinePage],['phone-host',page]]){
 }
 const offlineAllowlist=main.match(/private static final Set<String> FILES = new HashSet<>\(Arrays\.asList\(([\s\S]*?)\)\);/);
 assert.ok(offlineAllowlist&&offlineAllowlist[1].includes('"sightline-theme.mp3"'),'Android WebView offline allowlist blocks the theme asset');
-assert.ok(service.includes('hashes.size()!=49'),'Android host service count differs');
+assert.ok(service.includes('hashes.size()!=50'),'Android host service count differs');
 assert.ok(service.includes('hashes.containsKey("sightline-theme.mp3")'),'Android host staging does not require the active theme');
 assert.ok(service.includes('b.size()>16_000_000'),'Android host staging file-size guard is missing');
 assert.ok(service.includes('hashes.containsKey("legendary-packs.js")'),'Android host staging does not require Legendary module');

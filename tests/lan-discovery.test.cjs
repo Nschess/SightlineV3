@@ -19,7 +19,8 @@ test('discovery broadcasts only to active private IPv4 subnet broadcasts', () =>
   assert.equal(Discovery.validNetmask('255.0.255.0'), false);
   assert.equal(Discovery.validNetmask('0.0.0.0'), false);
   assert.equal(Discovery.isPrivateIPv4('192.168.20.8'), true);
-  assert.equal(Discovery.isPrivateIPv4('192.168.20.255'), false);
+  // Range membership does not also assert that an address is a usable host address.
+  assert.equal(Discovery.isPrivateIPv4('192.168.20.255'), true);
   assert.equal(Discovery.isPrivateIPv4('8.8.8.8'), false);
 });
 
