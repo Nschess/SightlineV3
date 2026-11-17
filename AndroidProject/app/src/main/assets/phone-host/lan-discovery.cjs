@@ -186,6 +186,38 @@ function verifyHostStatus(host, timeoutMs = 650) {
 function createLanDiscoveryClient({ interfaces = os.networkInterfaces, socketFactory = () => dgram.createSocket('udp4'), now = Date.now,
   verify = verifyHostStatus, scanMs = DEFAULT_SCAN_MS } = {}) {
   let activeScan = null;
+  function stream(onHost, onDone) {
+    const nonce=crypto.randomBytes(16).toString('hex'), seen=new Set(), pending=new Set();
+    let socket, timer, closed=false, listening=true;
+    function finish(error) {
+      if(closed)return;
+      closed=true;listening=false;clearTimeout(timer);
+      if(socket)try{socket.close();}catch(_){}
+      onDone(error);
+    }
+    try {
+      socket=socketFactory();
+      socket.on('error',()=>finish(true));
+      socket.on('message',(packet,remote)=>{
+        if(!listening)return;
+        const host=parseOffer(packet,remote&&remote.address,nonce,now());
+        if(!host||seen.has(host.id)||seen.size>=MAX_SCAN_HOSTS)return;
+        seen.add(host.id);
+        const task=Promise.resolve().then(()=>verify(host)).then(value=>{if(!closed&&value)onHost(value);}).catch(()=>{}).finally(()=>pending.delete(task));
+        pending.add(task);
+      });
+      socket.bind(0,'0.0.0.0',()=>{
+        if(closed)return;
+        try{socket.setBroadcast(true);}catch(_){return finish(true);}
+        const targets=privateBroadcastTargets(interfaces());
+        if(!targets.length)return finish(false);
+        const probe=makeProbe(nonce);
+        for(const address of targets)socket.send(probe,0,probe.length,DISCOVERY_PORT,address,error=>{if(error)finish(true);});
+        timer=setTimeout(()=>{listening=false;Promise.all([...pending]).then(()=>finish(false));},Math.max(250,Math.min(1800,scanMs)));
+      });
+    } catch(_){finish(true);}
+    return ()=>finish(false);
+  }
   async function scan() {
     if (activeScan) return activeScan;
     activeScan = new Promise(resolve => {
@@ -219,7 +251,7 @@ function createLanDiscoveryClient({ interfaces = os.networkInterfaces, socketFac
     }).finally(() => { activeScan = null; });
     return activeScan;
   }
-  return { scan };
+  return { scan, stream };
 }
 
 module.exports = Object.freeze({ DISCOVERY_PORT, SERVICE, DISCOVERY_VERSION, MULTIPLAYER_PROTOCOL,

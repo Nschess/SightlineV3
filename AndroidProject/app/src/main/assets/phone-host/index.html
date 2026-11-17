@@ -13271,7 +13271,7 @@ function mpPanel(head) {
   return h;
 }
 var MP_LAN_DISCOVERY = { busy:false, hosts:[], error:'', scannedAt:0, timer:0 };
-function mpCancelLanScan(){if(MP_LAN_DISCOVERY.abort){MP_LAN_DISCOVERY.abort.abort();MP_LAN_DISCOVERY.abort=null;}MP_LAN_DISCOVERY.generation=(MP_LAN_DISCOVERY.generation||0)+1;MP_LAN_DISCOVERY.busy=false;}
+function mpCancelLanScan(){clearTimeout(MP_LAN_DISCOVERY.timer);if(MP_LAN_DISCOVERY.abort){MP_LAN_DISCOVERY.abort.abort();MP_LAN_DISCOVERY.abort=null;}MP_LAN_DISCOVERY.generation=(MP_LAN_DISCOVERY.generation||0)+1;MP_LAN_DISCOVERY.busy=false;}
 var mpLocalHostOwned=false, mpLocalHostPending=false;
 function mpNativeLan() { return navigator.userAgent.indexOf('SightlineAndroid')>=0 && location.hostname==='appassets.androidplatform.net'; }
 function mpPlatformLanMarkup() {
@@ -13308,18 +13308,35 @@ function mpDrawLanHosts() {
   else if(MP_LAN_DISCOVERY.error) stateEl.textContent=MP_LAN_DISCOVERY.error+' Manual IP is still available below.';
   else if(!MP_LAN_DISCOVERY.hosts.length) stateEl.textContent='No matches found on this Wi-Fi.';
   else stateEl.textContent='Found '+MP_LAN_DISCOVERY.hosts.length+' compatible host'+(MP_LAN_DISCOVERY.hosts.length===1?'':'s')+'. Tap one to join.';
+  var focused=document.activeElement&&document.activeElement.getAttribute('data-host');
   listEl.innerHTML=MP_LAN_DISCOVERY.hosts.map(function(h){var full=h.players>=h.maxPlayers;return '<button type="button" class="btn '+(full?'ghost':'')+'" data-net="join-discovered" data-host="'+esc(h.address)+'"'+(full?' disabled':'')+'><b>'+esc(h.name||'Sightline V3 Host')+'</b> · '+esc(h.players+'/'+h.maxPlayers)+' · '+esc(h.mode||'lobby')+' · '+esc(h.map||'map')+(full?' · FULL':' · JOIN')+'</button>';}).join('');
+  if(focused){var current=Array.from(listEl.querySelectorAll('[data-host]')).find(function(e){return e.getAttribute('data-host')===focused;});if(current&&!current.disabled)current.focus({preventScroll:true});}
 }
 function mpScanLanHosts(manual) {
   if(!mpLanDiscoveryBridge())return;
   mpCancelLanScan();var generation=MP_LAN_DISCOVERY.generation;
-  MP_LAN_DISCOVERY.busy=true;MP_LAN_DISCOVERY.error='';MP_LAN_DISCOVERY.hosts=[];mpDrawLanHosts();
-  var abort=new AbortController(),timeout=setTimeout(function(){abort.abort();},2400);MP_LAN_DISCOVERY.abort=abort;
-  fetch('/__sightline/lan/hosts',{cache:'no-store',signal:abort.signal}).then(function(r){if(!r.ok)throw new Error('Discovery bridge is unavailable. Start SIGHTLINE.bat lan-client.');return r.json();}).then(function(data){
-    if(generation!==MP_LAN_DISCOVERY.generation)return;
-    if(!data||data.schema!=='sightline-lan-hosts-v1'||!data.ok)throw new Error(data&&data.error||'Local discovery is unavailable.');
-    var seen=new Set();MP_LAN_DISCOVERY.hosts=(Array.isArray(data.hosts)?data.hosts:[]).filter(function(h){if(!h||!mpLanPrivateIp(h.address)||h.port!==8080||h.protocol!==2||h.transport!=='dev'||h.verified!==true||seen.has(h.address))return false;seen.add(h.address);return true;});MP_LAN_DISCOVERY.scannedAt=Date.now();
-  }).catch(function(e){if(generation!==MP_LAN_DISCOVERY.generation)return;MP_LAN_DISCOVERY.error=e&&e.name==='AbortError'?'Discovery timed out. Use manual IP or try again.':String(e&&e.message||'Discovery failed.');}).finally(function(){clearTimeout(timeout);if(generation!==MP_LAN_DISCOVERY.generation)return;MP_LAN_DISCOVERY.abort=null;MP_LAN_DISCOVERY.busy=false;mpDrawLanHosts();clearTimeout(MP_LAN_DISCOVERY.timer);});
+  MP_LAN_DISCOVERY.busy=true;MP_LAN_DISCOVERY.error='';mpDrawLanHosts();
+  var abort=new AbortController(),timeout=setTimeout(function(){abort.abort();},3500);MP_LAN_DISCOVERY.abort=abort;
+  function accept(host){
+    if(generation!==MP_LAN_DISCOVERY.generation||!host||!host.verified||!mpLanPrivateIp(host.address)||host.port!==8080||host.protocol!==2||host.transport!=='dev'||!host.id)return;
+    host.lastSeen=Date.now();var index=MP_LAN_DISCOVERY.hosts.findIndex(function(x){return x.id===host.id;});
+    if(index<0)MP_LAN_DISCOVERY.hosts.push(host);else MP_LAN_DISCOVERY.hosts[index]=host;
+    mpDrawLanHosts();
+  }
+  fetch('/__sightline/lan/hosts-stream',{cache:'no-store',signal:abort.signal}).then(function(r){
+    if(!r.ok||!r.body)throw Error('Discovery unavailable');
+    var reader=r.body.getReader(),decoder=new TextDecoder(),buffer='';
+    function next(){return reader.read().then(function(part){
+      if(generation!==MP_LAN_DISCOVERY.generation){reader.cancel();return;}
+      buffer+=decoder.decode(part.value||new Uint8Array(),{stream:!part.done});var lines=buffer.split('\n');buffer=lines.pop();
+      lines.forEach(function(line){try{var m=JSON.parse(line);if(m.type==='host')accept(m.host);else if(m.type==='done'&&!m.ok)MP_LAN_DISCOVERY.error='Unable to search — check your network connection.';}catch(e){console.warn('LAN discovery response',e);}});
+      if(!part.done)return next();
+    });}return next();
+  }).catch(function(e){if(generation!==MP_LAN_DISCOVERY.generation)return;console.warn('LAN discovery failed',e);MP_LAN_DISCOVERY.error=e.name==='AbortError'?'Connection timed out — check your Wi-Fi.':'Unable to search — check your network connection.';}).finally(function(){
+    clearTimeout(timeout);if(generation!==MP_LAN_DISCOVERY.generation)return;MP_LAN_DISCOVERY.abort=null;MP_LAN_DISCOVERY.busy=false;
+    var cutoff=Date.now()-15000;MP_LAN_DISCOVERY.hosts=MP_LAN_DISCOVERY.hosts.filter(function(h){return h.lastSeen>=cutoff;});mpDrawLanHosts();
+    MP_LAN_DISCOVERY.timer=setTimeout(function(){if(generation===MP_LAN_DISCOVERY.generation&&document.getElementById('mp-discovery-list'))mpScanLanHosts(false);},5000);
+  });
 }
 function mpAction(b) {
   var a = b.getAttribute('data-net'), v = b.getAttribute('data-v');

@@ -67,6 +67,15 @@ function createOfflineServer(root, options = {}) {
       if (req.method === 'HEAD') { res.end(); return; }
       res.end(body); return;
     }
+    if (pathname === '/__sightline/lan/hosts-stream') {
+      if (req.method !== 'GET' || !options.discovery || typeof options.discovery.stream !== 'function') { res.writeHead(404);res.end();return; }
+      res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+      let stop=null;
+      const write=value=>{if(!res.destroyed&&!res.writableEnded)res.write(JSON.stringify(value)+'\n');};
+      stop=options.discovery.stream(host=>write({type:'host',host}),error=>{write({type:'done',ok:!error});if(!res.writableEnded)res.end();});
+      res.once('close',()=>{if(stop)stop();});
+      return;
+    }
     if (new URL(req.url || '/', 'http://127.0.0.1').pathname === '/__sightline/lan/hosts') {
       if (!options.discovery || typeof options.discovery.scan !== 'function') {
         res.writeHead(404, { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); res.end('LAN discovery is not enabled'); return;
