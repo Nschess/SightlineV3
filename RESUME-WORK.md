@@ -1,3 +1,13 @@
+# v18 LAN join recovery (2026-11-17)
+
+Current branch: `feature/cross-platform-lan-hosting`; parent `6409ff3fb1d093acac0f97a5cb22e1a8c2acabfc`. Latest checkpoint is the commit containing this note; use `git rev-parse HEAD` and compare the remote branch. Main remains unchanged.
+
+Fixed native broadcast `.255` rejection, remote-HTML navigation dependency and bundled HTTPS offline manual-Connect/appassets WSS mismatch. Join checks a responding compatible server, keeps the old screen on failure and serves APK assets under a virtual selected-host origin. Actual WS/WSS remains server-authoritative. Production TLS policy is unchanged. Read `docs/LAN-JOIN-RECOVERY-V18.md` for exact tests and limitations. V17 rollback branch and APK are preserved. No Android runtime or connected devices were used; all actual device pairings remain UNVERIFIED. Do not repeat unavailable emulator setup or claim phone recovery.
+
+VersionCode 18 was built successfully once. APK SHA256: `43e1437b51ab5111aa2fe6e393b20609c7a3a90b5a8d7b3c988717936a6ee6cc`, 82,947,058 bytes. All 104 assets, signature, native correction markers, permissions and diagnostic startup policy verified; see `docs/LAN-JOIN-V18-APK.json`. APKs/toolchains stay out of Git. The delivery supplies the verified remote SHA. Current-source additions after the APK are documentation and guarded test-port isolation in the Windows host manager/tests, not Android inputs.
+
+---
+Previous milestone retained below for history:
 # Sightline V3 — genuine cross-platform LAN host milestone (2026-11-17)
 
 Branch: `feature/cross-platform-lan-hosting`

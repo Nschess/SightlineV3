@@ -12738,6 +12738,7 @@ $('#supply').addEventListener('click', function (e) { e.stopPropagation(); mpBuy
 
 /* ---- connection ---- */
 function mpConnect() {
+  if (mpNativeLan()) { location.href='sightlinelan://join?host='+encodeURIComponent(String(MP.addr||'').trim()); return; }
   if (MP.sock) return;
   var securePage = location.protocol === 'https:';
   var addr = securePage ? location.host : String(MP.addr || '').trim();

@@ -1,0 +1,15 @@
+{
+  "debugCertificateSha256": "74516cfda39e6250bf50bedab19fbcaf0d33970db6807ad3ba7888a85f59c041",
+  "apk": "AndroidProject/app/build/outputs/apk/diagnostic/app-diagnostic.apk",
+  "bytes": 82947058,
+  "androidRuntime": "UNVERIFIED",
+  "versionCode": 18,
+  "assets": 104,
+  "signature": "PASS",
+  "nativeFixesPresent": "PASS",
+  "packageId": "com.sightline.v3.diagnostic.visibility",
+  "sha256": "43e1437b51ab5111aa2fe6e393b20609c7a3a90b5a8d7b3c988717936a6ee6cc",
+  "build": "PASS :app:assembleDiagnostic",
+  "buildSourceInventory": "559708c5ef22c4125d02c0102958eaf2aca0bf6d961890206a45e52caf326539",
+  "productionRelease": "BLOCKED"
+}

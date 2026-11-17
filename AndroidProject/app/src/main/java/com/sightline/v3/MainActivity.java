@@ -52,12 +52,13 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
+    private static final String HOST_BUNDLE_SHA256 = "b618ebb0f2a56ee3e00c52943e48eb5db6ddb59117c689781d6fe755f5486c1b";
+    private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
     private static final String HUD51_HOST_BUNDLE_SHA256 = "1be6c08ca8ef0460971f47c6f2986634003d22197c1b0b6e6dcd824a76a30b23";
     private static boolean acceptsHostBundle(String bundle) {
-        return HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);
+        return HOST_BUNDLE_SHA256.equals(bundle) || V17_HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);
     }
     private static final Set<String> FILES = new HashSet<>(Arrays.asList(
         "index.html", "three.min.js", "mp-transport-policy.js", "vr18-v31.js", "navigation.js", "squad-tactics.js", "bot-tactics.js", "character-poses.js", "zombie-counterplay.js", "thirdperson-hands.js", "character-prototypes.js", "character-realism.js", "character-realism-v12.js", "combat-foundation.js",
@@ -75,10 +76,12 @@ public final class MainActivity extends Activity {
     private static final Set<String> HOSTED_MODULES = new HashSet<>(Arrays.asList(
         "bot-tactics.js", "character-poses.js", "character-prototypes.js", "character-realism.js", "character-realism-v12.js", "zombie-counterplay.js", "mp-transport-policy.js",
         "weapon-skins.js", "legend-overlay.js", "legendary-packs.js", "character-skins.js", "deathmatch-rules.js", "gameplay-mode-rules.js", "optics-v1.js", "weapon-realism.js", "infection-evasion.js", "zombie-hunt.js"));
-    private static final Set<String> LAN_PATHS = new HashSet<>(Arrays.asList("/", "/index.html", "/status", "/favicon.ico"));
+    private static final Set<String> LAN_PATHS = new HashSet<>(Arrays.asList("/", "/index.html", "/favicon.ico"));
     private WebView web;
     private String chosenLanHost;
     private volatile boolean phoneHostStarting;
+    private int lanJoinGeneration;
+    private boolean lanJoinPending;
     private WebViewAssetLoader assetLoader;
     private FrameLayout root;
     private boolean showingGame;
@@ -160,6 +163,7 @@ public final class MainActivity extends Activity {
         return b;
     }
     private void showHome() {
+        lanJoinGeneration++; lanJoinPending=false;
         showingGame = false;
         chosenLanHost = null;
         disposeWeb();
@@ -193,7 +197,7 @@ public final class MainActivity extends Activity {
             layout.addView(button("Join Secure LAN Game", this::askForHost));
         } else {
             layout.addView(label("Development LAN uses unencrypted HTTP/WS. Use only an isolated trusted Wi-Fi or hotspot with no internet exposure or sensitive data.", 14));
-            layout.addView(button("Join Development LAN Game", this::askForHost));
+            layout.addView(button("FIND LAN MATCH", this::discoverLanHosts));
         }
         layout.addView(label("UPDATES  ·  Optional and free", 17));
         if (updater.enabled()) {
@@ -376,7 +380,7 @@ public final class MainActivity extends Activity {
         return n[3]>0&&n[3]<255&&(n[0]==10||(n[0]==172&&n[1]>=16&&n[1]<=31)||(n[0]==192&&n[1]==168));
     }
     private static boolean validPrivateBroadcast(InetAddress address) {
-        return address instanceof java.net.Inet4Address && privateLanAddress(address.getHostAddress());
+        return address instanceof java.net.Inet4Address && HostPolicy.isPrivateNetworkIPv4(address.getHostAddress());
     }
     private static InetAddress directedBroadcast(java.net.InterfaceAddress iface) {
         InetAddress configured=iface.getBroadcast();
@@ -539,7 +543,7 @@ public final class MainActivity extends Activity {
             java.util.Collections.emptyMap(), new ByteArrayInputStream(bytes));
     }
     private void openGame(String lanHost) {
-        openGame(lanHost,false);
+        openGame(lanHost,lanHost != null);
     }
     private void openGame(String lanHost, boolean autoJoin) {
         if (lanHost != null) {
@@ -556,6 +560,59 @@ public final class MainActivity extends Activity {
                 if (lanHost == null) { toast("Enter a valid private LAN IPv4 address"); return; }
             }
         }
+        if (lanHost == null) {
+            lanJoinGeneration++; lanJoinPending=false;
+            openVerifiedGame(null,false); return;
+        }
+        if (lanJoinPending) { toast("Checking the selected match…"); return; }
+        final String target=lanHost;
+        final int generation=++lanJoinGeneration;
+        lanJoinPending=true;
+        toast("Checking the match connection…");
+        new Thread(() -> {
+            String failure=null;
+            try { readLanStatus(target); }
+            catch (Exception e) {
+                Log.e("SightlineLAN","Host readiness failed before opening bundled LAN client",e);
+                if (e instanceof java.net.ConnectException) failure="No Sightline host is listening at that address. Create Match on the hosting device first.";
+                else if (e instanceof java.net.SocketTimeoutException) failure="The host did not respond. Confirm both players share the same Wi-Fi; guest networks or client isolation can block connections.";
+                else failure="The selected match is unavailable: "+e.getMessage();
+            }
+            final String error=failure;
+            runOnUiThread(() -> {
+                if (generation!=lanJoinGeneration || isFinishing() || isDestroyed()) return;
+                lanJoinPending=false;
+                if (error==null) openVerifiedGame(target,autoJoin);
+                else new AlertDialog.Builder(this).setTitle("Could not join match")
+                    .setMessage(error+" Your game remains open.")
+                    .setPositiveButton("Find LAN Match",(d,w)->discoverLanHosts())
+                    .setNeutralButton("Retry",(d,w)->openGame(target,autoJoin))
+                    .setNegativeButton("Back",null).show();
+            });
+        },"sightline-lan-connect").start();
+    }
+    private org.json.JSONObject readLanStatus(String host) throws Exception {
+        java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL(
+            (BuildConfig.SECURE_LAN_RELEASE?"https://":"http://")+host+":8080/status").openConnection();
+        c.setConnectTimeout(1800); c.setReadTimeout(1800); c.setUseCaches(false);
+        c.setInstanceFollowRedirects(false);
+        try {
+            if(c.getResponseCode()!=200) throw new java.io.IOException("Host readiness returned HTTP "+c.getResponseCode());
+            java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();
+            try(java.io.InputStream input=c.getInputStream()) {
+                byte[] b=new byte[512];int n;
+                while((n=input.read(b))!=-1) {out.write(b,0,n);if(out.size()>4096)throw new java.io.IOException("Invalid host response size");}
+            }
+            org.json.JSONObject status=new org.json.JSONObject(out.toString("UTF-8"));
+            if(!status.optBoolean("ok") || !"sightline-v12-host-prototype".equals(status.optString("game")) ||
+                status.optInt("protocol")!=2 || !(BuildConfig.SECURE_LAN_RELEASE?"release":"dev").equals(status.optString("transport")) ||
+                !acceptsHostBundle(status.optString("bundle"))) throw new java.io.IOException("This host is not a compatible Sightline build");
+            int players=status.optInt("players",-1),max=status.optInt("maxPlayers",-1);
+            if(players<0||max<2||max>32||players>=max)throw new java.io.IOException("Host is full or returned invalid capacity");
+            return status;
+        } finally { c.disconnect(); }
+    }
+    private void openVerifiedGame(String lanHost, boolean autoJoin) {
         chosenLanHost = lanHost;
         disposeWeb();
         root.removeAllViews();
@@ -621,6 +678,11 @@ public final class MainActivity extends Activity {
                     if (request.hasGesture() && OFFLINE_URL.equals(v.getUrl())) {
                         if ("create".equals(action.getHost())) startPhoneHost();
                         else if ("find".equals(action.getHost())) discoverLanHosts();
+                        else if ("join".equals(action.getHost())) {
+                            String host=HostPolicy.normalize(action.getQueryParameter("host"));
+                            if(host==null)toast("Enter a valid private LAN host address");
+                            else openGame(host,true);
+                        }
                     } else toast("Open Multiplayer in the main lobby to create or find a match.");
                     return true;
                 }
@@ -637,7 +699,19 @@ public final class MainActivity extends Activity {
                     WebResourceResponse response=assetLoader.shouldInterceptRequest(u);
                     return response == null ? blockedResponse() : response;
                 }
-                return null; // Only the selected host's allowed HTTPS/WSS-release or development HTTP/WS files.
+                // Never download executable UI from the host. This virtual selected-host
+                // origin serves the APK's assets; only the multiplayer socket uses LAN.
+                if ("/favicon.ico".equals(u.getPath())) return new WebResourceResponse("image/png",null,204,"No Content",java.util.Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
+                String asset=LanPagePolicy.assetPath(u.getPath(),request.isForMainFrame());
+                if(asset==null)return blockedResponse();
+                try {
+                    String mime=LanPagePolicy.mimeType(asset);
+                    return new WebResourceResponse(mime,(mime.startsWith("text/")||mime.equals("application/javascript"))?"UTF-8":null,200,"OK",
+                        java.util.Collections.singletonMap("Cache-Control","no-store"),getAssets().open(asset));
+                } catch(java.io.IOException e) {
+                    Log.e("SightlineLAN","Bundled LAN asset missing: "+asset,e);
+                    return new WebResourceResponse("text/plain","UTF-8",500,"Missing bundled asset",java.util.Collections.emptyMap(),new ByteArrayInputStream("Missing bundled game asset".getBytes(StandardCharsets.UTF_8)));
+                }
             }
             @Override public boolean onRenderProcessGone(WebView v, android.webkit.RenderProcessGoneDetail detail) {
                 if (BuildConfig.DEBUG) Log.e("SightlineV6", "WebView renderer process gone; crashed=" + detail.didCrash());
@@ -649,7 +723,7 @@ public final class MainActivity extends Activity {
         showingGame=true;
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (lanHost == null) web.loadUrl(OFFLINE_URL);
-        else web.loadUrl((BuildConfig.SECURE_LAN_RELEASE ? "https://" : "http://") + lanHost + ":8080/" + (autoJoin ? "?join=1" : ""));
+        else web.loadUrl(LanPagePolicy.pageUrl(lanHost,BuildConfig.SECURE_LAN_RELEASE,autoJoin));
         immersive();
     }
     private void toast(String message) { Toast.makeText(this, message, Toast.LENGTH_LONG).show(); }
