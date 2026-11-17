@@ -13312,7 +13312,7 @@ function mpDrawLanHosts() {
 }
 function mpScanLanHosts(manual) {
   if(!mpLanDiscoveryBridge())return;
-  if(MP_LAN_DISCOVERY.busy)return;
+  mpCancelLanScan();var generation=MP_LAN_DISCOVERY.generation;
   MP_LAN_DISCOVERY.busy=true;MP_LAN_DISCOVERY.error='';MP_LAN_DISCOVERY.hosts=[];mpDrawLanHosts();
   var abort=new AbortController(),timeout=setTimeout(function(){abort.abort();},2400);MP_LAN_DISCOVERY.abort=abort;
   fetch('/__sightline/lan/hosts',{cache:'no-store',signal:abort.signal}).then(function(r){if(!r.ok)throw new Error('Discovery bridge is unavailable. Start SIGHTLINE.bat lan-client.');return r.json();}).then(function(data){
