@@ -7,8 +7,8 @@ b618ebb0f2a56ee3e00c52943e48eb5db6ddb59117c689781d6fe755f5486c1b  app/src/main/a
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/phone-host/infection-evasion.js
 3603b9bdbbc15f17e5c04c3c15cee97e95524836456a26d7ca343cfe40261c4e  app/src/main/assets/phone-host/navigation.js
 6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53  app/src/main/assets/phone-host/rook117/rook117-model.js
-32a6f5e7419a12a7d715c846f430bbf143565c9e3ce43b427506e10b70a7d11e  app/src/main/assets/phone-host/server.js
-a1fc8d1889374e2ee56236897b68c2aa09437b634936dc0cd3b19291b04c34c4  app/src/main/assets/phone-host/SHA256SUMS
+f0927b4921d903254d41015feb7911f690014af841f21804647f782a337b1614  app/src/main/assets/phone-host/server.js
+3c4037f90347e616f37ad17b351fff2410fc596ec2e2aeea40a18580c326262d  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js

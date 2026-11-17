@@ -1,3 +1,9 @@
+# LAN security hardening source checkpoint (2026-11-17)
+
+Branch `feature/lan-security-hardening`, based on v18 `7b7706c0ad1ce25594ddc8d3759e25d057b1d171`. See `docs/LAN-SECURITY-HARDENING.md` for scope and deliberately skipped verification. Private-interface binding, bounded handshake/message/discovery work, Windows child environment isolation and truthful process shutdown were implemented. No tests/build/device use this cycle. Existing v18 APK is rollback. `main` and Adventure Mode untouched. Current checkpoint commit SHA is supplied in delivery and verified on the remote branch.
+
+---
+Previous LAN milestone retained below:
 # v18 LAN join recovery (2026-11-17)
 
 Current branch: `feature/cross-platform-lan-hosting`; parent `6409ff3fb1d093acac0f97a5cb22e1a8c2acabfc`. Latest checkpoint is the commit containing this note; use `git rev-parse HEAD` and compare the remote branch. Main remains unchanged.

@@ -22,13 +22,30 @@ class LocalLanHost {
     this.bundle=crypto.createHash('sha256').update(fs.readFileSync(path.join(dir,'index.html'))).digest('hex');
     this.instance=crypto.randomBytes(12).toString('hex');
     let fault='',exited=false;
-    const child=spawn(process.execPath,[path.join(dir,'server.js'),'--transport','dev','--bind',address,'--port',String(this.port),'--max','4','--bots','0','--wait-for-host',...(this.allowLoopbackForTests?[]:['--discover-lan']),'--room','PC Match'],{cwd:dir,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,SIGHTLINE_HOST_INSTANCE:this.instance}});
+    const env={SIGHTLINE_HOST_INSTANCE:this.instance};
+    for(const key of ['PATH','SystemRoot','WINDIR','TEMP','TMP'])if(process.env[key])env[key]=process.env[key];
+    // The authoritative server is a child process, but it must not inherit
+    // editor, CI, package-manager or credential variables from the launcher.
+    const child=spawn(process.execPath,[path.join(dir,'server.js'),'--transport','dev','--bind',address,'--port',String(this.port),'--max','4','--bots','0','--wait-for-host',...(this.allowLoopbackForTests?[]:['--discover-lan']),'--room','PC Match'],{cwd:dir,windowsHide:true,stdio:['ignore','pipe','pipe'],env});
     this.child=child;
     const collect=d=>{fault=(fault+d.toString()).slice(-2500);};child.stdout.on('data',collect);child.stderr.on('data',collect);
     child.once('error',e=>{fault=e.message;exited=true;});child.once('exit',()=>{exited=true;if(this.child===child){this.child=null;this.room=null;}});
     for(let i=0;i<60&&!exited;i++){const status=await this.probe(address);if(status){this.room={address,port:this.port,protocol:2,verified:true,name:status.name,maxPlayers:status.maxPlayers};return this.room;}await new Promise(r=>setTimeout(r,125));}
     await this.stop();throw Error(/EADDRINUSE/.test(fault)?'Another app is already using the local match port. Close the old host and retry.':'The local match server could not start. '+fault.slice(-300));
   }
-  async stop(){const child=this.child;this.child=null;this.room=null;if(!child||child.exitCode!==null)return;await new Promise(resolve=>{const timeout=setTimeout(()=>{try{child.kill('SIGKILL');}catch(_){}resolve();},1500);child.once('exit',()=>{clearTimeout(timeout);resolve();});child.kill('SIGTERM');});}
+  async stop(){
+    const child=this.child;this.child=null;this.room=null;if(!child||child.exitCode!==null)return;
+    const waitForExit=ms=>new Promise(resolve=>{
+      if(child.exitCode!==null)return resolve(true);
+      let settled=false;
+      const done=value=>{if(settled)return;settled=true;clearTimeout(timer);child.removeListener('exit',onExit);resolve(value);};
+      const onExit=()=>done(true),timer=setTimeout(()=>done(false),ms);
+      child.once('exit',onExit);
+    });
+    try{child.kill('SIGTERM');}catch(_){}
+    if(await waitForExit(1500))return;
+    try{child.kill('SIGKILL');}catch(_){}
+    if(!await waitForExit(1500))throw Error('The local match process did not exit after termination; hosting is not confirmed stopped.');
+  }
 }
 module.exports={LocalLanHost};

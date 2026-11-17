@@ -16,6 +16,8 @@ const GAME_ID = 'sightline-v12-host-prototype';
 const DEFAULT_SCAN_MS = 1200;
 const HOST_TTL_MS = 3500;
 const MAX_PACKET_BYTES = 1024;
+const MAX_RESPONDED_ADDRESSES = 256;
+const MAX_SCAN_HOSTS = 32;
 
 function isRfc1918IPv4(value) {
   if (typeof value !== 'string') return false;
@@ -128,7 +130,10 @@ function createLanDiscoveryHost({ info, interfaces = os.networkInterfaces, socke
     const at = now(), prior = responded.get(remote.address) || 0;
     if (at - prior < 300) return;
     responded.set(remote.address, at);
-    if (responded.size > 256) for (const [ip, stamp] of responded) if (at - stamp > 5000) responded.delete(ip);
+    if (responded.size >= MAX_RESPONDED_ADDRESSES && !responded.has(remote.address)) {
+      for (const [ip, stamp] of responded) if (at - stamp > 5000) responded.delete(ip);
+      while(responded.size>=MAX_RESPONDED_ADDRESSES)responded.delete(responded.keys().next().value);
+    }
     let body;
     try { const details=info(); if(details.ready===false)return; body = makeOffer(details, probe.nonce); } catch (_) { return; }
     socket.send(body, 0, body.length, remote.port, remote.address, () => {});
@@ -202,7 +207,7 @@ function createLanDiscoveryClient({ interfaces = os.networkInterfaces, socketFac
         socket.on('error', () => finish(true));
         socket.on('message', (packet, remote) => {
           const host = parseOffer(packet, remote && remote.address, nonce, now());
-          if (host && (!found.has(host.id) || host.seenAt > found.get(host.id).seenAt)) found.set(host.id, host);
+          if (host && (found.has(host.id) || found.size < MAX_SCAN_HOSTS) && (!found.has(host.id) || host.seenAt > found.get(host.id).seenAt)) found.set(host.id, host);
         });
         socket.bind(0, '0.0.0.0', () => {
           try { socket.setBroadcast(true); } catch (_) { return finish(true); }

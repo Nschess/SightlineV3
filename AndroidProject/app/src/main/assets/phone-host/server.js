@@ -6,7 +6,7 @@
    Usage: node server.js --transport dev [--port 8080] [--max 10] [--rounds 5] [--time 100] [--bots 0] [--skill regular]
           node server.js --transport release --bind <private-ip> --port 8080 */
 'use strict';
-const http = require('http'), zlib = require('zlib'), crypto = require('crypto'), fs = require('fs'), path = require('path'), os = require('os'), https = require('https');
+const http = require('http'), zlib = require('zlib'), crypto = require('crypto'), fs = require('fs'), path = require('path'), os = require('os'), https = require('https'), net = require('net');
 const HostTransport = require('./host-transport-config.js');
 
 /* ---------------- options ---------------- */
@@ -16,11 +16,40 @@ const ROOM_INDEX = argv.indexOf('--room');
 const ROOM_NAME = (ROOM_INDEX >= 0 ? String(argv[ROOM_INDEX + 1] || '') : 'Sightline Match').replace(/[\x00-\x1f\x7f]/g,'').slice(0,48) || 'Sightline Match';
 let ROOM_OPENED = !argv.includes('--wait-for-host');
 const HOST_INSTANCE = process.env.SIGHTLINE_HOST_INSTANCE || crypto.randomBytes(12).toString('hex');
+function isPrivateHostIPv4(value) {
+  if(typeof value!=='string'||net.isIP(value)!==4)return false;
+  const p=value.split('.').map(Number),a=p[0],b=p[1];
+  return a===10||(a===172&&b>=16&&b<=31)||(a===192&&b===168);
+}
+function defaultPrivateBind() {
+  const entries=os.networkInterfaces()||{};
+  for(const [name,rows] of Object.entries(entries)) {
+    if(/loopback|virtual|vethernet|docker|vpn|tun/i.test(name))continue;
+    for(const row of rows||[])if(row&&row.family==='IPv4'&&!row.internal&&isPrivateHostIPv4(row.address))return row.address;
+  }
+  return '127.0.0.1';
+}
 const BIND_ARG = argv.indexOf('--bind');
-const BIND = BIND_ARG >= 0 ? String(argv[BIND_ARG + 1] || '') : '0.0.0.0';
-const VALID_BIND = /^(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
-if (BIND !== '0.0.0.0' && BIND !== '127.0.0.1' && (!VALID_BIND.test(BIND) || require('net').isIP(BIND) !== 4)) throw new Error('Untrusted host bind address');
+const BIND = BIND_ARG >= 0 ? String(argv[BIND_ARG + 1] || '') : (require.main===module?defaultPrivateBind():'127.0.0.1');
+if (BIND !== '127.0.0.1' && !isPrivateHostIPv4(BIND)) throw new Error('Host bind address must be one private IPv4 interface; wildcard/public listeners are disabled');
 const PORT = opt('port', 8080, 1, 65535), MAX_PLAYERS = Math.round(opt('max', 32, 2, 32));
+const MAX_PENDING_HANDSHAKES = Math.min(64,MAX_PLAYERS*2), MAX_PENDING_PER_IP = 4;
+let pendingHandshakeCount=0;
+const pendingHandshakesByIp=new Map();
+function peerIPv4(address) { return String(address||'').replace(/^::ffff:/i,''); }
+function reservePendingHandshake(address) {
+  let ip=peerIPv4(address);
+  // Imported server instances are used by deterministic protocol harnesses
+  // with lightweight fake sockets. A real executable host always has a peer IP.
+  if(require.main!==module&&!ip)ip='127.0.0.1';
+  const loopback=BIND==='127.0.0.1'&&ip==='127.0.0.1';
+  if(!loopback&&!isPrivateHostIPv4(ip))return null;
+  const count=pendingHandshakesByIp.get(ip)||0;
+  if(pendingHandshakeCount>=MAX_PENDING_HANDSHAKES||count>=MAX_PENDING_PER_IP)return null;
+  pendingHandshakeCount++;pendingHandshakesByIp.set(ip,count+1);
+  let held=true;
+  return ()=>{if(!held)return;held=false;pendingHandshakeCount=Math.max(0,pendingHandshakeCount-1);const n=pendingHandshakesByIp.get(ip)||0;if(n<=1)pendingHandshakesByIp.delete(ip);else pendingHandshakesByIp.set(ip,n-1);};
+}
 const TRANSPORT_MODE = HostTransport.resolveTransportMode(argv, {
   defaultMode: require.main === module ? null : HostTransport.DEVELOPMENT_TRANSPORT
 });
@@ -100,7 +129,7 @@ const WS_TEXT_DECODER = new (require('util').TextDecoder)('utf-8', { fatal: true
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 // Bound synchronous work per peer so a coalesced input burst cannot monopolize
 // the simulation event loop. Normal Sightline clients send about 35 messages/s.
-const WS_FRAME_BATCH = 32, WS_FRAME_RATE_MAX = 600;
+const WS_FRAME_BATCH = 32, WS_FRAME_RATE_MAX = 600, WS_MESSAGE_RATE_MAX = 150;
 function frame(op, payload) {
   const len = payload.length, headerBytes = len < 126 ? 2 : len < 65536 ? 4 : 10;
   const out = Buffer.allocUnsafe(headerBytes + len);
@@ -115,6 +144,7 @@ class Conn {
   constructor(sock, onMsg, onClose) {
     this.sock = sock; this.buf = Buffer.alloc(0); this.onMsg = onMsg; this.onClose = onClose; this.closed = false; this.frag = null; this.fragOp = 0; this.lastRx = Date.now();
     this.drainScheduled = false; this.frameRateTimes = new Float64Array(WS_FRAME_RATE_MAX); this.frameRateHead = 0; this.frameRateCount = 0;
+    this.messageRateTimes = new Float64Array(WS_MESSAGE_RATE_MAX); this.messageRateHead = 0; this.messageRateCount = 0;
     this.snapshotFrames = 0; this.snapshotSkipped = 0; this.snapshotBytes = 0; this.snapshotBackpressure = 0; this.snapshotQueueBytes = 0; this.snapshotQueuePeakBytes = 0;
     sock.setNoDelay(true); sock.setTimeout(0);
     sock.setKeepAlive(true, 10000);
@@ -184,6 +214,10 @@ class Conn {
     if (this.closed || op !== 1) return;
     let text;
     try { text = WS_TEXT_DECODER.decode(pl); } catch (e) { return this.kill(); }
+    const rateNow=performance.now();
+    while(this.messageRateCount&&rateNow-this.messageRateTimes[this.messageRateHead]>=1000){this.messageRateHead=(this.messageRateHead+1)%WS_MESSAGE_RATE_MAX;this.messageRateCount--;}
+    if(this.messageRateCount>=WS_MESSAGE_RATE_MAX)return this.kill();
+    this.messageRateTimes[(this.messageRateHead+this.messageRateCount)%WS_MESSAGE_RATE_MAX]=rateNow;this.messageRateCount++;
     try { this.onMsg(text); } catch (e) { log('handler error', e && e.stack || e); }
   }
   send(op, payload) { if (!this.closed) { if(this.backlog>262144)return this.kill(); try { this.sock.write(frame(op, payload)); } catch (e) { this.kill(); } } }
@@ -2515,6 +2549,14 @@ const server = HostTransport.createListener(
   handleHttpRequest,
   RELEASE_TLS && RELEASE_TLS.secureOptions
 );
+// Bound pre-upgrade HTTP work and idle keep-alive sockets. WebSocket Conn
+// explicitly disables the HTTP idle timeout after a validated upgrade.
+server.headersTimeout=10000;
+server.requestTimeout=15000;
+server.keepAliveTimeout=5000;
+server.timeout=15000;
+server.maxHeadersCount=32;
+server.maxConnections=MAX_PLAYERS+MAX_PENDING_HANDSHAKES+16;
 function validWebSocketKey(value) {
   if (typeof value !== 'string') return false;
   const decoded = Buffer.from(value, 'base64');
@@ -2538,9 +2580,13 @@ server.on('upgrade', (req, sock) => {
       String(req.headers['sec-websocket-version'] || '') !== '13' ||
       !validWebSocketKey(key)) { sock.destroy(); return; }
   if (humanCount() >= MAX_PLAYERS) { sock.end('HTTP/1.1 503 Server full\r\nConnection: close\r\n\r\n'); return; }
+  const releasePending=reservePendingHandshake(sock.remoteAddress);
+  if(!releasePending){sock.end('HTTP/1.1 429 Too Many Connections\r\nConnection: close\r\n\r\n');return;}
   const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');
   sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
   let me = null;
+  let awaitingHello=true;
+  const releaseHelloSlot=()=>{if(awaitingHello){awaitingHello=false;releasePending();}};
   const hello = setTimeout(() => { if (!me) c.kill(); }, 8000);
   const c = new Conn(sock, raw => {
     if (!me) {
@@ -2549,7 +2595,7 @@ server.on('upgrade', (req, sock) => {
       if (!negotiation.ok) return c.closeAfterMessage({ t: 'err', code: negotiation.code, requiredProtocol: MULTIPLAYER_PROTOCOL, msg: negotiation.message });
       if (humanCount() >= MAX_PLAYERS) { c.text(JSON.stringify({ t: 'err', msg: 'Server is full.' })); return c.kill(); }
       if (players.size >= MAX_TOTAL) { const victim = [...players.values()].filter(p => p.bot).sort((a,b) => (a.alive-b.alive) || (b.id-a.id))[0]; if (victim) removeBot(victim); else { c.text(JSON.stringify({t:'err',msg:'Server is full.'})); return c.kill(); } }
-      me = addPlayer(c, m.name); ROOM_OPENED=true; log('joined:', me.name, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
+      me = addPlayer(c, m.name); releaseHelloSlot(); ROOM_OPENED=true; log('joined:', me.name, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
       me.protocol = MULTIPLAYER_PROTOCOL; me.session = crypto.randomBytes(16).toString('hex'); me.lastActionSeq = 0;
       send(me, { t: 'welcome', protocol: MULTIPLAYER_PROTOCOL, features: negotiation.features, session: me.session, id: me.id, host: me.host, max: MAX_PLAYERS });
       syncBots(); pushLobby();
@@ -2557,11 +2603,8 @@ server.on('upgrade', (req, sock) => {
       if(G.phase==='live'){checkElimination();checkAllDown();}
       return;
     }
-    const t = now(); if (t - c.winT > 1000) { c.winT = t; c.winN = 0; }
-    if (++c.winN > 150) { stats.dropped++; if (c.winN > 600) { log('flood, dropping', me.name); c.kill(); } return; }      /* a real client sends ~35 messages/s */
     onMessage(me, raw);
-  }, () => { clearTimeout(hello); if (me) removePlayer(me); });
-  c.winT = 0; c.winN = 0;
+  }, () => { clearTimeout(hello); releaseHelloSlot(); if (me) removePlayer(me); });
 });
 function fatalHostError(error, io = {}) {
   const err = error instanceof Error ? error : new Error(String(error == null ? 'Unknown fatal host error' : error));
@@ -2585,7 +2628,7 @@ server.on('error', e => { console.error(e.code === 'EADDRINUSE' ? 'Port ' + PORT
 
 function lanAddresses() {
   const out = []; const ifs = os.networkInterfaces();
-  Object.keys(ifs).forEach(n => ifs[n].forEach(a => { if (a.family === 'IPv4' && !a.internal) out.push({ name: n, ip: a.address }); }));
+  Object.keys(ifs).forEach(n => {if(/loopback|virtual|vethernet|docker|vpn|tun/i.test(n))return;(ifs[n]||[]).forEach(a=>{if(a.family==='IPv4'&&!a.internal&&isPrivateHostIPv4(a.address))out.push({name:n,ip:a.address});});});
   return out;
 }
 function ensureThree(cb) {

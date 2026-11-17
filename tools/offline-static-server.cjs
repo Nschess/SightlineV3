@@ -106,6 +106,12 @@ if (require.main === module) {
   const discovery = discoveryEnabled ? require('./lan-discovery.cjs').createLanDiscoveryClient() : null;
   const hostManager = discoveryEnabled ? new (require('./local-lan-host.cjs').LocalLanHost)() : null;
   const server = createOfflineServer(root, { discovery, hostManager });
+  server.headersTimeout=10000;
+  server.requestTimeout=15000;
+  server.keepAliveTimeout=3000;
+  server.timeout=15000;
+  server.maxHeadersCount=32;
+  server.maxConnections=32;
   for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{if(hostManager)await hostManager.stop();server.close(()=>process.exit(0));});
   server.on('error', error => { console.error('Offline server failed:', error.message); process.exitCode = 1; });
   server.listen(8090, '127.0.0.1', () => {
