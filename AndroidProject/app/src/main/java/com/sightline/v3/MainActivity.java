@@ -367,7 +367,7 @@ public final class MainActivity extends Activity {
 
     private static final int DISCOVERY_PORT = 49192;
     private static final class LanHostCandidate {
-        String address, id, mode, map, phase, name; int players, maxPlayers;
+        String address, id, mode, map, phase, name; int players, maxPlayers; long lastSeen;
         boolean full() { return players >= maxPlayers; }
         String label() { return (full() ? "FULL · " : "") + (name==null?"Sightline Match":name)+" · " + players + "/" + maxPlayers + " · " + mode + " · " + map; }
     }
@@ -415,12 +415,23 @@ public final class MainActivity extends Activity {
             try {
                 android.net.wifi.WifiManager wifi=(android.net.wifi.WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 if(wifi!=null){multicast=wifi.createMulticastLock("sightline-discovery");multicast.setReferenceCounted(false);multicast.acquire();}
-                scanLanHosts(cancelled,host->runOnUiThread(()->{
-                    if(cancelled.get()||!dialog.isShowing()||isFinishing()||isDestroyed())return;
-                    for(LanHostCandidate existing:hosts)if(existing.id.equals(host.id))return;
-                    hosts.add(host);rows.add(host.label());state.setText("Select a match to join.");
-                }));
-                runOnUiThread(()->{if(!cancelled.get()&&dialog.isShowing()&&hosts.isEmpty())state.setText("No matches found on this Wi-Fi.");});
+                while(!cancelled.get()) {
+                    scanLanHosts(cancelled,host->runOnUiThread(()->{
+                        if(cancelled.get()||!dialog.isShowing()||isFinishing()||isDestroyed())return;
+                        host.lastSeen=android.os.SystemClock.elapsedRealtime();int index=-1;
+                        for(int i=0;i<hosts.size();i++)if(hosts.get(i).id.equals(host.id)){index=i;break;}
+                        if(index<0){hosts.add(host);rows.add(host.label());}
+                        else {hosts.set(index,host);rows.remove(rows.getItem(index));rows.insert(host.label(),index);}
+                        state.setText("Select a match to join.");
+                    }));
+                    runOnUiThread(()->{
+                        if(cancelled.get()||!dialog.isShowing())return;
+                        long cutoff=android.os.SystemClock.elapsedRealtime()-15000;
+                        for(int i=hosts.size()-1;i>=0;i--)if(hosts.get(i).lastSeen<cutoff){hosts.remove(i);rows.remove(rows.getItem(i));}
+                        if(hosts.isEmpty())state.setText("No matches found on this Wi-Fi.");
+                    });
+                    for(int i=0;i<20&&!cancelled.get();i++)Thread.sleep(250);
+                }
             } catch(Exception e) {
                 Log.w("SightlineLAN","Discovery failed",e);
                 runOnUiThread(()->{if(!cancelled.get()&&dialog.isShowing())state.setText("Unable to search — check your network connection.");});
