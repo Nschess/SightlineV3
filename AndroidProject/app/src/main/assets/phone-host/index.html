@@ -13275,13 +13275,28 @@ var MP_LAN_DISCOVERY = { busy:false, hosts:[], error:'', scannedAt:0, timer:0 };
 function mpCancelLanScan(){clearTimeout(MP_LAN_DISCOVERY.timer);if(MP_LAN_DISCOVERY.abort){MP_LAN_DISCOVERY.abort.abort();MP_LAN_DISCOVERY.abort=null;}MP_LAN_DISCOVERY.generation=(MP_LAN_DISCOVERY.generation||0)+1;MP_LAN_DISCOVERY.busy=false;}
 var mpLocalHostOwned=false, mpLocalHostPending=false;
 function mpNativeLan() { return navigator.userAgent.indexOf('SightlineAndroid')>=0 && location.hostname==='appassets.androidplatform.net'; }
+var mpNetworks=null,mpNetworkNext='';
+function mpEnsureNetwork(action){
+  fetch('/__sightline/lan/networks',{cache:'no-store'}).then(function(r){if(!r.ok)throw Error('Network lookup failed');return r.json();}).then(function(data){
+    if(data.missing)throw Error('Your selected network is unavailable. Refresh and choose another.');
+    if(data.selected){mpNetworks=null;action==='create'?mpCreateLocalHost(true):mpScanLanHosts(true);return;}
+    if(!Array.isArray(data.networks)||!data.networks.length)throw Error('Connect to a private Wi-Fi or LAN and try again.');
+    mpNetworks=data.networks;mpNetworkNext=action;renderOps();
+  }).catch(function(e){console.warn('LAN network selection',e);MP.err=e.message||'Network unavailable.';renderOps();});
+}
+function mpChooseNetwork(address){
+  if(!mpNetworks||!mpNetworks.some(function(n){return n.address===address;}))return;
+  fetch('/__sightline/lan/network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:address})}).then(function(r){if(!r.ok)throw Error('Network unavailable. Refresh and choose again.');return r.json();}).then(function(){var action=mpNetworkNext;mpNetworks=null;mpNetworkNext='';renderOps();action==='create'?mpCreateLocalHost(true):mpScanLanHosts(true);}).catch(function(e){console.warn('LAN network selection',e);MP.err=e.message;mpNetworks=null;renderOps();});
+}
 function mpPlatformLanMarkup() {
   if(!mpNativeLan()&&!mpLanDiscoveryBridge())return '';
-  return '<div class="setfoot"><button type="button" class="btn" data-net="create-local"'+(mpLocalHostPending?' disabled':'')+'>CREATE MATCH</button><button type="button" class="btn ghost" data-net="find-local">FIND LAN MATCH</button></div>'+(mpLocalHostOwned?'<button type="button" class="btn ghost" data-net="stop-local">Stop Hosting</button>':'');
+  var picker=mpNetworks?'<div class="srow"><span class="lb"><b>Choose network</b></span></div>'+mpNetworks.map(function(n){return '<button type="button" class="btn ghost" data-net="choose-network" data-host="'+esc(n.address)+'">'+esc(n.name)+' · '+esc(n.address)+'</button>';}).join('')+'<button type="button" class="btn ghost" data-net="cancel-network">Back</button>':'';
+  return picker+'<div class="setfoot"><button type="button" class="btn" data-net="create-local"'+(mpLocalHostPending?' disabled':'')+'>CREATE MATCH</button><button type="button" class="btn ghost" data-net="find-local">FIND LAN MATCH</button></div>'+(mpLocalHostOwned?'<button type="button" class="btn ghost" data-net="stop-local">Stop Hosting</button>':'');
 }
-function mpCreateLocalHost() {
+function mpCreateLocalHost(networkReady) {
   if(mpNativeLan()){location.href='sightlinelan://create';return;}
   if(!mpLanDiscoveryBridge()||mpLocalHostPending)return;
+  if(!networkReady){mpEnsureNetwork('create');return;}
   var n=$('#mp-name');if(n)MP.name=n.value;
   mpLocalHostPending=true;MP.hostStartFailed=false;MP.status='Starting your match…';MP.err='';renderOps();
   fetch('/__sightline/lan/create',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json();}).then(function(result){
@@ -13342,7 +13357,9 @@ function mpScanLanHosts(manual) {
 function mpAction(b) {
   var a = b.getAttribute('data-net'), v = b.getAttribute('data-v');
   if(a==='create-local'){mpCreateLocalHost();return;}
-  if(a==='find-local'){if(mpNativeLan())location.href='sightlinelan://find';else mpScanLanHosts(true);return;}
+  if(a==='find-local'){if(mpNativeLan())location.href='sightlinelan://find';else mpEnsureNetwork('find');return;}
+  if(a==='choose-network'){mpChooseNetwork(b.getAttribute('data-host'));return;}
+  if(a==='cancel-network'){mpNetworks=null;mpNetworkNext='';renderOps();return;}
   if(a==='stop-local'){mpStopLocalHost();return;}
   if (a === 'retry-connect') { if(!MP.sock){MP.userLeft=false;MP.retryN=0;MP.err='';mpConnect();} }
   else if (a === 'connect') { var n = $('#mp-name'), d = $('#mp-addr'); if (n) MP.name = n.value; if (d) MP.addr = d.value; mpConnect(); }

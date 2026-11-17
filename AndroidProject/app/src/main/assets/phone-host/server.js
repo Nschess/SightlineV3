@@ -2663,7 +2663,7 @@ if (require.main === module) {
         try {
           const Discovery = require('./lan-discovery.cjs');
           const discoveryInstance = HOST_INSTANCE;
-          discoveryHost = Discovery.createLanDiscoveryHost({ info: () => ({
+          discoveryHost = Discovery.createLanDiscoveryHost({ interfaces: () => Object.fromEntries(Object.entries(os.networkInterfaces()||{}).map(([name,rows])=>[name,(rows||[]).filter(row=>row.address===BIND)])), info: () => ({
             id: discoveryInstance, name: ROOM_NAME, port: PORT, ready: ROOM_OPENED,
             players: humanCount(), maxPlayers: MAX_PLAYERS, phase: G.phase, mode: G.mode, map: G.map
           }), onError: error => console.error('  LAN discovery socket error:', error && (error.code || error.message) || 'unknown error') });

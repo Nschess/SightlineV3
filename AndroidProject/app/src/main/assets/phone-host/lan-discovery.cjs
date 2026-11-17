@@ -125,6 +125,8 @@ function createLanDiscoveryHost({ info, interfaces = os.networkInterfaces, socke
   function onMessage(socket, packet, remote) {
     const probe = parseProbe(packet, remote && remote.address);
     if (!probe || !remote || !Number.isInteger(remote.port) || remote.port < 1 || remote.port > 65535) return;
+    const inSubnet=Object.values(interfaces()||{}).flat().some(row=>row&&row.family==='IPv4'&&!row.internal&&validNetmask(row.netmask)&&isPrivateIPv4(row.address)&&((ipv4Number(row.address)&ipv4Number(row.netmask))===(ipv4Number(remote.address)&ipv4Number(row.netmask))));
+    if(!inSubnet)return;
     const at = now(), prior = responded.get(remote.address) || 0;
     if (at - prior < 300) return;
     if (responded.size >= MAX_RESPONDED_ADDRESSES && !responded.has(remote.address)) {
@@ -184,7 +186,7 @@ function verifyHostStatus(host, timeoutMs = 650) {
 }
 
 function createLanDiscoveryClient({ interfaces = os.networkInterfaces, socketFactory = () => dgram.createSocket('udp4'), now = Date.now,
-  verify = verifyHostStatus, scanMs = DEFAULT_SCAN_MS } = {}) {
+  verify = verifyHostStatus, scanMs = DEFAULT_SCAN_MS, bindAddress = () => '0.0.0.0' } = {}) {
   let activeScan = null;
   function stream(onHost, onDone) {
     const nonce=crypto.randomBytes(16).toString('hex'), seen=new Set(), pending=new Set();
@@ -206,7 +208,7 @@ function createLanDiscoveryClient({ interfaces = os.networkInterfaces, socketFac
         const task=Promise.resolve().then(()=>verify(host)).then(value=>{if(!closed&&value)onHost(value);}).catch(()=>{}).finally(()=>pending.delete(task));
         pending.add(task);
       });
-      socket.bind(0,'0.0.0.0',()=>{
+      socket.bind(0,bindAddress(),()=>{
         if(closed)return;
         try{socket.setBroadcast(true);}catch(_){return finish(true);}
         const targets=privateBroadcastTargets(interfaces());
@@ -239,7 +241,7 @@ function createLanDiscoveryClient({ interfaces = os.networkInterfaces, socketFac
           const host = parseOffer(packet, remote && remote.address, nonce, now());
           if (host && (found.has(host.id) || found.size < MAX_SCAN_HOSTS) && (!found.has(host.id) || host.seenAt > found.get(host.id).seenAt)) found.set(host.id, host);
         });
-        socket.bind(0, '0.0.0.0', () => {
+        socket.bind(0, bindAddress(), () => {
           try { socket.setBroadcast(true); } catch (_) { return finish(true); }
           const targets = privateBroadcastTargets(interfaces());
           if (!targets.length) return finish(false);

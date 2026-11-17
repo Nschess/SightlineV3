@@ -31,7 +31,7 @@ public final class HostPolicy {
             if (n[i] > 255) return null;
         }
         boolean privateIp = n[0]==10 || (n[0]==172 && n[1]>=16 && n[1]<=31) || (n[0]==192 && n[1]==168);
-        if (!privateIp || n[3]==0 || n[3]==255) return null;
+        if (!privateIp) return null;
         return n[0]+"."+n[1]+"."+n[2]+"."+n[3];
     }
 }

@@ -44,6 +44,14 @@ function createOfflineServer(root, options = {}) {
   const rootReal = fs.realpathSync(root);
   return http.createServer((req, res) => {
     const pathname = new URL(req.url || '/', 'http://127.0.0.1').pathname;
+    if(pathname==='/__sightline/lan/networks') {
+      if(req.method!=='GET'||!options.networks){res.writeHead(404);res.end();return;}
+      res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(options.networks.list()));return;
+    }
+    if(pathname==='/__sightline/lan/network') {
+      if(req.method!=='POST'||!['http://127.0.0.1:8090','http://localhost:8090'].includes(req.headers.origin)||req.headers['content-type']!=='application/json'||!options.networks){res.writeHead(403);res.end();return;}
+      let body='';req.on('data',d=>{body+=d;if(body.length>1024)req.destroy();});req.on('end',()=>{try{const value=JSON.parse(body);if(options.hostManager&&(options.hostManager.child||options.hostManager.pending))throw Error('Stop hosting before changing networks');const result=options.networks.select(value.address);res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(result));}catch(e){res.writeHead(400,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Network unavailable. Refresh and choose again.'}));}});return;
+    }
     if (pathname === '/__sightline/lan/create' || pathname === '/__sightline/lan/stop') {
       // Only the local game's same-origin JSON action may start a process.
       const trustedOrigin = ['http://127.0.0.1:8090','http://localhost:8090'].includes(req.headers.origin);
@@ -69,6 +77,7 @@ function createOfflineServer(root, options = {}) {
     }
     if (pathname === '/__sightline/lan/hosts-stream') {
       if (req.method !== 'GET' || !options.discovery || typeof options.discovery.stream !== 'function') { res.writeHead(404);res.end();return; }
+      if(options.networks&&!options.networks.address()){res.writeHead(409,{'Cache-Control':'no-store'});res.end('Selected network unavailable');return;}
       res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
       let stop=null;
       const write=value=>{if(!res.destroyed&&!res.writableEnded)res.write(JSON.stringify(value)+'\n');};
@@ -112,9 +121,10 @@ function createOfflineServer(root, options = {}) {
 if (require.main === module) {
   const root = path.resolve(__dirname, '../AndroidProject/app/src/main/assets/www');
   const discoveryEnabled = process.argv.includes('--lan-client');
-  const discovery = discoveryEnabled ? require('./lan-discovery.cjs').createLanDiscoveryClient() : null;
-  const hostManager = discoveryEnabled ? new (require('./local-lan-host.cjs').LocalLanHost)() : null;
-  const server = createOfflineServer(root, { discovery, hostManager });
+  const networks = discoveryEnabled ? new (require('./lan-network-selection.cjs').LanNetworkSelection)() : null;
+  const discovery = discoveryEnabled ? require('./lan-discovery.cjs').createLanDiscoveryClient({interfaces:()=>networks.interfaces(),bindAddress:()=>networks.address()}) : null;
+  const hostManager = discoveryEnabled ? new (require('./local-lan-host.cjs').LocalLanHost)({addressProvider:()=>networks.address()}) : null;
+  const server = createOfflineServer(root, { discovery, hostManager, networks });
   server.headersTimeout=10000;
   server.requestTimeout=15000;
   server.keepAliveTimeout=3000;

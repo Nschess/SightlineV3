@@ -30,23 +30,23 @@ public final class LanHostService extends Service {
     private android.net.wifi.WifiManager.MulticastLock discoveryLock;
     private native int runNode(String[] argv, String home, String temp);
     @Override public IBinder onBind(Intent intent) { return null; }
-    public static String lanAddress() {
+    public static java.util.Map<String,String> lanAddresses() {
+        java.util.Map<String,String> result=new java.util.LinkedHashMap<>();
         try {
             Enumeration<NetworkInterface> nets=NetworkInterface.getNetworkInterfaces();
-            while(nets.hasMoreElements()) {
-                NetworkInterface it=nets.nextElement();
-                String n=it.getName().toLowerCase(java.util.Locale.ROOT);
-                // Do not bind to a cellular interface even when its carrier IP happens to be private.
-                if (!(n.startsWith("wlan") || n.startsWith("ap") || n.startsWith("swlan") || n.startsWith("softap")) || !it.isUp() || it.isLoopback()) continue;
-                Enumeration<java.net.InetAddress> addresses=it.getInetAddresses();
-                while(addresses.hasMoreElements()) {
-                    java.net.InetAddress a=addresses.nextElement();
-                    if (a instanceof Inet4Address && HostPolicy.normalize(a.getHostAddress()) != null) return a.getHostAddress();
+            while(nets!=null&&nets.hasMoreElements()) {
+                NetworkInterface it=nets.nextElement();String n=it.getName().toLowerCase(java.util.Locale.ROOT);
+                if(!(n.startsWith("wlan")||n.startsWith("ap")||n.startsWith("swlan")||n.startsWith("softap"))||!it.isUp()||it.isLoopback()||it.isVirtual())continue;
+                for(java.net.InterfaceAddress row:it.getInterfaceAddresses()) {
+                    java.net.InetAddress addr=row.getAddress();short prefix=row.getNetworkPrefixLength();
+                    if(addr instanceof Inet4Address && prefix>0 && prefix<31 && HostPolicy.normalize(addr.getHostAddress())!=null)
+                        result.put(addr.getHostAddress(),it.getDisplayName()==null?it.getName():it.getDisplayName());
                 }
             }
-        } catch(Exception ignored) { }
-        return null;
+        } catch(Exception e) { android.util.Log.w("SightlineHost","Cannot enumerate Wi-Fi interfaces",e); }
+        return result;
     }
+    public static boolean hasLanAddress(String address) { return address!=null&&lanAddresses().containsKey(address); }
     private static String hex(byte[] bytes) {
         StringBuilder b=new StringBuilder(); for(byte x:bytes)b.append(String.format(java.util.Locale.ROOT,"%02x",x&255));return b.toString();
     }
@@ -116,11 +116,12 @@ public final class LanHostService extends Service {
             android.util.Log.e("SightlineHost","Android refused foreground service",e);
             stopSelf(); return START_NOT_STICKY;
         }
+        final String selectedAddress=intent==null?null:intent.getStringExtra("lan-address");
         new Thread(()->{
             try {
                 if(!BuildConfig.LAN_HOST_ENABLED) throw new Exception("Native runtime not installed");
-                String ip=lanAddress();
-                if(ip==null)throw new Exception("No trusted Wi-Fi/hotspot address");
+                String ip=selectedAddress;
+                if(!hasLanAddress(ip))throw new Exception("Selected Wi-Fi network is unavailable");
                 File error=new File(getFilesDir(), LAST_ERROR_FILE);
                 if(error.exists()&&!error.delete()) throw new Exception("Cannot clear previous hosting failure");
                 File root=stage();
@@ -133,7 +134,7 @@ public final class LanHostService extends Service {
                 new Thread(()->{
                     while(started) {
                         try {Thread.sleep(3000);} catch(InterruptedException e) {return;}
-                        if(!initialIp.equals(lanAddress())) { writeFailure("Wi-Fi changed. Rejoin Wi-Fi and create a new match.");stopSelf(); return; }
+                        if(!hasLanAddress(initialIp)) { writeFailure("Wi-Fi changed. Rejoin Wi-Fi and create a new match.");stopSelf(); return; }
                     }
                 },"sightline-host-network-watch").start();
                 System.loadLibrary("node"); System.loadLibrary("sightline_host");

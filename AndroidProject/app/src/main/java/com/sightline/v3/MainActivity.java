@@ -52,7 +52,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "45fc7e691aab2d4b047b700e219b62683e0324175b2cf38dca2145fa4292dd1a";
+    private static final String HOST_BUNDLE_SHA256 = "674de272f9b1be3157e80ceced075d122a355ee160a8d235e3cfe6f1d0ab0576";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
@@ -284,17 +284,29 @@ public final class MainActivity extends Activity {
             toast("Android installer unavailable: " + ex.getMessage());
         }
     }
-    private void startPhoneHost() {
+    private String selectedLanAddress;
+    private void chooseLanNetwork(Runnable action) {
+        java.util.Map<String,String> networks=LanHostService.lanAddresses();
+        if(networks.isEmpty()){selectedLanAddress=null;toast("Connect to Wi-Fi and try again.");return;}
+        if(networks.size()==1){selectedLanAddress=networks.keySet().iterator().next();action.run();return;}
+        if(selectedLanAddress!=null&&networks.containsKey(selectedLanAddress)){action.run();return;}
+        selectedLanAddress=null;java.util.List<String> addresses=new java.util.ArrayList<>(networks.keySet());
+        String[] labels=new String[addresses.size()];for(int i=0;i<labels.length;i++){String ip=addresses.get(i);labels[i]=networks.get(ip)+" · "+ip;}
+        new AlertDialog.Builder(this).setTitle("Choose network").setItems(labels,(d,index)->{selectedLanAddress=addresses.get(index);action.run();}).setNegativeButton("Back",null).show();
+    }
+    private void startPhoneHost() { chooseLanNetwork(this::startPhoneHostOnNetwork); }
+    private void startPhoneHostOnNetwork() {
         if (!BuildConfig.LAN_HOST_ENABLED) { toast("This build does not contain the phone host runtime."); return; }
         if (phoneHostStarting) { toast("Your match is still starting…"); return; }
         if (activePhoneHostIp != null && !new File(getFilesDir(),"phone-host-last-error.txt").exists()) { openGame(activePhoneHostIp,true); return; }
-        String ip=LanHostService.lanAddress();
+        String ip=selectedLanAddress;
         if(ip==null) {toast("Connect to private Wi-Fi or activate a hotspot first");return;}
         toast("Starting your match…");
         activePhoneHostIp=ip;
         phoneHostStarting=true;
         try {
             Intent start=new Intent(this,LanHostService.class);
+            start.putExtra("lan-address",ip);
             if(Build.VERSION.SDK_INT>=26) startForegroundService(start); else startService(start);
         } catch(Exception e) {activePhoneHostIp=null;phoneHostStarting=false;toast("Hosting could not start: "+e.getMessage());return;}
         new Thread(()->{
@@ -397,7 +409,8 @@ public final class MainActivity extends Activity {
         byte[] out=new byte[]{(byte)(broadcast>>>24),(byte)(broadcast>>>16),(byte)(broadcast>>>8),(byte)broadcast};
         try{return InetAddress.getByAddress(out);}catch(java.net.UnknownHostException ignored){return null;}
     }
-    private void discoverLanHosts() {
+    private void discoverLanHosts() { chooseLanNetwork(this::discoverLanHostsOnNetwork); }
+    private void discoverLanHostsOnNetwork() {
         final java.util.concurrent.atomic.AtomicBoolean cancelled=new java.util.concurrent.atomic.AtomicBoolean(false);
         final java.util.List<LanHostCandidate> hosts=new java.util.ArrayList<>();
         final android.widget.ArrayAdapter<String> rows=new android.widget.ArrayAdapter<>(this,android.R.layout.simple_list_item_1,new java.util.ArrayList<>());
@@ -455,14 +468,14 @@ public final class MainActivity extends Activity {
             try { if(!network.isUp()||network.isLoopback()||network.isVirtual())continue; } catch(Exception ignored) { continue; }
             for(java.net.InterfaceAddress ia:network.getInterfaceAddresses()) {
                 InetAddress local=ia.getAddress(),broadcast=directedBroadcast(ia);
-                if(local==null||!(local instanceof java.net.Inet4Address)||!privateLanAddress(local.getHostAddress())||!validPrivateBroadcast(broadcast))continue;
+                if(local==null||!(local instanceof java.net.Inet4Address)||!local.getHostAddress().equals(selectedLanAddress)||!privateLanAddress(local.getHostAddress())||!validPrivateBroadcast(broadcast))continue;
                 targets.add(broadcast.getHostAddress()); if(targets.size()>=8)break;
             }
         }
         if(targets.isEmpty())return new java.util.ArrayList<>();
         java.util.Map<String,LanHostCandidate> candidates=new java.util.LinkedHashMap<>();
         try(java.net.DatagramSocket socket=new java.net.DatagramSocket(null)) {
-            socket.setReuseAddress(false);socket.setBroadcast(true);socket.bind(new java.net.InetSocketAddress(0));
+            socket.setReuseAddress(false);socket.setBroadcast(true);socket.bind(new java.net.InetSocketAddress(InetAddress.getByName(selectedLanAddress),0));
             java.net.DatagramPacket request=new java.net.DatagramPacket(payload,payload.length);
             for(String target:targets){request.setAddress(InetAddress.getByName(target));request.setPort(DISCOVERY_PORT);socket.send(request);}
             long deadline=android.os.SystemClock.elapsedRealtime()+1250;
