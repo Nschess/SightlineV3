@@ -173,6 +173,7 @@ public final class MainActivity extends Activity {
     }
     private void showHome() {
         cancelLanJoin();
+        cancelLanDiscovery();
         showingGame = false;
         chosenLanHost = null;
         disposeWeb();
@@ -293,6 +294,34 @@ public final class MainActivity extends Activity {
             toast("Android installer unavailable: " + ex.getMessage());
         }
     }
+    // Called on the UI thread. The queued actions still check their own request generation.
+    static final class ForegroundCallbacks {
+        private final java.util.ArrayDeque<Runnable> pending = new java.util.ArrayDeque<>();
+        private boolean resumed, closed;
+
+        void run(Runnable action) {
+            if (closed) return;
+            if (resumed) action.run();
+            else pending.addLast(action);
+        }
+
+        void resume() {
+            if (closed) return;
+            resumed = true;
+            while (resumed && !pending.isEmpty()) pending.removeFirst().run();
+        }
+
+        boolean isResumed() { return resumed; }
+        void pause() { resumed = false; }
+
+        void close() {
+            closed = true;
+            resumed = false;
+            pending.clear();
+        }
+    }
+    private final ForegroundCallbacks foreground = new ForegroundCallbacks();
+
     private String selectedLanAddress;
     private java.util.concurrent.atomic.AtomicBoolean activeLanScan;
     private AlertDialog activeLanDialog;
@@ -313,8 +342,7 @@ public final class MainActivity extends Activity {
     private void handleLanNetworkChanged() {
         if(selectedLanAddress==null)return;
         selectedLanAddress=null;cancelLanJoin();phoneHostGeneration++;cancelPhoneHostProbe();phoneHostStarting=false;
-        if(activeLanScan!=null)activeLanScan.set(true);
-        if(activeLanDialog!=null&&activeLanDialog.isShowing())activeLanDialog.dismiss();
+        cancelLanDiscovery();
         if(activePhoneHostIp!=null)shutdownPhoneHost(null);
         if(web!=null)web.evaluateJavascript("if(window.slLanNetworkChanged)window.slLanNetworkChanged();",null);
         java.util.Map<String,String> available=LanHostService.lanAddresses();
@@ -356,14 +384,14 @@ public final class MainActivity extends Activity {
                 try{Thread.sleep(250);}catch(InterruptedException e){Thread.currentThread().interrupt();break;}
             }
             final boolean stopped=confirmed;
-            runOnUiThread(()->{
+            runOnUiThread(() -> foreground.run(() -> {
                 phoneHostStopping=false;phoneHostShutdownUnconfirmed=!stopped;
                 if(isFinishing()||isDestroyed())return;
                 if(stopped){activePhoneHostIp=null;if(onStopped!=null)onStopped.run();}
                 else new AlertDialog.Builder(this).setTitle("Host shutdown not confirmed")
                     .setMessage("The previous match may still be running. Retry stopping it before hosting again.")
                     .setPositiveButton("Retry",(d,w)->shutdownPhoneHost(onStopped)).setNegativeButton("Back",null).show();
-            });
+            }));
         },"sightline-host-shutdown").start();
     }
     private void chooseLanNetwork(Runnable action) {
@@ -426,7 +454,7 @@ public final class MainActivity extends Activity {
                 try {Thread.sleep(160);}catch(InterruptedException e){Thread.currentThread().interrupt();break;}
             }
             final boolean available=ready;
-            runOnUiThread(()->{
+            runOnUiThread(() -> foreground.run(() -> {
                 if(isFinishing()||isDestroyed()||hostGeneration!=phoneHostGeneration)return;
                 phoneHostStarting=false;
                 if(!ip.equals(activePhoneHostIp))return;
@@ -447,7 +475,7 @@ public final class MainActivity extends Activity {
                         .setPositiveButton("Retry",(d,w)->startPhoneHost())
                         .setNegativeButton("Back",null).show());
                 }
-            });
+            }));
         },"sightline-lan-ready").start();
     }
     private void copyJoinAddress(String ip) {
@@ -499,7 +527,15 @@ public final class MainActivity extends Activity {
         try{return InetAddress.getByAddress(out);}catch(java.net.UnknownHostException ignored){return null;}
     }
     private void discoverLanHosts() { chooseLanNetwork(this::discoverLanHostsOnNetwork); }
+    private void cancelLanDiscovery() {
+        if (activeLanScan != null) activeLanScan.set(true);
+        activeLanScan = null;
+        AlertDialog dialog = activeLanDialog;
+        activeLanDialog = null;
+        if (dialog != null && dialog.isShowing()) dialog.dismiss();
+    }
     private void discoverLanHostsOnNetwork() {
+        cancelLanDiscovery();
         final java.util.concurrent.atomic.AtomicBoolean cancelled=new java.util.concurrent.atomic.AtomicBoolean(false);
         activeLanScan=cancelled;
         final java.util.List<LanHostCandidate> hosts=new java.util.ArrayList<>();
@@ -638,18 +674,18 @@ public final class MainActivity extends Activity {
             }).setNegativeButton("Cancel", null).show();
     }
 
-    private boolean allowed(Uri uri, boolean mainFrame) {
+    private boolean allowed(Uri uri, boolean mainFrame, String viewHost) {
         if (uri == null) return false;
         String scheme=uri.getScheme(), host=uri.getHost(), path=uri.getPath();
         if (scheme == null || host == null || path == null || uri.getUserInfo() != null) return false;
         if ("https".equals(scheme) && ASSET_DOMAIN.equalsIgnoreCase(host) && uri.getPort() == -1
-                && chosenLanHost == null && path.startsWith("/assets/www/")) {
+                && viewHost == null && path.startsWith("/assets/www/")) {
             return FILES.contains(path.substring("/assets/www/".length()));
         }
-        boolean approvedLanOrigin = chosenLanHost != null && uri.getPort() == 8080 &&
+        boolean approvedLanOrigin = viewHost != null && uri.getPort() == 8080 &&
             (BuildConfig.SECURE_LAN_RELEASE
                 ? "https".equals(scheme) && BuildConfig.LAN_TLS_HOST.equalsIgnoreCase(host)
-                : "http".equals(scheme) && chosenLanHost.equals(host));
+                : "http".equals(scheme) && viewHost.equals(host));
         boolean diagnostic = "diagnostic".equals(BuildConfig.BUILD_TYPE);
         boolean autoJoinQuery = mainFrame && ("join=1".equals(uri.getQuery())
                 || (diagnostic && "join=1&lanDiag=1".equals(uri.getQuery())));
@@ -703,7 +739,7 @@ public final class MainActivity extends Activity {
                 else failure="Host unavailable — try again.";
             }
             final String error=failure;
-            runOnUiThread(() -> {
+            runOnUiThread(() -> foreground.run(() -> {
                 if (generation!=lanJoinGeneration || isFinishing() || isDestroyed()) return;
                 lanJoinPending=false;
                 if ("Match is full. Choose another room.".equals(error)) { toast(error); discoverLanHosts(); return; }
@@ -713,7 +749,7 @@ public final class MainActivity extends Activity {
                     .setPositiveButton("Find LAN Match",(d,w)->discoverLanHosts())
                     .setNeutralButton("Retry",(d,w)->openGame(target,autoJoin))
                     .setNegativeButton("Back",null).show();
-            });
+            }));
         },"sightline-lan-connect").start();
     }
     private org.json.JSONObject readLanStatus(String host,int generation) throws Exception {
@@ -812,6 +848,7 @@ public final class MainActivity extends Activity {
         disposeWeb();
         root.removeAllViews();
         web = new WebView(this);
+        final WebView gameView = web;
         installLanDiagnosticExport(lanHost);
         web.setBackgroundColor(0xff111a1c);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -835,7 +872,13 @@ public final class MainActivity extends Activity {
         reportedWebErrors.clear();
         web.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onConsoleMessage(ConsoleMessage message) {
-                if(message!=null && "SL_LAN_MATCH_FULL".equals(message.message()) && chosenLanHost!=null){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()){toast("Match is full. Choose another room.");discoverLanHosts();}});return true;}
+                if (message != null && "SL_LAN_MATCH_FULL".equals(message.message()) && lanHost != null) {
+                    // A retired view or backgrounded Activity cannot open a new dialog.
+                    if (gameView != web || !foreground.isResumed() || isFinishing() || isDestroyed()) return true;
+                    toast("Match is full. Choose another room.");
+                    discoverLanHosts();
+                    return true;
+                }
                 if (BuildConfig.DEBUG && message != null) {
                     String text = message.message() + " @ " + message.sourceId() + ":" + message.lineNumber();
                     if (message.messageLevel() == ConsoleMessage.MessageLevel.ERROR ||
@@ -870,6 +913,7 @@ public final class MainActivity extends Activity {
                 }
             }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
+                if (v != web) return true;
                 Uri action=request.getUrl();
                 if (request.isForMainFrame() && "sightlinelan".equals(action.getScheme())) {
                     if (request.hasGesture() && OFFLINE_URL.equals(v.getUrl())) {
@@ -883,7 +927,7 @@ public final class MainActivity extends Activity {
                     } else toast("Open Multiplayer in the main lobby to create or find a match.");
                     return true;
                 }
-                if (!allowed(request.getUrl(), true)) {
+                if (!allowed(request.getUrl(), true, lanHost)) {
                     runOnUiThread(() -> toast("Blocked a navigation outside Sightline"));
                     return true;
                 }
@@ -891,8 +935,8 @@ public final class MainActivity extends Activity {
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest request) {
                 Uri u=request.getUrl();
-                if (!allowed(u, request.isForMainFrame())) return blockedResponse();
-                if (chosenLanHost==null) {
+                if (!allowed(u, request.isForMainFrame(), lanHost)) return blockedResponse();
+                if (lanHost == null) {
                     WebResourceResponse response=assetLoader.shouldInterceptRequest(u);
                     return response == null ? blockedResponse() : response;
                 }
@@ -912,7 +956,16 @@ public final class MainActivity extends Activity {
             }
             @Override public boolean onRenderProcessGone(WebView v, android.webkit.RenderProcessGoneDetail detail) {
                 if (BuildConfig.DEBUG) Log.e("SightlineV6", "WebView renderer process gone; crashed=" + detail.didCrash());
-                runOnUiThread(() -> { showHome(); toast("WebView restarted after a rendering process failure"); });
+                if (v == web) {
+                    web = null;
+                    detachAndDestroy(v);
+                    cancelLanJoin();
+                    foreground.run(() -> {
+                        if (web != null || isFinishing() || isDestroyed()) return;
+                        showHome();
+                        toast("The game renderer stopped. Reopen the game from the launcher.");
+                    });
+                }
                 return true;
             }
         });
@@ -930,11 +983,14 @@ public final class MainActivity extends Activity {
     private void toast(String message) { Toast.makeText(this, message, Toast.LENGTH_LONG).show(); }
     private void disposeWeb() {
         if (web != null) {
-            WebView old = web; web=null;
-            old.stopLoading(); old.loadUrl("about:blank");
-            if (old.getParent() instanceof ViewGroup) ((ViewGroup)old.getParent()).removeView(old);
-            old.destroy();
+            WebView old = web;
+            web = null;
+            detachAndDestroy(old);
         }
+    }
+    private void detachAndDestroy(WebView view) {
+        if (view.getParent() instanceof ViewGroup) ((ViewGroup)view.getParent()).removeView(view);
+        view.destroy();
     }
     private void handleBack() {
         if (showingGame) {
@@ -947,6 +1003,8 @@ public final class MainActivity extends Activity {
     }
     @Override public void onBackPressed() { handleBack(); }
     @Override protected void onPause() {
+        foreground.pause();
+        cancelLanDiscovery();
         lanWatchGeneration++;lanWatchHandler.removeCallbacksAndMessages(null);
         if (web!=null) {
             web.evaluateJavascript("window.dispatchEvent(new Event('blur'));", null);
@@ -957,6 +1015,7 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume(); immersive(); startLanWatch();
         if (web!=null) web.onResume();
+        foreground.resume();
         if (returnedFromInstallSettings && !showingGame && root != null) {
             returnedFromInstallSettings=false;
             showHome(); // Re-expose an explicit install button, never auto-launch installer.
@@ -966,6 +1025,9 @@ public final class MainActivity extends Activity {
         super.onConfigurationChanged(configuration); immersive();
     }
     @Override protected void onDestroy() {
+        foreground.close();
+        cancelLanDiscovery();
+        pendingLanDiagnostics = null;
         lanWatchGeneration++;lanWatchHandler.removeCallbacksAndMessages(null);cancelLanJoin();phoneHostGeneration++;cancelPhoneHostProbe();
         if (updater!=null) updater.shutdown();
         disposeWeb(); super.onDestroy();

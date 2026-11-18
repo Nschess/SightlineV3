@@ -42,6 +42,7 @@ for (const { name, html } of clients) {
     const context = vm.createContext({
       MP: { sock: null, addr: '192.168.1.20:8080', name: 'Tester', retryN: 0, userLeft: false,
         id: 0, names: {}, session: '', actionSeq: 0, err: '', status: '', net: { lastRx: 0 } },
+      LAN_DIAG: null,
       MP_PROTOCOL: 2,
       MP_FEATURES: ['session-generation', 'life-epoch', 'action-seq'],
       ME: { name: 'Tester' },
@@ -92,6 +93,7 @@ for (const { name, html } of clients) {
     const context = vm.createContext({
       MP: { sock: null, addr: '127.0.0.1:8080', name: 'Tester', retryN: 0, userLeft: false,
         id: 0, names: {}, session: '', actionSeq: 0, net: { lastRx: 7 } },
+      LAN_DIAG: null,
       MP_PROTOCOL: 2,
       MP_FEATURES: ['session-generation', 'life-epoch', 'action-seq'],
       ME: { name: 'Tester' },
