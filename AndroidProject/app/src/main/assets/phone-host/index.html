@@ -3850,7 +3850,7 @@ initMobileHudPositionEditor();
 function slLegacyMenuAmbience() { try { return localStorage.getItem('sl-ambient') !== '0'; } catch (e) { return true; } }
 var DEF_G = {
   mobileFov: 75, // Independent horizontal gameplay FOV; desktop S.fov stays unchanged.
-  renderScale: touchMode ? 85 : 100, shadows: touchMode ? 'off' : 'low', drawDist: 100, brightness: 100, viewBob: 100, shake: 100, flashAmt: 100, fps: false,
+  renderScale: touchMode ? 90 : 100, mobileQuality: 'balanced', shadows: touchMode ? 'off' : 'low', drawDist: 100, brightness: 100, viewBob: 100, shake: 100, flashAmt: 100, fps: false,
   master: 55, musicVol: 75, sfxVol: 100, uiVol: 70, muted: false, menuAmbience: slLegacyMenuAmbience(), hitSound: true, uiSound: true, legendaryAudio: true, legendaryEffects: true,
   xhStyle: 'cross', xhColor: '#f4f0dc', xhSize: 9, xhThick: 2, xhGap: 0, xhAlpha: 100, xhOutline: true, xhDot: false, xhDynamic: true,
   hudScale: 100, radar: true, radarSize: 100, feed: true, hitMarker: true, dmgDir: true, banners: true, marker: 'team',
@@ -3882,16 +3882,27 @@ function framePixelBudget() {
   // preset alone can be clamped by the previous 2.4M pixel ceiling and
   // therefore fail to reduce actual framebuffer work on high-DPI screens.
   if (G.fastMode && Number(G.fpsCap) !== 30) return touchMode ? 600000 : 1300000;
-  var normal = touchMode ? 1200000 : 3600000;
-  if (!G.adaptive || Number(G.fpsCap) === 30) return normal;
   var hz = Math.min(Number(G.fpsCap) || 60, Math.max(60, (typeof rafHzBest === 'number' && rafHzBest) || 60));
-  return touchMode ? (hz > 75 ? 850000 : 1050000) : (hz > 75 ? 1800000 : 2400000);
+  if (touchMode) {
+    if (G.mobileQuality === 'low') return 650000;
+    if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1200000 : 1500000;
+    return !G.adaptive || Number(G.fpsCap) === 30 ? 1200000 : hz > 75 ? 850000 : 1050000;
+  }
+  return !G.adaptive || Number(G.fpsCap) === 30 ? 3600000 : hz > 75 ? 1800000 : 2400000;
+}
+function mobileDprLimit() {
+  return G.mobileQuality === 'low' ? 1.5 : G.mobileQuality === 'high' ? 2.2 : 1.8;
 }
 function pixelRatio() {
   var w = Math.max(1, stage.clientWidth || window.innerWidth || 640);
   var h = Math.max(1, stage.clientHeight || window.innerHeight || 360);
-  var requested = Math.min(window.devicePixelRatio || 1, touchMode ? 1.5 : 1.75) * G.renderScale / 100 * perfScale;
   var maxPixels = framePixelBudget();
+  if (touchMode) {
+    var scale = Math.max(0.5, Math.min(1, (Number(G.renderScale) || 90) / 100));
+    var target = Math.min(window.devicePixelRatio || 1, mobileDprLimit(), Math.sqrt(maxPixels / (w * h)));
+    return target * scale * perfScale;
+  }
+  var requested = Math.min(window.devicePixelRatio || 1, 1.75) * G.renderScale / 100 * perfScale;
   return Math.max(0.4, Math.min(requested, Math.sqrt(maxPixels / (w * h))));
 }
 function fail(msg) {
@@ -3907,7 +3918,7 @@ if (!renderer) { fail('WebGL is not available in this browser, so the range cann
 // conversion changed the perceived palette on the active game build; keep
 // texture construction calls routed through this compatibility helper.
 function colorTexture(texture) { return texture; }
-renderer.setPixelRatio(pixelRatio());
+if (!touchMode) renderer.setPixelRatio(pixelRatio());
 renderer.shadowMap.enabled = !touchMode;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -3949,9 +3960,19 @@ sun.shadow.camera.left = -46; sun.shadow.camera.right = 46; sun.shadow.camera.to
 sun.shadow.camera.near = 5; sun.shadow.camera.far = 120;
 scene.add(sun);
 
+var lastMobileBufferWidth = 0, lastMobileBufferHeight = 0, lastMobileBufferRatio = 0;
 function resize() {
   var w = stage.clientWidth || 640, h = stage.clientHeight || 360;
-  renderer.setPixelRatio(pixelRatio()); renderer.setSize(w, h, false); if (typeof pausedDrawn !== 'undefined') pausedDrawn = false;
+  var ratio = pixelRatio();
+  if (touchMode) {
+    // A quality step can resolve to the same dimensions. Keep its existing buffer.
+    if (w === lastMobileBufferWidth && h === lastMobileBufferHeight && ratio === lastMobileBufferRatio) return;
+    lastMobileBufferWidth = w; lastMobileBufferHeight = h; lastMobileBufferRatio = ratio;
+    renderer.setDrawingBufferSize(w, h, ratio);
+  } else {
+    renderer.setPixelRatio(ratio); renderer.setSize(w, h, false);
+  }
+  if (typeof pausedDrawn !== 'undefined') pausedDrawn = false;
   stage.style.setProperty('--sd', Math.round(Math.min(w, h) * 0.94) + 'px');
   // The scope aperture must be sized to the actual 3D stage, not the browser viewport.
   stage.style.setProperty('--scope-r', Math.round(Math.min(w, h) * 0.405) + 'px');
@@ -11603,17 +11624,21 @@ function applyG() {
 }
 function markerColor() { return { team: foeTeam().color, amber: '#ffb000', lime: '#9dff3a', magenta: '#ff4fd8' }[G.marker] || foeTeam().color; }
 function uiTick(ok) { if (!G.uiSound || !AC) return; sfxTone(ok ? 880 : 640, ok ? 1250 : 480, 0.04, 0.18, 'square', busUi); }
-var QUALITY = { low: { renderScale: 70, shadows: 'off', drawDist: 70 }, medium: { renderScale: 85, shadows: 'low', drawDist: 100 }, high: { renderScale: 100, shadows: 'high', drawDist: 100 } };
+var QUALITY = touchMode ? {
+  low: { mobileQuality: 'low', renderScale: 85, shadows: 'off', drawDist: 100, fx: 'low', fastMode: false },
+  medium: { mobileQuality: 'balanced', renderScale: 90, shadows: 'off', drawDist: 100, fx: 'low', fastMode: false },
+  high: { mobileQuality: 'high', renderScale: 100, shadows: 'off', drawDist: 100, fx: 'low', fastMode: false }
+} : { low: { renderScale: 70, shadows: 'off', drawDist: 70 }, medium: { renderScale: 85, shadows: 'low', drawDist: 100 }, high: { renderScale: 100, shadows: 'high', drawDist: 100 } };
 function qualityNow() { var r = 'custom'; Object.keys(QUALITY).forEach(function (q) { if (Object.keys(QUALITY[q]).every(function (k) { return G[k] === QUALITY[q][k]; })) r = q; }); return r; }
 
 /* ---------- settings: spec ---------- */
 var pc = function (v) { return Math.round(v) + '%'; };
 var SPEC = {
   video: [
-    { t: 'preset', l: 'Quality preset', h: 'Sets render scale, shadows and fog horizon. The pixel budget can cap the actual internal resolution on high-DPI screens.' },
+    { t: 'preset', l: 'Quality preset', h: touchMode ? 'Low reduces GPU workload. Balanced improves clarity. High uses a larger pixel budget. Frame rate is a separate setting.' : 'Sets render scale, shadows and fog horizon. The pixel budget can cap the actual internal resolution on high-DPI screens.' },
     touchMode ? { t: 'range', k: 'mobileFov', l: 'Mobile field of view', h: 'Horizontal degrees. Lower values make distant enemies larger; ADS keeps its relative magnification.', min: 65, max: 95, step: 1, f: function (v) { return Math.round(v) + '° horizontal'; } } :
     { t: 'range', o: 'S', k: 'fov', l: 'Field of view', min: 65, max: 100, step: 1, f: function (v) { return Math.round(v) + '°'; } },
-    { t: 'range', k: 'renderScale', l: 'Render scale', h: 'Lower this first if the game stutters.', min: 50, max: 100, step: 5, f: pc },
+    { t: 'range', k: 'renderScale', l: 'Render scale', h: touchMode ? 'Percentage of the resolution allowed by the device and preset. Lower it if the game stutters.' : 'Lower this first if the game stutters.', min: 50, max: 100, step: 5, f: pc },
     { t: 'seg', k: 'shadows', l: 'Shadows', opts: [['off', 'Off'], ['low', 'Low'], ['high', 'High']] },
     { t: 'range', k: 'drawDist', l: 'Fog horizon', h: 'Changes map fog range only. It does not cull distant geometry or reduce draw calls.', min: 50, max: 150, step: 10, f: pc },
     { t: 'range', k: 'brightness', l: 'Brightness', min: 70, max: 140, step: 5, f: pc },
@@ -11792,7 +11817,7 @@ function rowHtml(it) {
   if (it.t === 'check') return '<div class="srow chk"><label for="' + id + '">' + it.l + hint + '</label><input id="' + id + '" type="checkbox" ' + da + (v ? ' checked' : '') + '></div>';
   if (it.t === 'seg') return '<div class="srow"><span class="lb">' + it.l + hint + '</span><div class="seg" role="group" aria-label="' + it.l + '">' + it.opts.map(function (p) { return '<button type="button" ' + da + ' data-v="' + p[0] + '" aria-pressed="' + (String(p[0]) === String(v)) + '">' + p[1] + '</button>'; }).join('') + '</div></div>';
   if (it.t === 'sw') return '<div class="srow"><span class="lb">' + it.l + '</span><div class="seg sw" role="group" aria-label="' + it.l + '">' + it.opts.map(function (c) { return '<button type="button" ' + da + ' data-v="' + c + '" style="--c:' + c + '" aria-label="' + c + '" aria-pressed="' + (c === v) + '"></button>'; }).join('') + '</div></div>';
-  if (it.t === 'preset') { var q = qualityNow(); return '<div class="srow"><span class="lb">' + it.l + '<small>' + it.h + '</small></span><div class="seg" role="group">' + ['low', 'medium', 'high'].map(function (n) { return '<button type="button" data-q="' + n + '" aria-pressed="' + (q === n) + '">' + n + '</button>'; }).join('') + '<button type="button" disabled aria-pressed="' + (q === 'custom') + '">Custom</button></div></div>'; }
+  if (it.t === 'preset') { var q = qualityNow(); return '<div class="srow"><span class="lb">' + it.l + '<small>' + it.h + '</small></span><div class="seg" role="group">' + ['low', 'medium', 'high'].map(function (n) { return '<button type="button" data-q="' + n + '" aria-pressed="' + (q === n) + '">' + (touchMode && n === 'medium' ? 'balanced' : n) + '</button>'; }).join('') + '<button type="button" disabled aria-pressed="' + (q === 'custom') + '">Custom</button></div></div>'; }
   if (it.t === 'xhprev') { var e = '<i></i><i></i><i></i><i></i><b></b><s></s>'; return '<div class="xhrow"><div class="xhbox"><span>Standing</span><div class="xh" data-prev="still">' + e + '</div></div><div class="xhbox"><span>Moving or firing</span><div class="xh" data-prev="move">' + e + '</div></div></div>'; }
   return '';
 }
@@ -12214,7 +12239,7 @@ $('.mn-main').addEventListener('click', function (e) {
     if(a==='open-cosmetics'){finishTab='weapons';showFinishPicker(true);return;}
     if(a==='open-optics'){finishTab='optics';showFinishPicker(true);return;}
     if (a === 'p1157-report') { var report = document.getElementById('p1157-report'); if (report) { report.hidden = false; report.textContent = JSON.stringify(performanceInfo(), null, 2) + '\nNOTE: paused/menu numbers are last sampled values; measure during a live match before opening settings.'; } return; }
-    if (a === 'p1157-clear') { Object.assign(G, { fpsCap: 60, adaptive: true, fastMode: false, renderScale: 100, shadows: 'off', drawDist: 80, fx: 'low', fps: true }); saveObj(G_KEY, G); renderNextDue = 0; renderCap = -1; resetFpsWindow(); applyG(); renderBody(true); uiTick(true); return; }
+    if (a === 'p1157-clear') { Object.assign(G, { fpsCap: 60, adaptive: true, fastMode: false, renderScale: 100, shadows: 'off', drawDist: 80, fx: 'low', fps: true }, touchMode ? QUALITY.medium : null); saveObj(G_KEY, G); renderNextDue = 0; renderCap = -1; resetFpsWindow(); applyG(); renderBody(true); uiTick(true); return; }
     if (a === 'p1156-fast') { Object.assign(G, { fpsCap: 60, adaptive: true, fastMode: true, renderScale: 70, shadows: 'off', drawDist: 70, fx: 'low', fps: true }); saveObj(G_KEY, G); renderNextDue = 0; renderCap = -1; resetFpsWindow(); applyG(); renderBody(true); uiTick(true); return; }
     if (a === 'p111-fullscreen') { $('#btn-full').click(); renderBody(true); return; }
     if (a === 'p111-mute') { toggleSound(); renderBody(true); return; }
@@ -13825,8 +13850,11 @@ function resetFpsWindow() {
   perfEma = 16.7; perfT = 0; perfBad = 0; perfGood = 0;
 }
 function performanceInfo() {
-  var dprCap = Math.min(window.devicePixelRatio || 1, touchMode ? 1.5 : 1.75);
-  var actualPixelRatio = pixelRatio();
+  var deviceDpr = window.devicePixelRatio || 1;
+  var dprCap = Math.min(deviceDpr, touchMode ? mobileDprLimit() : 1.75);
+  var gl = renderer.getContext();
+  var stageWidth = stage.clientWidth || 640, stageHeight = stage.clientHeight || 360;
+  var actualPixelRatio = renderer.getPixelRatio();
   var selectedPixelRatio = dprCap * (G.renderScale / 100) * perfScale;
   return { build: 'P11.5.7', measuredGameFps: fpsMeasured, requestedLimitFps: Number(G.fpsCap) || 0,
     activeRenderLimitFps: (state === 'live' || state === 'roundend') ? effectiveRenderCap(Number(G.fpsCap) || 0,rafHzBest,rafCount) : effectiveRenderCap(menuFrameCap(G.fpsCap),rafHzBest,rafCount),
@@ -13844,7 +13872,11 @@ function performanceInfo() {
     effectiveRenderScalePercent: Math.round(actualPixelRatio / Math.max(0.01, dprCap) * 100),
     effectivePixelRatio: Math.round(actualPixelRatio * 100) / 100,
     pixelBudgetLimited: actualPixelRatio + 0.0001 < selectedPixelRatio,
-    framebufferPixels: Math.round((stage.clientWidth || 640) * (stage.clientHeight || 360) * actualPixelRatio * actualPixelRatio),
+    devicePixelRatio: deviceDpr, mobileQuality: touchMode ? (G.mobileQuality || 'balanced') : null,
+    stageCssSize: [stageWidth, stageHeight], stageDeviceSize: [Math.round(stageWidth * deviceDpr), Math.round(stageHeight * deviceDpr)],
+    drawingBufferSize: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+    framebufferPixels: gl.drawingBufferWidth * gl.drawingBufferHeight,
+    allocatedGeometries: renderer.info.memory.geometries, allocatedTextures: renderer.info.memory.textures,
     fastFramebufferEnabled: !!G.fastMode,
     adaptivePixelBudget: framePixelBudget(),
     shadowMapSize: renderer.shadowMap.enabled ? sun.shadow.mapSize.x : 0,
