@@ -4,6 +4,8 @@ def versionProperties = new Properties()
 file('version.properties').withInputStream { versionProperties.load(it) }
 def code = Integer.parseInt(versionProperties.getProperty('VERSION_CODE','0'))
 def name = versionProperties.getProperty('VERSION_NAME','')
+def playName = versionProperties.getProperty('PLAY_VERSION_NAME','')
+if (!(playName ==~ /[0-9]+\.[0-9]+\.[0-9]+/)) throw new GradleException('Invalid PLAY_VERSION_NAME')
 if (code < 2 || !name || name.length() > 70) throw new GradleException('Invalid version.properties')
 
 def manifestUrl = providers.gradleProperty('sightlineUpdateManifestUrl')
@@ -107,6 +109,7 @@ android {
         versionCode code // Monotonic: tools/bump-version.ps1 for each release.
         versionName name
         buildConfigField 'boolean', 'LAN_HOST_ENABLED', hostRequested.toString()
+        buildConfigField 'boolean', 'PLAY_DISTRIBUTION', 'false'
         buildConfigField 'boolean', 'SECURE_LAN_RELEASE', 'false'
         buildConfigField 'String', 'LAN_TLS_HOST', '""'
         buildConfigField 'String', 'UPDATE_MANIFEST_URL', '"' + manifestUrl + '"'
@@ -134,7 +137,10 @@ android {
             matchingFallbacks = ['debug']
         }
         release {
+            debuggable false
             minifyEnabled false
+            buildConfigField 'boolean', 'PLAY_DISTRIBUTION', 'true'
+            buildConfigField 'String', 'UPDATE_MANIFEST_URL', '""'
             buildConfigField 'boolean', 'SECURE_LAN_RELEASE', 'true'
             buildConfigField 'String', 'LAN_TLS_HOST', '"' + releaseTlsHost + '"'
             if (releaseSigningProvided) signingConfig signingConfigs.sightlineRelease
@@ -149,6 +155,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+androidComponents.onVariants(androidComponents.selector().withBuildType("release")) { variant ->
+    variant.outputs.each { output -> output.versionName.set(playName) }
 }
 
 // Derive the diagnostic-only report from the unchanged gameplay asset.

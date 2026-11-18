@@ -55,7 +55,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "410b8b557ea676ab30f37c56217adfcdfa0f3d520854c99e85ced0f329816f30";
+    private static final String HOST_BUNDLE_SHA256 = "97cd5e16b147fd2b47252ec68cee1a3038f15c1ab7ffbd7785e05c15c3e703c8";
     private static final String DEV20_HOST_BUNDLE_SHA256 = "88e15be18fde11843d72b6905be41d30bf277e11fae81d479a25c677ae2b5b3d";
     private static final String DEV18_2_HOST_BUNDLE_SHA256 = "9bcc0b6245a6934508c9fed3315a231625eff1b8a5d2a62b96bb96cc9b7544cc";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
@@ -126,7 +126,7 @@ public final class MainActivity extends Activity {
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(14, 21, 25));
         setContentView(root);
-        updater = new UpdateManager(this);
+        if (!BuildConfig.PLAY_DISTRIBUTION) updater = new UpdateManager(this);
         assetLoader = new WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
         // Start in the bundled Lobby v10 WebView. The native Offline / LAN
@@ -190,7 +190,7 @@ public final class MainActivity extends Activity {
         layout.addView(brand, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             Math.round(104 * getResources().getDisplayMetrics().density)));
-        layout.addView(label("ANDROID INSTALLATION TEST  ·  NOT A PUBLIC RELEASE", 13));
+        if (!BuildConfig.PLAY_DISTRIBUTION) layout.addView(label("ANDROID INSTALLATION TEST  ·  NOT A PUBLIC RELEASE", 13));
         layout.addView(label("Offline mode uses game files packaged inside this app. It does not require a PC or internet connection.", 14));
         layout.addView(button("Play Offline", () -> openGame(null)));
         if (BuildConfig.LAN_HOST_ENABLED) {
@@ -209,8 +209,8 @@ public final class MainActivity extends Activity {
             layout.addView(label("Development LAN uses unencrypted HTTP/WS. Use only an isolated trusted Wi-Fi or hotspot with no internet exposure or sensitive data.", 14));
             layout.addView(button("FIND LAN MATCH", this::discoverLanHosts));
         }
-        layout.addView(label("UPDATES  ·  Optional and free", 17));
-        if (updater.enabled()) {
+        if (updater != null) layout.addView(label("UPDATES  ·  Optional and free", 17));
+        if (updater != null && updater.enabled()) {
             layout.addView(button("Check for Updates", () -> checkForUpdates(true)));
             CheckBox automatic = new CheckBox(this);
             automatic.setText("Check for updates when I open the launcher");
@@ -221,19 +221,21 @@ public final class MainActivity extends Activity {
             layout.addView(automatic);
             if (verifiedUpdate != null && verifiedUpdate.isFile())
                 layout.addView(button("Install Previously Verified Update", this::showInstallDialog));
-        } else {
+        } else if (updater != null) {
             layout.addView(label("Update checks are disabled until an official HTTPS release feed is configured. Offline play always works.", 12));
         }
-        layout.addView(label("Use Android Back to return here. No public servers, accounts, or payments. Local LAN traffic is unencrypted; use only trusted Wi-Fi/hotspot.", 12));
+        layout.addView(label(BuildConfig.PLAY_DISTRIBUTION
+                ? "Use Android Back to return here. For multiplayer, connect to the approved secure host."
+                : "Use Android Back to return here. No public servers, accounts, or payments. Local LAN traffic is unencrypted; use only trusted Wi-Fi/hotspot.", 12));
         scroll.addView(layout);
         root.addView(scroll, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         immersive();
-        if (updater.enabled() && getPreferences(Context.MODE_PRIVATE).getBoolean("optional-update-checks",false))
+        if (updater != null && updater.enabled() && getPreferences(Context.MODE_PRIVATE).getBoolean("optional-update-checks",false))
             checkForUpdates(false);
     }
 
     private void checkForUpdates(boolean manual) {
-        if (!updater.enabled()) { if (manual) toast("No trusted update feed configured"); return; }
+        if (updater == null || !updater.enabled()) { if (manual) toast("No trusted update feed configured"); return; }
         updater.check((info, error) -> {
             if (showingGame || isFinishing() || isDestroyed()) return; // Never interrupt live matches.
             if (error != null) { if (manual) toast(error); return; }
@@ -250,6 +252,7 @@ public final class MainActivity extends Activity {
     }
 
     private void downloadUpdate(UpdateManager.UpdateInfo info) {
+        if (updater == null) return;
         toast("Downloading on a background thread. Offline play remains available.");
         updater.downloadAndVerify(info,(file,error) -> {
             if (isFinishing() || isDestroyed()) return;
@@ -260,6 +263,7 @@ public final class MainActivity extends Activity {
         });
     }
     private void showInstallDialog() {
+        if (BuildConfig.PLAY_DISTRIBUTION) return;
         if (verifiedUpdate==null || !verifiedUpdate.isFile()) {
             toast("Verified file is unavailable. Download the update again."); return;
         }
@@ -526,7 +530,10 @@ public final class MainActivity extends Activity {
         byte[] out=new byte[]{(byte)(broadcast>>>24),(byte)(broadcast>>>16),(byte)(broadcast>>>8),(byte)broadcast};
         try{return InetAddress.getByAddress(out);}catch(java.net.UnknownHostException ignored){return null;}
     }
-    private void discoverLanHosts() { chooseLanNetwork(this::discoverLanHostsOnNetwork); }
+    private void discoverLanHosts() {
+        if (BuildConfig.SECURE_LAN_RELEASE) { askForHost(); return; }
+        chooseLanNetwork(this::discoverLanHostsOnNetwork);
+    }
     private void cancelLanDiscovery() {
         if (activeLanScan != null) activeLanScan.set(true);
         activeLanScan = null;
@@ -855,7 +862,7 @@ public final class MainActivity extends Activity {
         web.setHapticFeedbackEnabled(false);
         WebSettings settings=web.getSettings();
         settings.setJavaScriptEnabled(true);
-        settings.setUserAgentString(settings.getUserAgentString()+" SightlineAndroid");
+        settings.setUserAgentString(settings.getUserAgentString() + " SightlineAndroid" + (BuildConfig.PLAY_DISTRIBUTION ? " SightlinePlay" : ""));
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
@@ -917,7 +924,9 @@ public final class MainActivity extends Activity {
                 Uri action=request.getUrl();
                 if (request.isForMainFrame() && "sightlinelan".equals(action.getScheme())) {
                     if (request.hasGesture() && OFFLINE_URL.equals(v.getUrl())) {
-                        if ("create".equals(action.getHost())) startPhoneHost();
+                        if (BuildConfig.PLAY_DISTRIBUTION) {
+                            if ("find".equals(action.getHost()) || "join".equals(action.getHost())) askForHost();
+                        } else if ("create".equals(action.getHost())) startPhoneHost();
                         else if ("find".equals(action.getHost())) discoverLanHosts();
                         else if ("join".equals(action.getHost())) {
                             String host=HostPolicy.normalize(action.getQueryParameter("host"));

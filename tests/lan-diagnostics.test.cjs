@@ -33,7 +33,8 @@ function makeContext(search, userAgent = 'LAN diagnostics test') {
     __elements: elements, __blobText: () => blobText
   };
   vm.createContext(context);
-  vm.runInContext(initializer, context, { timeout: 1000 });
+  const variantFlag = html.split(/\r?\n/).find(line => line.startsWith('var SL_PLAY_BUILD = '));
+  vm.runInContext(variantFlag + '\n' + initializer, context, { timeout: 1000 });
   return context;
 }
 
@@ -109,4 +110,10 @@ test('Android saves the capture through its native bridge and Windows downloads 
   const desktop = makeContext('?lanDiag=1');
   desktop.__elements.get('sightline-lan-diag-save').onclick();
   assert.equal(JSON.parse(desktop.__blobText()).schema, 'sightline-lan-diag-v1');
+});
+
+test('Play WebView suppresses LAN diagnostics even with an opt-in query', () => {
+  const play = makeContext('?join=1&lanDiag=1', 'Test SightlineAndroid SightlinePlay');
+  assert.equal(play.LAN_DIAG, null);
+  assert.equal(play.__elements.size, 0);
 });
