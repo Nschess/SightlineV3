@@ -85,3 +85,21 @@ test('Existing rule edit path persists values that remain selected when Rules re
     assert.deepEqual(saved, ['R'], `${name}: edited rule persisted through existing setter`);
   }
 });
+test('Play shortcuts and Deploy reach the authoritative LAN rules route in both builds', () => {
+  for (const page of Object.values(pages)) {
+    const { context, transitions } = routeHarness(page, { connected: true });
+    const shortcut = page.slice(page.indexOf('function slGoto(which)'), page.indexOf("document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-sl-goto]')"));
+    vm.runInNewContext(shortcut, context);
+    context.slGoto('rules');
+    assert.equal(context.SL82_HOST_SUBROUTE, 'rules');
+    assert.equal(transitions.at(-1).tab, 'net');
+    const deploy = page.match(/if \(mpConnected\(\) && state === 'idle'\) \{ sl82GoRoute[^\n]+/)[0];
+    context.state = 'idle';
+    context.MP = { host: true };
+    vm.runInNewContext('(function () { ' + deploy + ' })()', context);
+    assert.equal(context.SL82_HOST_SUBROUTE, 'rules');
+    context.MP.host = false;
+    vm.runInNewContext('(function () { ' + deploy + ' })()', context);
+    assert.equal(context.SL82_HOST_SUBROUTE, 'multiplayer');
+  }
+});

@@ -72,20 +72,38 @@ test('real host HTTP, browser-origin upgrade, v2 join, gameplay exchange and res
         assert(!/^HTTP\/1.1 101/.test(await browserUpgrade('https://unrelated.example')));
         for(let i=0;i<2;i++) {
             const p={ws:new WebSocket('ws://127.0.0.1:'+PORT+'/ws'),events:[]};peers.push(p);
-            p.ws.onmessage=e=>{const m=JSON.parse(e.data);observeProtocolV2(p,m);p.events.push(m);if(m.t==='sp')p.spawn=m;if(m.t==='ping')p.ws.send(JSON.stringify({t:'pong',s:m.s}));};
+            p.ws.onmessage=e=>{const m=JSON.parse(e.data);observeProtocolV2(p,m);p.events.push(m);if(m.t==='sp')p.spawn=m;if(m.t==='ping'){const pong=()=>{if(p.ws.readyState===WebSocket.OPEN)p.ws.send(JSON.stringify({t:'pong',s:m.s}));};if(i===1)setTimeout(pong,95);else pong();}};
             await new Promise((resolve,reject)=>{p.ws.onopen=resolve;p.ws.onerror=reject;});
-            p.ws.send(JSON.stringify(protocolHello('JoinRecovery'+i)));await until(()=>p.session);
+            p.ws.send(JSON.stringify({...protocolHello('JoinRecovery'+i),diagnostics:true}));await until(()=>p.session);
         }
         assert.equal(peers[0].events.find(m=>m.t==='welcome').host,true);
         assert.equal(peers[1].events.find(m=>m.t==='welcome').host,false);
         sendProtocolV2(peers[0],{t:'cfg',mode:'deathmatch'});
         await until(()=>peers[0].events.some(m=>m.t==='lobby'&&m.mode==='deathmatch'));
+        sendProtocolV2(peers[1],{t:'start'});
+        // This ordered team update serves as a barrier for the guest's prior start request.
+        const lobbyCount=peers[0].events.filter(m=>m.t==='lobby').length;
+        const lobby=peers[0].events.filter(m=>m.t==='lobby').at(-1);
+        const guestId=peers[1].events.find(m=>m.t==='welcome').id;
+        const guestTeam=lobby.players.find(p=>p.id===guestId).team;
+        sendProtocolV2(peers[1],{t:'team',team:1-guestTeam});
+        await until(()=>peers[0].events.filter(m=>m.t==='lobby').length>lobbyCount);
+        assert(!peers[0].events.some(m=>m.t==='start'));
+        const hostId=peers[0].events.find(m=>m.t==='welcome').id;
+        const oppositeTeam=1-lobby.players.find(p=>p.id===hostId).team;
+        sendProtocolV2(peers[1],{t:'team',team:oppositeTeam});
+        await until(()=>peers[0].events.filter(m=>m.t==='lobby').at(-1).players.find(p=>p.id===guestId).team===oppositeTeam);
         sendProtocolV2(peers[0],{t:'start'});
         await until(()=>peers.every(p=>p.spawn)&&peers[0].events.some(m=>m.t==='ph'&&m.ph==='live'));
         for(const p of peers) {const q=p.spawn;sendProtocolV2(p,{t:'in',x:q.x+.02,y:q.y,z:q.z,yaw:q.yaw,pitch:0,cr:0,pr:0});sendProtocolV2(p,{t:'shot',w:q.cur,d:[[0,0,-1]]});}
         await delay(120);
         const active=await(await fetch('http://127.0.0.1:'+PORT+'/status')).json();assert(active.stats.shots>=2);assert.equal(active.players,2);
         assert(peers.every(p=>p.events.some(m=>m.t==='s')));
+        await until(()=>peers.every(p=>p.events.some(m=>m.t==='ping'&&m.diagnostics?.rttMs!=null)));
+        const samples=peers.map(p=>p.events.find(m=>m.t==='ping'&&m.diagnostics?.rttMs!=null).diagnostics);
+        assert(samples[1].rttMs>=85 && samples[1].rttMs>samples[0].rttMs,samples);
+        assert(samples.every(s=>s.tickWorkMs>=0&&s.tickGapMs>0&&s.snapshotCadenceMs>0&&s.snapshotFrames>0));
+        console.log('Loopback telemetry with 95 ms guest pong delay: '+JSON.stringify(samples));
         peers[1].ws.close();await until(()=>peers[1].ws.readyState===WebSocket.CLOSED);
         await until(()=>peers[0].events.some(m=>m.t==='lobby')||peers[0].events.some(m=>m.t==='sc'));
         await host.stop();await until(()=>peers[0].ws.readyState===WebSocket.CLOSED);

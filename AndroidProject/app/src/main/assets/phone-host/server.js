@@ -2151,7 +2151,7 @@ function onMessage(p, raw) {
       if(!p.finishes)p.finishes={};if(p.finishes[key]===ix)return;
       p.finishes[key]=ix;pushLobby();return;
     }
-    case 'pong': { if (m.s !== p.pingSent) return; const rtt = now() - p.pingSent; p.pingSent = 0; if (rtt >= 0 && rtt < 5000) {p.rtt = p.rtt ? p.rtt * 0.7 + rtt * 0.3 : rtt;p.rttAt=now();} return; }
+    case 'pong': { if (m.s !== p.pingSent) return; const rtt = now() - p.pingSent; p.pingSent = 0; if (rtt >= 0 && rtt < 5000) {p.rtt = p.rtt ? p.rtt * 0.7 + rtt * 0.3 : rtt;p.rttAt=now(); if (p.diagnostics) p.lastRttMs=rtt;} return; }
     case 'team': {
       if (G.phase !== 'lobby' || groupMode()) return; const t = m.team === 1 ? 1 : 0; if (t === p.team) return;
       p.team = t; p.op = pickOp(t); syncBots(); pushLobby(); return;
@@ -2485,7 +2485,22 @@ if (require.main === module) {
   setTimeout(scheduleTick,TICK_MS);
   setInterval(() => {
     const t = now(); let n = 0;
-    players.forEach(p => { if (p.bot) return; if (t - p.c.lastRx > 20000) { log('timeout:', p.name); p.c.kill(); return; } p.pingSent = t; send(p, { t: 'ping', s: t }); n++; });
+    players.forEach(p => {
+      if (p.bot) return;
+      if (t - p.c.lastRx > 20000) { log('timeout:', p.name); p.c.kill(); return; }
+      p.pingSent = now();
+      const ping = { t: 'ping', s: p.pingSent };
+      if (p.diagnostics) ping.diagnostics = {
+        rttMs: p.rttAt && t - p.rttAt <= 5000 ? p.lastRttMs : null,
+        displayedRttMs: p.rttAt && t - p.rttAt <= 5000 ? Math.round(p.rtt) : null,
+        tickWorkMs: r2(previousTickWorkMs), tickGapMs: stats.lastGap ?? null,
+        snapshotCadenceMs: TICK_MS * snapshotEveryNow(),
+        snapshotFrames: p.c.snapshotFrames, snapshotSkipped: p.c.snapshotSkipped,
+        outboundQueueBytes: p.c.backlog, snapshotQueuePeakBytes: p.c.snapshotQueuePeakBytes
+      };
+      send(p, ping);
+      n++;
+    });
     if (n && G.phase === 'lobby') pushLobby();
   }, 2000);
 }
@@ -2601,6 +2616,7 @@ server.on('upgrade', (req, sock) => {
       if (humanCount() >= MAX_PLAYERS) { c.text(JSON.stringify({ t: 'err', msg: 'Server is full.' })); return c.kill(); }
       if (players.size >= MAX_TOTAL) { const victim = [...players.values()].filter(p => p.bot).sort((a,b) => (a.alive-b.alive) || (b.id-a.id))[0]; if (victim) removeBot(victim); else { c.text(JSON.stringify({t:'err',msg:'Server is full.'})); return c.kill(); } }
       me = addPlayer(c, m.name); releaseHelloSlot(); ROOM_OPENED=true; log('joined:', me.name, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
+      me.diagnostics = !RELEASE_TLS && m.diagnostics === true;
       me.protocol = MULTIPLAYER_PROTOCOL; me.session = crypto.randomBytes(16).toString('hex'); me.lastActionSeq = 0;
       send(me, { t: 'welcome', protocol: MULTIPLAYER_PROTOCOL, features: negotiation.features, session: me.session, id: me.id, host: me.host, max: MAX_PLAYERS });
       syncBots(); pushLobby();
