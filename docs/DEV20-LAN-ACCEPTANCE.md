@@ -16,3 +16,9 @@ Use the same trusted private network for both peers. For each direction, let the
 - Compare `hostFingerprints.bundle` and `hostFingerprints.server` with `host_bundle_sha256` and `host_inventory_sha256` in the APK report. Keep the JSON private when sharing because it includes the selected LAN address and environment details.
 
 Use heartbeat RTT and queue samples together with client snapshot gaps, frame pacing and corrections when reviewing a spike. Timing differs between the Windows and Android paths. A loopback RTT sample does not replace either device capture.
+
+## Interpreting DEV20.1 timing
+
+The roster uses the smoothed application heartbeat RTT. It includes client JavaScript handling, event loop scheduling and socket queues. `transportRttMs` measures a separate WebSocket control-frame exchange, which bypasses page JavaScript but still includes the network, socket queues and host scheduling. Treat the difference as a clue rather than an exact measurement of client processing time. Correlate it with `lobbyFrameMs`, live frame and snapshot gaps, queue bytes, and the host tick maxima for the heartbeat window. Compare both host directions using the same source revision.
+
+In Match Rules, Apply submits staged settings to the host. Cancel discards the draft. Back to Lobby and Maps leave the draft in the current session. Mode selection applies immediately because it changes the applicable rules and map validation. Guests can review saved rules.

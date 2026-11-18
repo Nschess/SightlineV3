@@ -11735,9 +11735,9 @@ var MP = { on: false, sock: null, id: 0, host: false, lobby: null, lobbyRenderKe
 var LAN_DIAG = (function () {
   if (!/(?:\?|&)lanDiag=1(?:&|$)/.test(location.search)) return null;
   var androidDiagnostic = navigator.userAgent.indexOf('SightlineAndroid') >= 0;
-  var CAP = 7200, stopped = false, started = new Date().toISOString(), lastFrame = 0, previousHost = null;
+  var CAP = 7200, stopped = false, started = new Date().toISOString(), lastFrame = 0, lastLobbyFrame = 0, previousHost = null;
   function ring() { return { a: new Array(CAP), n: 0, p: 0, add: function (v) { if (!Number.isFinite(v)) return; this.a[this.p] = v; this.p = (this.p + 1) % CAP; if (this.n < CAP) this.n++; }, values: function () { var out = new Array(this.n), from = (this.p - this.n + CAP) % CAP; for (var i = 0; i < this.n; i++) out[i] = this.a[(from + i) % CAP]; return out; } }; }
-  var d = { startedAt: started, enabledBy: 'URL query lanDiag=1', frameMs: ring(), wsGapMs: ring(), wsHandlerMs: ring(), snapshotGapMs: ring(), hostSnapshotGapMs: ring(), zombieStepM: ring(), zombieTurnRad: ring(), frames: 0, snapshots: 0, sequenceMissed: 0, corrections: 0, correctionMaxM: 0, correctionMaxRad: 0, zombieDiscontinuities: 0, zombieTurns: 0, zombieStepMaxM: 0, zombieTurnMaxRad: 0, correctionsRecent: [], discontinuitiesRecent: [], hostSamples: [], heartbeatSamples: [], heartbeat: function (sample) {
+  var d = { startedAt: started, enabledBy: 'URL query lanDiag=1', frameMs: ring(), lobbyFrameMs: ring(), wsGapMs: ring(), wsHandlerMs: ring(), snapshotGapMs: ring(), hostSnapshotGapMs: ring(), zombieStepM: ring(), zombieTurnRad: ring(), frames: 0, snapshots: 0, sequenceMissed: 0, corrections: 0, correctionMaxM: 0, correctionMaxRad: 0, zombieDiscontinuities: 0, zombieTurns: 0, zombieStepMaxM: 0, zombieTurnMaxRad: 0, correctionsRecent: [], discontinuitiesRecent: [], hostSamples: [], heartbeatSamples: [], heartbeat: function (sample) {
     if (stopped) return;
     this.heartbeatSamples.push({ atMs: performance.now(), sample: sample });
     if (this.heartbeatSamples.length > 180) this.heartbeatSamples.shift();
@@ -11748,12 +11748,12 @@ var LAN_DIAG = (function () {
       var rtt = Number.isFinite(sample.rttMs) ? sample.rttMs + ' ms' : 'sampling';
       el.textContent = phase + ' · RTT ' + rtt + ' · frames ' + this.frames + ' · snapshots ' + this.snapshots;
     }
-  }, fingerprints: null, errors: [], stop: function () { stopped = true; }, stopped: function () { return stopped; }, frame: function (now, active) { if (stopped || !active) { lastFrame = 0; return; } if (lastFrame) this.frameMs.add(now - lastFrame); lastFrame = now; this.frames++; }, snapshot: function (rxGap, hostGap) { if (stopped) return; if (Number.isFinite(rxGap) && rxGap >= 0) this.snapshotGapMs.add(rxGap); if (Number.isFinite(hostGap) && hostGap > 0) this.hostSnapshotGapMs.add(hostGap); this.snapshots++; }, missed: function (n) { if (!stopped && n > 0) this.sequenceMissed += n; }, correction: function (distance, radians, source) { if (stopped) return; distance = Number.isFinite(distance) ? Math.max(0, distance) : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.corrections++; this.correctionMaxM = Math.max(this.correctionMaxM, distance); this.correctionMaxRad = Math.max(this.correctionMaxRad, radians); if (this.correctionsRecent.length >= 200) this.correctionsRecent.shift(); this.correctionsRecent.push({ atMs: Math.round(performance.now()), distanceM: distance, headingRad: radians, source: source }); }, zombieStep: function (distance, radians, dt, stateCode) { if (stopped) return; distance = Number.isFinite(distance) ? distance : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.zombieStepM.add(distance); this.zombieTurnRad.add(radians); this.zombieStepMaxM = Math.max(this.zombieStepMaxM, distance); this.zombieTurnMaxRad = Math.max(this.zombieTurnMaxRad, radians); var stepLimit = Math.max(.35, 14 * Math.max(0, dt || 0) * 1.8), turnLimit = Math.max(.8, 12 * Math.max(0, dt || 0)); if (distance > stepLimit) { this.zombieDiscontinuities++; if (this.discontinuitiesRecent.length >= 300) this.discontinuitiesRecent.shift(); this.discontinuitiesRecent.push({ atMs: Math.round(performance.now()), stepM: distance, frameMs: Math.round((dt || 0) * 1000), poseState: stateCode }); } if (radians > turnLimit) this.zombieTurns++; }, host: function (s) { if (stopped || !s || !s.ok) return; if (!this.fingerprints) this.fingerprints = { bundle: s.bundle || null, server: s.server || null }; var now = new Date().toISOString(), z = s.zombiePaths || {}, nav = s.navigation || {}, bot = s.bot || {}, delta = {}; if (previousHost) Object.keys(z).forEach(function (k) { if (Number.isFinite(z[k]) && Number.isFinite(previousHost.z[k])) delta['zombiePaths.' + k] = z[k] - previousHost.z[k]; }); if (previousHost && Number.isFinite(bot.stuck) && Number.isFinite(previousHost.stuck)) delta.botStuck = bot.stuck - previousHost.stuck; this.hostSamples.push({ at: now, phase: s.phase || null, mode: s.mode || null, players: s.players, bots: s.bots, zombies: s.zombies, botStuck: Number.isFinite(bot.stuck) ? bot.stuck : null, zombiePaths: z, zombiePathDelta: delta, navigation: nav, tick: s.liveTiming || s.stats || null, peer: (s.clients || []).find(function (p) { return p.id === MP.id; }) || null, snapshot: s.snapshot || null }); if (this.hostSamples.length > 180) this.hostSamples.shift(); previousHost = { z: z, stuck: bot.stuck }; }, summary: function (r) { var a = r.values().sort(function (x, y) { return x - y; }); function p(q) { return a.length ? a[Math.min(a.length - 1, Math.ceil(a.length * q) - 1)] : null; } return { count: a.length, p50: p(.50), p95: p(.95), p99: p(.99), max: a.length ? a[a.length - 1] : null }; } };
+  }, fingerprints: null, errors: [], stop: function () { stopped = true; }, stopped: function () { return stopped; }, frame: function (now, active) { if (stopped || !active) { lastFrame = 0; return; } if (lastFrame) this.frameMs.add(now - lastFrame); lastFrame = now; this.frames++; }, lobbyFrame: function (now, active) { if (stopped || !active) { lastLobbyFrame = 0; return; } if (lastLobbyFrame) this.lobbyFrameMs.add(now - lastLobbyFrame); lastLobbyFrame = now; }, snapshot: function (rxGap, hostGap) { if (stopped) return; if (Number.isFinite(rxGap) && rxGap >= 0) this.snapshotGapMs.add(rxGap); if (Number.isFinite(hostGap) && hostGap > 0) this.hostSnapshotGapMs.add(hostGap); this.snapshots++; }, missed: function (n) { if (!stopped && n > 0) this.sequenceMissed += n; }, correction: function (distance, radians, source) { if (stopped) return; distance = Number.isFinite(distance) ? Math.max(0, distance) : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.corrections++; this.correctionMaxM = Math.max(this.correctionMaxM, distance); this.correctionMaxRad = Math.max(this.correctionMaxRad, radians); if (this.correctionsRecent.length >= 200) this.correctionsRecent.shift(); this.correctionsRecent.push({ atMs: Math.round(performance.now()), distanceM: distance, headingRad: radians, source: source }); }, zombieStep: function (distance, radians, dt, stateCode) { if (stopped) return; distance = Number.isFinite(distance) ? distance : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.zombieStepM.add(distance); this.zombieTurnRad.add(radians); this.zombieStepMaxM = Math.max(this.zombieStepMaxM, distance); this.zombieTurnMaxRad = Math.max(this.zombieTurnMaxRad, radians); var stepLimit = Math.max(.35, 14 * Math.max(0, dt || 0) * 1.8), turnLimit = Math.max(.8, 12 * Math.max(0, dt || 0)); if (distance > stepLimit) { this.zombieDiscontinuities++; if (this.discontinuitiesRecent.length >= 300) this.discontinuitiesRecent.shift(); this.discontinuitiesRecent.push({ atMs: Math.round(performance.now()), stepM: distance, frameMs: Math.round((dt || 0) * 1000), poseState: stateCode }); } if (radians > turnLimit) this.zombieTurns++; }, host: function (s) { if (stopped || !s || !s.ok) return; if (!this.fingerprints) this.fingerprints = { bundle: s.bundle || null, server: s.server || null }; var now = new Date().toISOString(), z = s.zombiePaths || {}, nav = s.navigation || {}, bot = s.bot || {}, delta = {}; if (previousHost) Object.keys(z).forEach(function (k) { if (Number.isFinite(z[k]) && Number.isFinite(previousHost.z[k])) delta['zombiePaths.' + k] = z[k] - previousHost.z[k]; }); if (previousHost && Number.isFinite(bot.stuck) && Number.isFinite(previousHost.stuck)) delta.botStuck = bot.stuck - previousHost.stuck; this.hostSamples.push({ at: now, phase: s.phase || null, mode: s.mode || null, players: s.players, bots: s.bots, zombies: s.zombies, botStuck: Number.isFinite(bot.stuck) ? bot.stuck : null, zombiePaths: z, zombiePathDelta: delta, navigation: nav, tick: s.liveTiming || s.stats || null, peer: (s.clients || []).find(function (p) { return p.id === MP.id; }) || null, snapshot: s.snapshot || null }); if (this.hostSamples.length > 180) this.hostSamples.shift(); previousHost = { z: z, stuck: bot.stuck }; }, summary: function (r) { var a = r.values().sort(function (x, y) { return x - y; }); function p(q) { return a.length ? a[Math.min(a.length - 1, Math.ceil(a.length * q) - 1)] : null; } return { count: a.length, p50: p(.50), p95: p(.95), p99: p(.99), max: a.length ? a[a.length - 1] : null }; } };
   var box = document.createElement('aside'); box.id = 'sightline-lan-diag'; box.style.cssText = 'position:fixed;right:8px;top:8px;z-index:2147483000;width:min(280px,calc(100vw - 16px));padding:8px;background:rgba(8,18,24,.94);border:1px solid #55cbb8;border-radius:6px;color:#e7f2ee;font:12px/1.35 Arial,sans-serif;box-shadow:0 2px 12px #0008';
   box.innerHTML = '<strong>LAN diagnostics · opt-in</strong><div id="sightline-lan-diag-state" style="margin:5px 0">Waiting for a live LAN match.</div><button id="sightline-lan-diag-save" type="button">' + (androidDiagnostic ? 'Save JSON' : 'Download JSON') + '</button> <button id="sightline-lan-diag-stop" type="button">Stop capture</button><div style="margin-top:5px;opacity:.8">No gameplay changes. Host heartbeat samples arrive every 2 seconds.</div>';
   document.body.appendChild(box);
   document.getElementById('sightline-lan-diag-stop').onclick = function () { d.stop(); document.getElementById('sightline-lan-diag-state').textContent = 'Capture stopped; download remains available.'; };
-  document.getElementById('sightline-lan-diag-save').onclick = function () { var report = { schema: 'sightline-lan-diag-v1', startedAt: d.startedAt, endedAt: new Date().toISOString(), page: location.origin + location.pathname, userAgent: navigator.userAgent, hostFingerprints: d.fingerprints, gameState: { connected: !!MP.on, mode: MP.mode || null, snapshotsReceived: d.snapshots }, summaries: { renderedFrameMs: d.summary(d.frameMs), webSocketReceiveGapMs: d.summary(d.wsGapMs), webSocketHandlerMs: d.summary(d.wsHandlerMs), clientSnapshotReceiveGapMs: d.summary(d.snapshotGapMs), hostSnapshotGapMs: d.summary(d.hostSnapshotGapMs), renderedZombieStepM: d.summary(d.zombieStepM), renderedZombieTurnRad: d.summary(d.zombieTurnRad) }, corrections: { count: d.corrections, maxDistanceM: d.correctionMaxM, maxHeadingRad: d.correctionMaxRad, recent: d.correctionsRecent }, zombies: { discontinuities: d.zombieDiscontinuities, abruptTurns: d.zombieTurns, maxStepM: d.zombieStepMaxM, maxTurnRad: d.zombieTurnMaxRad, recentDiscontinuities: d.discontinuitiesRecent }, sequenceMissed: d.sequenceMissed, hostSamples: d.hostSamples, heartbeatSamples: d.heartbeatSamples, errors: d.errors };
+  document.getElementById('sightline-lan-diag-save').onclick = function () { var report = { schema: 'sightline-lan-diag-v1', startedAt: d.startedAt, endedAt: new Date().toISOString(), page: location.origin + location.pathname, userAgent: navigator.userAgent, hostFingerprints: d.fingerprints, gameState: { connected: !!MP.on, mode: MP.mode || null, snapshotsReceived: d.snapshots }, summaries: { renderedFrameMs: d.summary(d.frameMs), lobbyFrameMs: d.summary(d.lobbyFrameMs), webSocketReceiveGapMs: d.summary(d.wsGapMs), webSocketHandlerMs: d.summary(d.wsHandlerMs), clientSnapshotReceiveGapMs: d.summary(d.snapshotGapMs), hostSnapshotGapMs: d.summary(d.hostSnapshotGapMs), renderedZombieStepM: d.summary(d.zombieStepM), renderedZombieTurnRad: d.summary(d.zombieTurnRad) }, corrections: { count: d.corrections, maxDistanceM: d.correctionMaxM, maxHeadingRad: d.correctionMaxRad, recent: d.correctionsRecent }, zombies: { discontinuities: d.zombieDiscontinuities, abruptTurns: d.zombieTurns, maxStepM: d.zombieStepMaxM, maxTurnRad: d.zombieTurnMaxRad, recentDiscontinuities: d.discontinuitiesRecent }, sequenceMissed: d.sequenceMissed, hostSamples: d.hostSamples, heartbeatSamples: d.heartbeatSamples, errors: d.errors };
     var json = JSON.stringify(report, null, 2);
     if (androidDiagnostic) {
       if (window.SightlineLanDiagnostics) window.SightlineLanDiagnostics.postMessage(json);
@@ -11979,7 +11979,7 @@ function sl82RouteItems(group) {
 }
 function sl82ActiveRoute() {
   if (menuTab === 'play') return document.querySelector('meta[name="sightline-route"]')?.content === 'lan-host' ? 'host-play' : 'offline';
-  if (menuTab === 'net') return document.querySelector('meta[name="sightline-route"]')?.content === 'lan-host' ? SL82_HOST_SUBROUTE : 'multiplayer';
+  if (menuTab === 'net') return mpConnected() || document.querySelector('meta[name="sightline-route"]')?.content === 'lan-host' ? SL82_HOST_SUBROUTE : 'multiplayer';
   if (menuTab === 'map') return 'maps';
   if (menuTab === 'rules') return 'rules';
   if (menuTab === 'op') return 'operative';
@@ -12042,8 +12042,12 @@ function sl82ReturnFromRules(){var isHost=document.querySelector('meta[name="sig
 function sl82GoRoute(route, focus) {
   if (route === 'offline' || route === 'host-play') goTab('play', focus);
   else if (route === 'multiplayer') { SL82_HOST_SUBROUTE='multiplayer'; goTab('net', focus); }
-  else if (route === 'maps') { var lanHost=document.querySelector('meta[name="sightline-route"]')?.content==='lan-host'; if(lanHost&&mpConnected()){SL82_HOST_SUBROUTE='maps';goTab('net',focus);setTimeout(function(){var d=$('#pn-dyn .mp-map-details');if(d){d.open=true;d.scrollIntoView({block:'center'});}else{var a=$('#mp-addr');if(a)a.focus({preventScroll:true});}},0);}else{if(lanHost)SL82_HOST_SUBROUTE='multiplayer';goTab('map',focus);} }
-  else if (route === 'rules') { var lanHost=document.querySelector('meta[name="sightline-route"]')?.content==='lan-host'; var connected=mpConnected(); SL82_RULES_RETURN_ROUTE=connected?'multiplayer':lanHost?'host-play':'offline'; if(connected){SL82_HOST_SUBROUTE='rules';goTab('net',focus);setTimeout(function(){var d=$('#pn-dyn .mp-bomb-settings'),a=$('#pn-dyn [data-net="mode"]');if(d){d.open=true;d.scrollIntoView({block:'center'});}else if(a)a.focus({preventScroll:true});},0);}else{if(lanHost)SL82_HOST_SUBROUTE='multiplayer';goTab('rules',focus);} }
+  else if (route === 'maps' || route === 'rules') {
+    var connected = mpConnected(), hosted = document.querySelector('meta[name="sightline-route"]')?.content === 'lan-host';
+    if (route === 'rules') SL82_RULES_RETURN_ROUTE = connected ? 'multiplayer' : hosted ? 'host-play' : 'offline';
+    if (connected) { SL82_HOST_SUBROUTE = route; goTab('net', focus); }
+    else { SL82_HOST_SUBROUTE = 'multiplayer'; goTab(route === 'maps' ? 'map' : 'rules', focus); }
+  }
   else if (route === 'operative') { pendingOpId=ME.id;opFactionFilter='all';goTab('op', focus); }
   else if (route === 'settings') { SL82_SETTINGS_SUBROUTE='settings'; setTab='video'; goTab('settings', focus); }
   else if (route === 'customization') { setTab = 'customization'; goTab('settings', focus); }
@@ -12414,7 +12418,7 @@ function mpRefreshLobbyPings(m) {
 function mpRefreshPanel() {
   if (menuTab !== 'net' || $('#ov-start').hidden) return;
   var panel = $('#pn-dyn'), map = panel.querySelector('.mp-map-details'), bomb = panel.querySelector('.mp-bomb-settings:not(.sl82-bot-settings)'), botSetup=panel.querySelector('.sl82-bot-settings'), active = document.activeElement;
-  var ui = { mapOpen: !!(map && map.open), bombOpen: !!(bomb && bomb.open), botSetupOpen:!!(botSetup&&botSetup.open), scrollTop: $('.mn-main').scrollTop, focusKind: '', focusKey: '', focusNet: '', focusK: '', focusV: '', selectionStart: null, selectionEnd: null };
+  var ui = { mapOpen: !!(map && map.open), bombOpen: !!(bomb && bomb.open), botSetupOpen:!!(botSetup&&botSetup.open), scrollTop: $('.mn-main').scrollTop, panelScrollTop: panel.scrollTop, focusKind: '', focusKey: '', focusNet: '', focusK: '', focusV: '', selectionStart: null, selectionEnd: null };
   if (panel.contains(active)) {
     if (active.hasAttribute('data-bot-count')) { ui.focusKind = 'bot'; ui.focusKey = active.getAttribute('data-bot-count'); }
     else if (active.hasAttribute('data-net')) { ui.focusKind = 'net'; ui.focusNet = active.getAttribute('data-net'); ui.focusK = active.getAttribute('data-k') || ''; ui.focusV = active.getAttribute('data-v') || ''; }
@@ -12423,7 +12427,7 @@ function mpRefreshPanel() {
   renderBody(true);
   map = panel.querySelector('.mp-map-details'); bomb = panel.querySelector('.mp-bomb-settings:not(.sl82-bot-settings)');botSetup=panel.querySelector('.sl82-bot-settings');
   if (map && ui.mapOpen) map.open = true; if (bomb && ui.bombOpen) bomb.open = true;if(botSetup&&ui.botSetupOpen)botSetup.open=true;
-  $('.mn-main').scrollTop = ui.scrollTop;
+  $('.mn-main').scrollTop = ui.scrollTop; panel.scrollTop = ui.panelScrollTop;
   var replacement = null;
   if (ui.focusKind === 'bot') panel.querySelectorAll('[data-bot-count]').forEach(function (e) { if (e.getAttribute('data-bot-count') === ui.focusKey) replacement = e; });
   else if (ui.focusKind === 'net') panel.querySelectorAll('[data-net]').forEach(function (e) { if (e.getAttribute('data-net') === ui.focusNet && (e.getAttribute('data-k') || '') === ui.focusK && (e.getAttribute('data-v') || '') === ui.focusV) replacement = e; });
@@ -12552,7 +12556,7 @@ function mpConnect() {
   try { ws = new WebSocket(endpoint.url); } catch (e) { MP.err = 'That address does not look right.'; MP.status = ''; mpRefreshPanel(); return; }
   MP.sock = ws; MP.id = 0; MP.names = {};
   var to = setTimeout(function () { if (MP.sock === ws && !MP.id && !MP.err) { MP.err = 'Connection timed out — check that both devices use the same Wi-Fi.'; MP.status = ''; try { ws.close(); } catch (e) {} mpRefreshPanel(); } }, 5000);
-  ws.onopen = function () { if (MP.sock !== ws) return; MP.status = 'Joining lobby…'; mpRefreshPanel(); ws.send(JSON.stringify({ t: 'hello', v: MP_PROTOCOL, features: MP_FEATURES, name: MP.name, diagnostics: !!LAN_DIAG })); };
+  ws.onopen = function () { if (MP.sock !== ws) return; MP.status = 'Joining lobby…'; mpRefreshPanel(); ws.send(JSON.stringify({ t: 'hello', v: MP_PROTOCOL, features: MP_FEATURES, name: MP.name, diagnostics: !!LAN_DIAG, lobbyPingUpdates: true })); };
   ws.onmessage = function (ev) { if (MP.sock !== ws) return; var m, previousRx = MP.net.lastRx; MP.net.lastRx = performance.now(); var receivedAt = MP.net.lastRx, diag = LAN_DIAG && MP.on && !LAN_DIAG.stopped(); try { m = JSON.parse(ev.data); } catch (e) { return; } if (!MP.id && (m.t === 'welcome' || m.t === 'err')) clearTimeout(to); mpMsg(m); if (diag) { if (previousRx) LAN_DIAG.wsGapMs.add(receivedAt - previousRx); LAN_DIAG.wsHandlerMs.add(performance.now() - receivedAt); } };
   ws.onerror = function () { if (MP.sock === ws && !MP.id) { if(!MP.err)MP.err = 'Host unavailable — try again.'; MP.status = ''; try{ws.close();}catch(e){} mpRefreshPanel(); } };
   ws.onclose = function (event) {
@@ -12595,8 +12599,19 @@ function mpMsg(m) {
       mpSend({ t: 'pong', s: m.s });
       if (LAN_DIAG && m.diagnostics) LAN_DIAG.heartbeat(m.diagnostics);
       break;
+    case 'lobbyPings': {
+      if (!MP.lobby || !Array.isArray(m.rows)) break;
+      var pings = new Map(m.rows.filter(function (row) { return Array.isArray(row) && Number.isSafeInteger(row[0]) && Number.isFinite(row[1]) && row[1] >= 0; }));
+      MP.lobby.players.forEach(function (p) { if (pings.has(p.id)) p.ping = pings.get(p.id); });
+      mpRefreshLobbyPings(MP.lobby);
+      break;
+    }
     case 'lobby': {
       var renderKey = mpLobbyRenderKey(m), lobbyNeedsRender = renderKey !== MP.lobbyRenderKey;
+      var draft = MP.ruleEdits;
+      if (draft?.sending && draft.session === MP.session && mpRulesMatch(m, draft.patch)) {
+        clearTimeout(draft.timer); draft.sending = false; draft.patch = {}; draft.message = ''; lobbyNeedsRender = true;
+      }
       MP.lobby = m; MP.names = {}; m.players.forEach(function (p) { MP.names[p.id] = p.name; });
       MP.mode = m.mode || 'versus';
       var me = mpMe(); if (me) { MP.host = me.host; if (!MP.on || MP.mode === 'infection') MP.myTeam = me.team; if(MP.mode==='infection')MP.myInfected=!!me.infected; }
@@ -13173,7 +13188,7 @@ var BOT_SKILLS = [['recruit', 'Recruit'], ['regular', 'Regular'], ['veteran', 'V
 function mpBotCount(k, label, value, max, disabled, mode) { var help = mode === 'fill' ? 'Final team size, including human players.' : 'AI bots added to this team; total bot cap is 64.'; return '<div class="srow"><label class="lb" for="mp-bot-' + k + '">' + label + '<small>' + help + ' Up to ' + max + '.</small></label><input class="mp-count" id="mp-bot-' + k + '" type="number" inputmode="numeric" min="0" max="' + max + '" step="1" value="' + Math.max(0, Math.min(max, value | 0)) + '" data-bot-count="' + k + '" aria-label="' + esc(label) + '"' + (disabled ? ' disabled' : '') + '></div>'; }
 function mpRow(p) { return '<div class="mp-pl' + (p.id === MP.id ? ' me' : '') + (p.bot ? ' bot' : '') + '" data-player-id="' + esc(p.id) + '"><span><b>' + esc(p.name) + '</b>' + (p.host ? ' <small>host</small>' : '') + (p.id === MP.id ? ' <small>you</small>' : '') + (p.bot ? ' <small class="bt">bot' + (p.skill ? ' · ' + p.skill : '') + '</small>' : '') + '</span><small data-player-ping="1">' + (p.bot ? '' : (p.ping ? p.ping + ' ms' : '')) + '</small></div>'; }
 function mpSeg(k, vals, cur, dis) { return '<div class="seg">' + vals.map(function (v) { var val = Array.isArray(v) ? v[0] : v, lab = Array.isArray(v) ? v[1] : v; return '<button type="button" data-net="bots" data-k="' + k + '" data-v="' + val + '" aria-pressed="' + (cur === val) + '"' + (dis ? ' disabled' : '') + '>' + lab + '</button>'; }).join('') + '</div>'; }
-function mpBotsHtml(L, coop, isHost, lobbyPhase) {
+function mpBotsHtml(L, coop, isHost, lobbyPhase, saving) {
   var B = L.bots || { mode: 'add', t0: 0, t1: 0, coop: 0, skill: 'regular' }, nb = L.players.filter(function (p) { return p.bot; }).length;
   if (!isHost) return '<p class="small">Bots: ' + (nb ? nb + ' (' + B.skill + '), ' + (B.mode === 'fill' ? 'fills teams' : 'added on top') : 'none') + '.</p>';
   var h = '<div class="srow"><span class="lb">Bots<small>Server-controlled, same rules as players. ' + nb + ' in the lobby now.</small></span>' + mpSeg('mode', [['add', 'Add on top'], ['fill', 'Fill teams']], B.mode, !lobbyPhase) + '</div>';
@@ -13182,8 +13197,65 @@ function mpBotsHtml(L, coop, isHost, lobbyPhase) {
   else h += mpBotCount('t0', (B.mode === 'fill' ? 'Team size · ' : 'Bots · ') + TEAMS[TEAMKEY[0]].short, B.t0, max, !lobbyPhase, B.mode) + mpBotCount('t1', (B.mode === 'fill' ? 'Team size · ' : 'Bots · ') + TEAMS[TEAMKEY[1]].short, B.t1, max, !lobbyPhase, B.mode);
   if (!coop) h += '<div class="srow"><span class="lb">Balance bots<small>Equalize team size while preserving human team choices</small></span>' + mpSeg('balance', [[true, 'On'], [false, 'Off']], B.balance !== false, !lobbyPhase) + '</div>';
   h += '<p class="small">' + (L.mode==='infection'?'Infection: Blue and Red are allied survivors during the 10-second incubation. Two Patient Zero are then selected from the full roster; color does not determine infection. Fill targets 32 participants per color team at 64 total.':'Player slots follow room capacity. Start with small AI populations on phones. In Outbreak, Blue and Red are one allied survivor squad against the Hollowed; up to 56 squad bots are shared across both colors, with remaining AI slots reserved for Hollowed. Fill targets squad size; Add on top counts bots separately.') + '</p>';
-  h += '<div class="srow"><span class="lb">Bot skill<small>Can change during a match</small></span>' + mpSeg('skill', BOT_SKILLS, B.skill, false) + '</div>';
+  h += '<div class="srow"><span class="lb">Bot skill<small>Can change during a match</small></span>' + mpSeg('skill', BOT_SKILLS, B.skill, !!saving) + '</div>';
   return h;
+}
+function mpRulesDraft() {
+  if (!MP.ruleEdits || MP.ruleEdits.session !== MP.session) {
+    MP.ruleEdits = { session: MP.session, patch: {}, sending: false, message: '' };
+  }
+  return MP.ruleEdits;
+}
+function mpRuleBase(lobby, group) {
+  return group === 'bomb' ? lobby.bomb?.settings || {} : group === 'bots' ? lobby.bots || {} : lobby;
+}
+function mpRulesMatch(lobby, patch) {
+  return Object.keys(patch).every(function (key) {
+    return key === 'bomb' || key === 'bots'
+      ? Object.keys(patch[key]).every(function (field) { return mpRuleBase(lobby, key)[field] === patch[key][field]; })
+      : lobby[key] === patch[key];
+  });
+}
+function mpCanEditRules() {
+  return mpConnected() && MP.host && MP.lobby && MP.lobby.phase === 'lobby';
+}
+function mpRulesAction(action, value, field) {
+  if (!mpCanEditRules() || SL82_HOST_SUBROUTE !== 'rules') return false;
+  var draft = mpRulesDraft(), patch = draft.patch;
+  if (!['apply-rules','cancel-rules','mode','rounds','time','kills','cash','auto','bots','bomb','start'].includes(action)) return false;
+  if (draft.sending) return true;
+  if (action === 'cancel-rules') {
+    draft.patch = {}; draft.message = '';
+  } else if (action === 'apply-rules') {
+    if (!Object.keys(patch).length) return true;
+    draft.sending = true; draft.message = '';
+    mpSend(Object.assign({ t: 'cfg' }, patch));
+    draft.timer = setTimeout(function () {
+      if (MP.ruleEdits !== draft || MP.session !== draft.session || !draft.sending) return;
+      draft.sending = false; draft.message = 'The host did not confirm these changes. Review and try Apply again.';
+      mpRefreshPanel();
+    }, 3500);
+  } else if (action === 'mode' || action === 'start') {
+    if (!Object.keys(patch).length) return false;
+    draft.message = 'Apply or cancel pending rule changes first.';
+  } else {
+    draft.message = '';
+    var group = action === 'bots' || action === 'bomb' ? action : null;
+    var key = group ? field : action;
+    var next = action === 'auto' ? value === '1' : field === 'balance' ? value === 'true'
+      : field === 'mode' || field === 'skill' ? value : Number(value);
+    var target = group ? (patch[group] ||= {}) : patch;
+    if (mpRuleBase(MP.lobby, group)[key] === next) delete target[key]; else target[key] = next;
+    if (group && !Object.keys(target).length) delete patch[group];
+  }
+  mpRefreshPanel();
+  return true;
+}
+function mpRulesView(lobby, patch) {
+  var view = Object.assign({}, lobby, patch);
+  if (patch.bots) view.bots = Object.assign({}, lobby.bots, patch.bots);
+  if (patch.bomb) view.bomb = Object.assign({}, lobby.bomb, { settings: Object.assign({}, lobby.bomb?.settings, patch.bomb) });
+  return view;
 }
 function mpBombRulesHtml(L,lobbyPhase){
   var b=(L.bomb&&L.bomb.settings)||{bestOf:7,roundSeconds:90,bombSeconds:35,plantSeconds:4,defuseSeconds:6};
@@ -13208,31 +13280,43 @@ function mpHostRouteHtml(head,L,route){
   var modeNames={versus:'Tactical',deathmatch:'Team Deathmatch',ffa:'Free-for-all',bomb:'Bomb Defusal',outbreak:'Co-op Outbreak',infection:'Infection'};
   var selected=(L.maps||[]).find(function(m){return m[0]===L.map;}),canStart=coop?L.players.length>0:mode==='ffa'?L.players.length>=2:!!(counts[0]&&counts[1])&&(mode!=='bomb'||!!(L.bomb&&L.bomb.supported));
   var summary='<div class="sl82-host-summary"><div><small>HOST STATUS</small><b>'+esc(lobbyPhase?'LOBBY':String(L.phase||'MATCH').toUpperCase())+'</b></div><div><small>MODE</small><b>'+esc(modeNames[mode]||mode)+'</b></div><div><small>ARENA</small><b>'+esc(selected?selected[1]:L.map||'Not selected')+'</b></div><div><small>ROSTER</small><b>'+humanCount+' / '+(L.max||96)+' humans'+(totalBots?' · '+totalBots+' bots':'')+'</b></div></div>';
-  var h=head.replace('Multiplayer',route==='maps'?'Maps':route==='rules'?'Match rules':'Multiplayer')+summary;
+  var host = !!MP.host, editable = host && lobbyPhase;
+  var draft = host && route === 'rules' && lobbyPhase ? mpRulesDraft() : null;
+  var dirty = !!(draft && Object.keys(draft.patch).length), saving = !!draft?.sending;
+  var canEdit = editable && !saving;
+  var h=head.replace('Multiplayer',route==='maps'?'Maps':route==='rules'?'Match rules':'Multiplayer');
+  if (route === 'maps' || route === 'rules') {
+    h += '<div class="sl-lan-setup-nav"><button type="button" class="btn ghost" data-host-route="multiplayer">Back to Lobby</button><button type="button" class="btn ghost" data-host-route="'+(route==='maps'?'rules':'maps')+'">'+(route==='maps'?'Match Rules':'Maps')+'</button></div>';
+  }
+  if (route !== 'rules') h += summary;
   if(route==='maps'){
     h+='<p class="small">Only host-validated arenas are listed. Bomb Defusal arenas have reachable A and B sites and bot routes.</p>';
-    h+='<details class="mp-map-details sl82-map-route" open><summary><span class="lb">Choose arena<small>'+((L.maps||[]).length)+' validated maps · current: '+esc(selected?selected[1]:L.map)+'</small></span></summary><div class="mappick">'+(L.maps||[]).map(function(m){return '<button type="button" class="mp" data-net="map" data-v="'+esc(m[0])+'" aria-pressed="'+(m[0]===L.map)+'"'+(lobbyPhase?'':' disabled')+'><b>'+esc(m[1])+'</b><span>'+esc(m[2])+'</span>'+(mode==='bomb'?'<em>A/B sites · routes checked</em>':'')+'</button>';}).join('')+'</div></details>';
+    h+='<details class="mp-map-details sl82-map-route" open><summary><span class="lb">Choose arena<small>'+((L.maps||[]).length)+' validated maps · current: '+esc(selected?selected[1]:L.map)+'</small></span></summary><div class="mappick">'+(L.maps||[]).map(function(m){return '<button type="button" class="mp" data-net="map" data-v="'+esc(m[0])+'" aria-pressed="'+(m[0]===L.map)+'"'+(editable?'':' disabled')+'><b>'+esc(m[1])+'</b><span>'+esc(m[2])+'</span>'+(mode==='bomb'?'<em>A/B sites · routes checked</em>':'')+'</button>';}).join('')+'</div></details>';
     if(!lobbyPhase)h+='<p class="small">The map is locked while a match is active. Disconnect or finish the match before changing the next arena.</p>';
-    h+='<div class="setfoot"><button class="btn ghost" type="button" data-net="leave">Disconnect</button></div>';
     return h;
   }
   if(route==='rules'){
-    h+='<p class="small">Set the mode and match rules here. Player capacity is shared by people and AI; the server remains authoritative.</p>';
-    h+='<div class="srow"><span class="lb">Starting cash<small>Per player at the start of each match · host setting</small></span><div class="seg">'+[[800,'$800'],[2000,'$2,000'],[5000,'$5,000'],[9000,'$9,000']].map(function(v){return '<button type="button" data-net="cash" data-v="'+v[0]+'" aria-pressed="'+((L.cash||800)===v[0])+'"'+(lobbyPhase?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
-    h+='<div class="srow"><span class="lb">Mode</span><div class="seg">'+[['versus','Tactical'],['deathmatch','Team Deathmatch'],['ffa','Free-for-all'],['bomb','Bomb Defusal'],['outbreak','Co-op Outbreak'],['infection','Infection']].map(function(v){return '<button type="button" data-net="mode" data-v="'+v[0]+'" aria-pressed="'+(mode===v[0])+'"'+(lobbyPhase?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
-    h+='<div class="srow"><span class="lb">Next match<small>Automatic next round or return to lobby</small></span><div class="seg"><button type="button" data-net="auto" data-v="1" aria-pressed="'+!!L.auto+'">Auto</button><button type="button" data-net="auto" data-v="0" aria-pressed="'+!L.auto+'">Back to lobby</button></div></div>';
+    if (dirty) L = mpRulesView(L, draft.patch);
+    h += '<div class="sl-lan-setup-nav"><span role="status">'+(saving?'Applying…':dirty?'Unsaved rule changes':host?'Rules saved':'Read only · the host sets the rules')+'</span>'+
+      (host && lobbyPhase ? '<button type="button" class="btn" data-net="apply-rules"'+(dirty&&!saving?'':' disabled')+'>Apply Changes</button><button type="button" class="btn ghost" data-net="cancel-rules"'+(dirty&&!saving?'':' disabled')+'>Cancel Changes</button>' : '')+'</div>';
+    if (draft?.message) h += '<p class="small" role="alert">'+esc(draft.message)+'</p>';
+    h += summary;
+    if (host && lobbyPhase) h += '<p class="small">Selecting a mode applies immediately. Other rule edits stay pending until you apply them.</p>';
+    h+='<div class="srow"><span class="lb">Starting cash<small>Per player at the start of each match · host setting</small></span><div class="seg">'+[[800,'$800'],[2000,'$2,000'],[5000,'$5,000'],[9000,'$9,000']].map(function(v){return '<button type="button" data-net="cash" data-v="'+v[0]+'" aria-pressed="'+((L.cash||800)===v[0])+'"'+(canEdit?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
+    h+='<div class="srow"><span class="lb">Mode</span><div class="seg">'+[['versus','Tactical'],['deathmatch','Team Deathmatch'],['ffa','Free-for-all'],['bomb','Bomb Defusal'],['outbreak','Co-op Outbreak'],['infection','Infection']].map(function(v){return '<button type="button" data-net="mode" data-v="'+v[0]+'" aria-pressed="'+(mode===v[0])+'"'+(canEdit&&!dirty?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
+    h+='<div class="srow"><span class="lb">Next match<small>Automatic next round or return to lobby</small></span><div class="seg"><button type="button" data-net="auto" data-v="1" aria-pressed="'+!!L.auto+'"'+(canEdit?'':' disabled')+'>Auto</button><button type="button" data-net="auto" data-v="0" aria-pressed="'+!L.auto+'"'+(canEdit?'':' disabled')+'>Return to lobby after match</button></div></div>';
     var B=L.bots||{mode:'add',t0:0,t1:0,coop:0,skill:'regular'},botModeLabel=B.mode==='fill'?'Fill teams':'Add on top',skillLabel=(BOT_SKILLS.find(function(x){return x[0]===B.skill;})||BOT_SKILLS[1])[1];
-    h+='<details class="mp-bomb-settings sl82-bot-settings"><summary><b>Bot setup</b><small>'+botModeLabel+' · '+totalBots+' in lobby · '+skillLabel+' skill · up to 64 AI</small></summary>'+mpBotsHtml(L,coop,true,lobbyPhase)+'</details>';
-    if(!coop&&mode!=='deathmatch'&&mode!=='ffa')h+='<div class="srow"><span class="lb">Rounds to win</span><div class="seg">'+[1,3,5,8,10].map(function(v){return '<button type="button" data-net="rounds" data-v="'+v+'" aria-pressed="'+(L.rounds===v)+'"'+(lobbyPhase?'':' disabled')+'>'+v+'</button>';}).join('')+'</div></div>';
-    if(mode==='deathmatch'||mode==='ffa')h+='<div class="srow"><span class="lb">Kill target</span><div class="seg">'+[10,20,30,50].map(function(v){return '<button type="button" data-net="kills" data-v="'+v+'" aria-pressed="'+(L.kills===v)+'"'+(lobbyPhase?'':' disabled')+'>'+v+'</button>';}).join('')+'</div></div>';
+    h+='<details class="mp-bomb-settings sl82-bot-settings"><summary><b>Bot setup</b><small>'+botModeLabel+' · '+totalBots+' in lobby · '+skillLabel+' skill · up to 64 AI</small></summary>'+mpBotsHtml(L,coop,host,canEdit,saving)+'</details>';
+    if(!coop&&mode!=='deathmatch'&&mode!=='ffa'&&mode!=='bomb')h+='<div class="srow"><span class="lb">Rounds to win</span><div class="seg">'+[1,3,5,8,10].map(function(v){return '<button type="button" data-net="rounds" data-v="'+v+'" aria-pressed="'+(L.rounds===v)+'"'+(canEdit?'':' disabled')+'>'+v+'</button>';}).join('')+'</div></div>';
+    if(mode==='deathmatch'||mode==='ffa')h+='<div class="srow"><span class="lb">Kill target</span><div class="seg">'+[10,20,30,50].map(function(v){return '<button type="button" data-net="kills" data-v="'+v+'" aria-pressed="'+(L.kills===v)+'"'+(canEdit?'':' disabled')+'>'+v+'</button>';}).join('')+'</div></div>';
     if(mode==='bomb'){
       var b=(L.bomb&&L.bomb.settings)||{bestOf:7,roundSeconds:90,bombSeconds:35,plantSeconds:4,defuseSeconds:6};
-      h+=mpBombRulesHtml(L,lobbyPhase);
+      h+=mpBombRulesHtml(L,canEdit);
     }
-    if(mode==='deathmatch'||mode==='ffa')h+='<div class="srow"><span class="lb">Match time</span><div class="seg">'+[[180,'3:00'],[300,'5:00'],[600,'10:00'],[900,'15:00']].map(function(v){return '<button type="button" data-net="time" data-v="'+v[0]+'" aria-pressed="'+(L.time===v[0])+'"'+(lobbyPhase?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
-    else h+='<div class="srow"><span class="lb">Round time</span><div class="seg">'+[[60,'1:00'],[100,'1:40'],[150,'2:30'],[180,'3:00']].map(function(v){return '<button type="button" data-net="time" data-v="'+v[0]+'" aria-pressed="'+(L.time===v[0])+'"'+(lobbyPhase?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
-    h+='<div class="setfoot"><button class="btn" type="button" data-net="start"'+(lobbyPhase&&canStart?'':' disabled')+'>'+(coop?(mode==='infection'?'Start infection':'Start run'):mode==='bomb'?'Start Bomb Defusal':mode==='ffa'?'Start Free-for-all':'Start match')+'</button>'+(lobbyPhase?'':'<button class="btn ghost" type="button" data-net="endmatch">End match</button>')+'<button class="btn ghost" type="button" data-net="leave">Disconnect</button></div>';
-    if(lobbyPhase&&!canStart)h+='<p class="small">'+(mode==='ffa'?'FFA needs at least two combatants. Add a bot or wait for another player.':mode==='bomb'&&!(L.bomb&&L.bomb.supported)?'Bomb Defusal requires a validated A/B arena.':'Each team needs at least one player.')+'</p>';
+    if(mode==='deathmatch'||mode==='ffa')h+='<div class="srow"><span class="lb">Match time</span><div class="seg">'+[[180,'3:00'],[300,'5:00'],[600,'10:00'],[900,'15:00']].map(function(v){return '<button type="button" data-net="time" data-v="'+v[0]+'" aria-pressed="'+(L.time===v[0])+'"'+(canEdit?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
+    else if(mode!=='bomb') h+='<div class="srow"><span class="lb">Round time</span><div class="seg">'+[[60,'1:00'],[100,'1:40'],[150,'2:30'],[180,'3:00']].map(function(v){return '<button type="button" data-net="time" data-v="'+v[0]+'" aria-pressed="'+(L.time===v[0])+'"'+(canEdit?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';
+    if(host) h+='<div class="setfoot"><button class="btn" type="button" data-net="start"'+(canEdit&&canStart&&!dirty?'':' disabled')+'>'+(coop?(mode==='infection'?'Start infection':'Start run'):mode==='bomb'?'Start Bomb Defusal':mode==='ffa'?'Start Free-for-all':'Start match')+'</button>'+(lobbyPhase?'':'<button class="btn ghost" type="button" data-net="endmatch">End match</button>')+'</div>';
+    if(host&&lobbyPhase&&!canStart)h+='<p class="small">'+(mode==='ffa'?'FFA needs at least two combatants. Add a bot or wait for another player.':mode==='bomb'&&!(L.bomb&&L.bomb.supported)?'Bomb Defusal requires a validated A/B arena.':'Each team needs at least one player.')+'</p>';
     if(MP.err)h+='<p class="small mp-err" role="alert">'+esc(MP.err)+'</p>';
     return h;
   }
@@ -13262,7 +13346,7 @@ function mpPanel(head) {
   }
   if(mpLocalHostOwned)h+='<div class="setfoot"><button type="button" class="btn ghost" data-net="stop-local">Stop Hosting</button></div>';
   var me = mpMe(), isHost = !!(me && me.host), lobbyPhase = L.phase === 'lobby', col = ['', ''], cnt = [0, 0];
-  if(isHost)return mpHostRouteHtml(h,L,SL82_HOST_SUBROUTE);
+  if (isHost || SL82_HOST_SUBROUTE === 'rules' || SL82_HOST_SUBROUTE === 'maps') return mpHostRouteHtml(h,L,SL82_HOST_SUBROUTE);
   L.players.forEach(function (p) {
     if (p.team !== 0 && p.team !== 1) return; cnt[p.team]++;
     col[p.team] += mpRow(p);
@@ -13285,20 +13369,7 @@ function mpPanel(head) {
     h += '<div class="mp-team" style="--tc:' + tm.color + '"><h3 style="color:' + tm.color + '">' + tm.name + ' · ' + cnt[t] + '</h3>' + '<div class="mp-roster">' + (col[t] || '<small>Empty</small>') + '</div><button class="btn ghost" type="button" data-net="team" data-v="' + t + '"' + (mine || !lobbyPhase ? ' disabled' : '') + '>' + (mine ? 'Your team' : 'Join ' + tm.short) + '</button></div>';
   });
   if (!coop && L.mode!=='ffa') h += '</div>';
-  if (isHost) {
-    h += '<div class="srow"><span class="lb">Starting cash<small>Per player at the start of each match · host setting</small></span><div class="seg">' + [[800,'$800'],[2000,'$2,000'],[5000,'$5,000'],[9000,'$9,000']].map(function (v) { return '<button type="button" data-net="cash" data-v="' + v[0] + '" aria-pressed="' + ((L.cash || 800) === v[0]) + '"' + (lobbyPhase ? '' : ' disabled') + '>' + v[1] + '</button>'; }).join('') + '</div></div>';
-    h += '<div class="srow"><span class="lb">Mode</span><div class="seg"><button type="button" data-net="mode" data-v="versus" aria-pressed="' + (L.mode==='versus') + '"' + (lobbyPhase ? '' : ' disabled') + '>Tactical</button><button type="button" data-net="mode" data-v="deathmatch" aria-pressed="' + (L.mode==='deathmatch') + '"' + (lobbyPhase ? '' : ' disabled') + '>Team Deathmatch</button><button type="button" data-net="mode" data-v="ffa" aria-pressed="' + (L.mode==='ffa') + '"' + (lobbyPhase ? '' : ' disabled') + '>Free-for-all</button><button type="button" data-net="mode" data-v="bomb" aria-pressed="' + (L.mode==='bomb') + '"' + (lobbyPhase ? '' : ' disabled') + '>Bomb Defusal</button><button type="button" data-net="mode" data-v="outbreak" aria-pressed="' + (L.mode==='outbreak') + '"' + (lobbyPhase ? '' : ' disabled') + '>Co-op Outbreak</button><button type="button" data-net="mode" data-v="infection" aria-pressed="' + (L.mode==='infection') + '"' + (lobbyPhase ? '' : ' disabled') + '>Infection</button></div></div>' +
-      '<div class="srow"><span class="lb">Next match<small>Start the next match automatically</small></span><div class="seg"><button type="button" data-net="auto" data-v="1" aria-pressed="' + !!L.auto + '">Auto</button><button type="button" data-net="auto" data-v="0" aria-pressed="' + !L.auto + '">Back to lobby</button></div></div>';
-    var selectedMap=(L.maps||[]).find(function(m){return m[0]===L.map;});
-    h += '<details class="srow wide mp-map-details"><summary><span class="lb">Map · <b>'+esc(selectedMap?selectedMap[1]:L.map)+'</b><small>'+(L.mode==='bomb'?L.maps.length+' Bomb-compatible arenas · A/B bot routes checked':'Choose from '+L.maps.length+' available arenas')+' · tap to change</small></span></summary><div class="mappick">' + L.maps.map(function (m) { return '<button type="button" class="mp" data-net="map" data-v="' + m[0] + '" aria-pressed="' + (m[0] === L.map) + '"' + (lobbyPhase ? '' : ' disabled') + '><b>' + esc(m[1]) + '</b><span>' + esc(m[2]) + '</span>' + (L.mode === 'bomb' ? '<em>A/B sites · routes checked</em>' : '') + '</button>'; }).join('') + '</div></details>' +
-      mpBotsHtml(L, coop, true, lobbyPhase) +
-      (coop||L.mode==='deathmatch'||L.mode==='ffa'||L.mode==='bomb' ? '' : '<div class="srow"><span class="lb">Rounds to win</span><div class="seg">' + [1, 3, 5, 8, 10].map(function (v) { return '<button type="button" data-net="rounds" data-v="' + v + '" aria-pressed="' + (L.rounds === v) + '"' + (lobbyPhase ? '' : ' disabled') + '>' + v + '</button>'; }).join('') + '</div></div>') +
-      (L.mode==='deathmatch'||L.mode==='ffa'?'<div class="srow"><span class="lb">Kill target</span><div class="seg">'+[10,20,30,50].map(function(v){return '<button type="button" data-net="kills" data-v="'+v+'" aria-pressed="'+(L.kills===v)+'"'+(lobbyPhase?'':' disabled')+'>'+v+'</button>';}).join('')+'</div></div>':'') +
-      (L.mode==='bomb'?(function(){var b=(L.bomb&&L.bomb.settings)||{bestOf:7,roundSeconds:90,bombSeconds:35,plantSeconds:4,defuseSeconds:6};return '<details class="mp-bomb-settings"><summary><b>Bomb rules</b><small>Best of '+b.bestOf+' · '+Math.floor(b.roundSeconds/60)+':'+('0'+b.roundSeconds%60).slice(-2)+' · fuse '+b.bombSeconds+'s · plant '+b.plantSeconds+'s · defuse '+b.defuseSeconds+'s · tap to edit</small></summary><div class="seg">'+[['bestOf','Best of',[[3,'3'],[5,'5'],[7,'7'],[9,'9']] ],['roundSeconds','Round',[[60,'1:00'],[90,'1:30'],[120,'2:00'],[180,'3:00']] ],['bombSeconds','Fuse',[[20,'20s'],[35,'35s'],[45,'45s'],[60,'60s']] ],['plantSeconds','Plant',[[3,'3s'],[4,'4s'],[6,'6s'],[8,'8s']] ],['defuseSeconds','Defuse',[[4,'4s'],[6,'6s'],[8,'8s'],[10,'10s']] ]].map(function(row){return '<div class="srow"><span class="lb">'+row[1]+'</span><div class="seg">'+row[2].map(function(v){return '<button type="button" data-net="bomb" data-k="'+row[0]+'" data-v="'+v[0]+'" aria-pressed="'+(b[row[0]]===v[0])+'"'+(lobbyPhase?'':' disabled')+'>'+v[1]+'</button>';}).join('')+'</div></div>';}).join('')+'</div></details><p class="small">'+(L.bomb&&L.bomb.supported?'A/B sites validated for this map.':'Bomb mode unavailable on this map: '+esc(L.bomb&&L.bomb.unsupportedReason||'map site validation pending'))+'</p>';})():'') +
-      '<div class="srow"><span class="lb">' + (L.mode==='deathmatch'||L.mode==='ffa'?'Match time':'Round time') + '</span><div class="seg">' + (L.mode==='deathmatch'||L.mode==='ffa'?[[180,'3:00'],[300,'5:00'],[600,'10:00'],[900,'15:00']]:[[60,'1:00'],[100,'1:40'],[150,'2:30'],[180,'3:00']]).map(function (v) { return '<button type="button" data-net="time" data-v="' + v[0] + '" aria-pressed="' + (L.time === v[0]) + '"' + (lobbyPhase ? '' : ' disabled') + '>' + v[1] + '</button>'; }).join('') + '</div></div>' +
-      '<div class="setfoot"><button class="btn" type="button" data-net="start"' + (lobbyPhase && canHostStart ? '' : ' disabled') + '>' + (coop ? (L.mode==='infection'?'Start infection':'Start run') : L.mode==='bomb'?'Start Bomb Defusal':L.mode==='ffa'?'Start Free-for-all':'Start match') + '</button>' + (lobbyPhase ? '' : '<button class="btn ghost" type="button" data-net="endmatch">End match</button>') + '<button class="btn ghost" type="button" data-net="leave">Disconnect</button></div>' +
-      (lobbyPhase && !canHostStart ? (L.mode==='ffa'?'<p class="small">FFA needs at least two combatants. Add a bot or wait for another player.</p>':L.mode==='bomb'&&!(L.bomb&&L.bomb.supported)?'<p class="small">Bomb Defusal cannot start until this map has validated A/B objective sites.</p>':'<p class="small">Each team needs at least one player.</p>') : '');
-  } else {
+  {
     var mp0 = L.maps.filter(function (m) { return m[0] === L.map; })[0];
     h += mpBotsHtml(L, coop, false, lobbyPhase) + '<p class="small">' + (L.mode==='infection'?'Zombie Infection':L.mode==='ffa'?'Free-for-all':L.mode==='bomb'?'Bomb Defusal':coop?'Co-op Outbreak':L.mode==='deathmatch'?'Team Deathmatch':'Tactical') + ' · Map: <b>' + esc(mp0 ? mp0[1] : L.map) + '</b>' + (coop ? '' : ' · '+(L.mode==='bomb'?'best of '+((L.bomb&&L.bomb.settings&&L.bomb.settings.bestOf)||7):'first to '+(L.mode==='deathmatch'||L.mode==='ffa'?L.kills+' kills':L.rounds+' rounds'))+' · '+Math.floor(L.time / 60) + ':' + ('0' + L.time % 60).slice(-2)) + ' · start cash ' + money(L.cash || 800) + (lobbyPhase ? '. Waiting for the host to start.' : '. Match in progress.') + '</p><div class="setfoot"><button class="btn ghost" type="button" data-net="leave">Disconnect</button></div>';
   }
@@ -13417,6 +13488,7 @@ function mpScanLanHosts(manual) {
 }
 function mpAction(b) {
   var a = b.getAttribute('data-net'), v = b.getAttribute('data-v');
+  if (mpRulesAction(a, v, b.getAttribute('data-k'))) return;
   if(a==='create-local'){mpCreateLocalHost();return;}
   if(a==='find-local'){if(mpNativeLan())location.href='sightlinelan://find';else mpEnsureNetwork('find');return;}
   if(a==='choose-network'){mpChooseNetwork(b.getAttribute('data-host'));return;}
@@ -13443,7 +13515,7 @@ function mpAction(b) {
   else if (a === 'endmatch') mpSend({ t: 'endmatch' });
 }
 $('.mn-main').addEventListener('input', function (e) { if (e.target.id === 'mp-name') MP.name = e.target.value; else if (e.target.id === 'mp-addr') MP.addr = e.target.value; });
-$('.mn-main').addEventListener('change', function (e) { var k = e.target.getAttribute('data-bot-count'); if (k) { var b = {}; b[k] = +e.target.value; mpSend({ t: 'cfg', bots: b }); } });
+$('.mn-main').addEventListener('change', function (e) { var k = e.target.getAttribute('data-bot-count'); if (k && !mpRulesAction('bots', e.target.value, k)) { var b = {}; b[k] = +e.target.value; mpSend({ t: 'cfg', bots: b }); } });
 $('.mn-main').addEventListener('keydown', function (e) { if (e.code === 'Enter' && (e.target.id === 'mp-name' || e.target.id === 'mp-addr')) { MP.name = $('#mp-name').value; MP.addr = $('#mp-addr').value; mpConnect(); } });
 if (/[?&]debug\b/.test(location.search)) window.__sl = { MP: MP, P: P, camera: camera, OB: OB, mpUpdate: mpUpdate, scene: scene, get state() { return state; }, get owned() { return owned; }, get cur() { return cur; }, get M() { return M; }, get roundT() { return roundT; }, ammo: function () { return ammo; }, bots: function () { return bots; }, mates: function () { return mates; }, specUnit: specUnit, setView: function (y, p) { P.yaw = y; P.pitch = p; }, tryFire: tryFire, setWeapon: setWeapon, buy: buy, losClear: losClear, scoreHtml: mpScoreHtml, canBuy: canBuyNow, press: inputEvent, prepareWeaponQA: function (id) { P.alive=true;P.hp=100;state='live';owned[id]=true;var w=WEAPONS[id];ammo[id]={mag:w.mag,res:w.reserve};setWeapon(id); }, weaponIds: function () { return Object.keys(WEAPONS); }, weaponInfo: function (id) { var w=WEAPONS[id]; return w?{mag:w.mag,reserve:w.reserve,reload:w.reload,melee:!!w.melee}:null; }, fpWeaponStatus: function (id) { var g=guns[id],meshes=0,visible=0; if(g)g.traverse(function(n){if(!n.isMesh)return;var mats=Array.isArray(n.material)?n.material:[n.material];if(mats.some(function(m){return m===mGlove||m===mSleeve||m&&m.userData&&m.userData.sightlineFPArmPart;})){meshes++;if(n.visible)visible++;}}); return {weapon:id,className:fpGripClass(id),renderer:'legacy-weapon-viewmodel',legacyArmMeshes:meshes,visibleArmMeshes:visible,visible:!!(g&&g.visible)};}, startReload: startReload, resetReloadForQA: function () { reloading=0;scoped=false; }, setAmmoForQA: function (id,mag,res) { if(ammo[id]){ammo[id].mag=mag;ammo[id].res= res;} }, characterQA: { buildRig: buildRig, bakeOp: bakeOp, makeUnit: makeUnit, ensureWorldWeapon: ensureWorldWeapon, poseWorldArms: poseWorldArms, hideLocalViewModel: function () { qaHideFPViewmodel=true;Object.keys(guns).forEach(function(k){if(guns[k])guns[k].visible=false;}); }, operators: function () { return ROSTER.red.concat(ROSTER.blue); }, selectableOperators: function () { return OPS.slice(); }, weaponSpecs: function () { return WEAPONS; }, weaponMeta: function () { return WORLD_WEAPON_META; }, weaponProfiles: function () { return WORLD_WEAPON_PRESENTATION; }, blueGearAudit: function () { return ROSTER.blue.map(function (op) { var d=window.SightlineClaudeCharacterV128.designFor(op); return { id:op.id, role:op.role, head:d.head, helmet:d.helm, sleeves:d.sleeves, gloves:d.gloves, vest:d.kit.vest, pack:d.kit.pack, extras:d.kit.extras.slice() }; }); }, infected: allZOps } };
 
@@ -13894,7 +13966,7 @@ function frame(now) {
   if (!renderCapAllows(now, effectiveRenderCap(cap, rafHzBest, rafCount))) return;
   if (state === 'paused') { if (pausedDrawn) return; pausedDrawn = true; } else pausedDrawn = false;
   lastRender = now;
-  if(typeof LAN_DIAG!=='undefined'&&LAN_DIAG)LAN_DIAG.frame(now,MP.on&&(state==='live'||state==='roundend'));
+  if (LAN_DIAG) { LAN_DIAG.frame(now, MP.on && (state === 'live' || state === 'roundend')); LAN_DIAG.lobbyFrame(now, mpConnected() && state === 'idle' && menuOpen()); }
   var raw = Math.max(0, now - last), dt = Math.min(0.05, raw / 1000); last = now;
   sampleFrame(raw); if (inPlay) { fpsN++; fpsT += raw / 1000; }
   if (fpsT >= 0.5) readFrameStats();
@@ -15196,6 +15268,9 @@ html body.sl-lobby-screen[data-sl-route] #ov-start .mn-tab:active,html body.sl-l
  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-brand { display:none!important; }
 }
+.sl-lan-setup-nav { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:8px 0; }
+.sl-lan-setup-nav > span { flex:1 0 100%; }
+html.touch-device #pn-dyn:has(.sl-lan-setup-nav) :is(button,summary,.mp-in) { min-height:44px; }
 /* Keep the mobile lobby inside the safe area and leave each subtab reachable. */
 html.touch-device body.sl-lobby-screen[data-sl-route=play] #ov-start #mn-context { display:block!important; padding-block:4px!important; }
 html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-main {

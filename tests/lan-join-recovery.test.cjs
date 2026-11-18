@@ -74,10 +74,12 @@ test('real host HTTP, browser-origin upgrade, v2 join, gameplay exchange and res
             const p={ws:new WebSocket('ws://127.0.0.1:'+PORT+'/ws'),events:[]};peers.push(p);
             p.ws.onmessage=e=>{const m=JSON.parse(e.data);observeProtocolV2(p,m);p.events.push(m);if(m.t==='sp')p.spawn=m;if(m.t==='ping'){const pong=()=>{if(p.ws.readyState===WebSocket.OPEN)p.ws.send(JSON.stringify({t:'pong',s:m.s}));};if(i===1)setTimeout(pong,95);else pong();}};
             await new Promise((resolve,reject)=>{p.ws.onopen=resolve;p.ws.onerror=reject;});
-            p.ws.send(JSON.stringify({...protocolHello('JoinRecovery'+i),diagnostics:true}));await until(()=>p.session);
+            p.ws.send(JSON.stringify({...protocolHello('JoinRecovery'+i),diagnostics:true,lobbyPingUpdates:i===0}));await until(()=>p.session);
         }
         assert.equal(peers[0].events.find(m=>m.t==='welcome').host,true);
         assert.equal(peers[1].events.find(m=>m.t==='welcome').host,false);
+        await until(()=>peers[0].events.some(m=>m.t==='lobbyPings' && m.rows.length===2));
+        assert(!peers[1].events.some(m=>m.t==='lobbyPings'));
         sendProtocolV2(peers[0],{t:'cfg',mode:'deathmatch'});
         await until(()=>peers[0].events.some(m=>m.t==='lobby'&&m.mode==='deathmatch'));
         sendProtocolV2(peers[1],{t:'start'});
@@ -102,6 +104,8 @@ test('real host HTTP, browser-origin upgrade, v2 join, gameplay exchange and res
         await until(()=>peers.every(p=>p.events.some(m=>m.t==='ping'&&m.diagnostics?.phase==='live'&&m.diagnostics.rttMs!=null)));
         const samples=peers.map(p=>p.events.find(m=>m.t==='ping'&&m.diagnostics?.phase==='live'&&m.diagnostics.rttMs!=null).diagnostics);
         assert(samples[1].rttMs>=85 && samples[1].rttMs>samples[0].rttMs,samples);
+        assert(samples.every(s=>Number.isFinite(s.transportRttMs)&&s.transportRttMs>=0));
+        assert(samples.every(s=>s.tickGapWindowMaxMs>=s.tickGapMs));
         assert(samples.every(s=>s.bundle===status.bundle&&s.server===status.server));
         assert(samples.every(s=>s.tickWorkMs>=0&&s.tickGapMs>0&&s.snapshotCadenceMs>0&&s.snapshotFrames>0));
         console.log('Loopback telemetry with 95 ms guest pong delay: '+JSON.stringify(samples));

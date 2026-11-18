@@ -202,6 +202,11 @@ class Conn {
       }
       if (op === 9) { this.send(10, pl); if (this.closed) return; }
       if (op === 10) {
+        if (this.transportProbe && pl.equals(this.transportProbe.token)) {
+          this.transportRttMs = performance.now() - this.transportProbe.started;
+          this.transportRttAt = performance.now();
+          this.transportProbe = null;
+        }
         if (++frameCount >= WS_FRAME_BATCH && this.buf.length >= 2) { this.scheduleDrain(); return; }
         continue;
       }
@@ -424,6 +429,23 @@ function lobbyMsg() {
     players: [...players.values()].map(p => ({ id: p.id, name: p.name, team: p.team, infected: isInfection() && p.infected ? 1 : 0, host: p.host, ping: p.bot ? 0 : Math.round(p.rtt), op: p.op, skin: p.skin || 'default', finishes: p.finishes || {}, bot: p.bot ? 1 : 0, skill: p.bot ? p.skill : undefined })) };
 }
 function pushLobby() { bcast(lobbyMsg()); }
+function pushLobbyPings() {
+  const peers = realPlayers();
+  const pings = frame(1, Buffer.from(JSON.stringify({
+    t: 'lobbyPings', rows: peers.map(p => [p.id, Math.round(p.rtt)])
+  }), 'utf8'));
+  let legacy;
+  for (const p of peers) {
+    if (!p.c || p.c.closed) continue;
+    if (p.lobbyPingUpdates) {
+      // Ping labels are replaceable. Leave queued gameplay/control data ahead of them.
+      if (p.c.backlog === 0) p.c.sendFrame(pings);
+    } else {
+      legacy ||= frame(1, Buffer.from(JSON.stringify(lobbyMsg()), 'utf8'));
+      p.c.sendFrame(legacy);
+    }
+  }
+}
 function scoreMsg() {
   return { t: 'sc', score: G.score, round: G.round, kills: G.kills, ffa: isFFA() ? [...(FFA.match?.scores || new Map())].sort((a,b)=>b[1]-a[1]).map(([id,k])=>({id,k})) : undefined,
     objective: isBomb() ? bombStateMessage() : undefined,
@@ -2151,7 +2173,15 @@ function onMessage(p, raw) {
       if(!p.finishes)p.finishes={};if(p.finishes[key]===ix)return;
       p.finishes[key]=ix;pushLobby();return;
     }
-    case 'pong': { if (m.s !== p.pingSent) return; const rtt = now() - p.pingSent; p.pingSent = 0; if (rtt >= 0 && rtt < 5000) {p.rtt = p.rtt ? p.rtt * 0.7 + rtt * 0.3 : rtt;p.rttAt=now(); if (p.diagnostics) p.lastRttMs=rtt;} return; }
+    case 'pong': {
+      if (!p.pingSent || m.s !== p.pingSent) return;
+      const rtt = performance.now() - p.pingStartedMs;
+      p.pingSent = 0;
+      p.rtt = p.rtt ? p.rtt * 0.7 + rtt * 0.3 : rtt;
+      p.rttAt = now();
+      if (p.diagnostics) p.lastRttMs = rtt;
+      return;
+    }
     case 'team': {
       if (G.phase !== 'lobby' || groupMode()) return; const t = m.team === 1 ? 1 : 0; if (t === p.team) return;
       p.team = t; p.op = pickOp(t); syncBots(); pushLobby(); return;
@@ -2348,6 +2378,7 @@ function recordSample(samples, value, cursor) {
   return (cursor + 1) % 2400;
 }
 function percentile(a,p) { if(!a.length)return 0;const s=a.slice().sort((a,b)=>a-b);return r2(s[Math.min(s.length-1,Math.floor(s.length*p))]); }
+let heartbeatTickGapMax = 0, heartbeatTickWorkMax = 0;
 function tick() {
   const t0 = process.hrtime.bigint();
   try { tickBody(); } catch (e) { stats.tickErrors++; log('tick error', e && e.stack || e); }
@@ -2361,6 +2392,8 @@ function tick() {
     recentSlowGaps.push({ at: Date.now(), gapMs: stats.lastGap, tickMs: r2(ms), previousTickMs:r2(previousTickWorkMs), tickComponents:components&&{...components}, previousComponents:previousTickComponents, phase: G.phase, mode: G.mode, bots: players.size - humanCount(), zombies: OB.zs.size, heapUsed: process.memoryUsage().heapUsed, lastGC: eventLoopDiagnostics.lastGC });
     if (recentSlowGaps.length > 16) recentSlowGaps.shift();
   }
+  heartbeatTickGapMax = Math.max(heartbeatTickGapMax, stats.lastGap || 0);
+  heartbeatTickWorkMax = Math.max(heartbeatTickWorkMax, ms);
   previousTickWorkMs=ms;previousTickComponents=components?{...components}:null;
   tickSampleWrite = recordSample(tickSamples, ms, tickSampleWrite);
 }
@@ -2490,19 +2523,29 @@ if (require.main === module) {
       if (t - p.c.lastRx > 20000) { log('timeout:', p.name); p.c.kill(); return; }
       p.pingSent = now();
       const ping = { t: 'ping', s: p.pingSent };
+      const probeQueue = p.c.backlog;
       if (p.diagnostics) ping.diagnostics = {
         phase: G.phase, bundle: HOST_BUNDLE_SHA256, server: HOST_SERVER_SHA256,
         rttMs: p.rttAt && t - p.rttAt <= 5000 ? p.lastRttMs : null,
         displayedRttMs: p.rttAt && t - p.rttAt <= 5000 ? Math.round(p.rtt) : null,
+        transportRttMs: performance.now() - (p.c.transportRttAt ?? -Infinity) <= 5000 ? r2(p.c.transportRttMs) : null,
+        tickGapWindowMaxMs: heartbeatTickGapMax, tickWorkWindowMaxMs: r2(heartbeatTickWorkMax),
         tickWorkMs: r2(previousTickWorkMs), tickGapMs: stats.lastGap ?? null,
         snapshotCadenceMs: TICK_MS * snapshotEveryNow(),
         snapshotFrames: p.c.snapshotFrames, snapshotSkipped: p.c.snapshotSkipped,
         outboundQueueBytes: p.c.backlog, snapshotQueuePeakBytes: p.c.snapshotQueuePeakBytes
       };
+      p.pingStartedMs = performance.now();
       send(p, ping);
+      if (p.diagnostics && probeQueue === 0 && !p.c.closed) {
+        const token = crypto.randomBytes(8);
+        p.c.transportProbe = { token, started: performance.now() };
+        p.c.send(9, token);
+      }
       n++;
     });
-    if (n && G.phase === 'lobby') pushLobby();
+    if (n && G.phase === 'lobby') pushLobbyPings();
+    heartbeatTickGapMax = heartbeatTickWorkMax = 0;
   }, 2000);
 }
 
@@ -2618,6 +2661,7 @@ server.on('upgrade', (req, sock) => {
       if (players.size >= MAX_TOTAL) { const victim = [...players.values()].filter(p => p.bot).sort((a,b) => (a.alive-b.alive) || (b.id-a.id))[0]; if (victim) removeBot(victim); else { c.text(JSON.stringify({t:'err',msg:'Server is full.'})); return c.kill(); } }
       me = addPlayer(c, m.name); releaseHelloSlot(); ROOM_OPENED=true; log('joined:', me.name, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
       me.diagnostics = !RELEASE_TLS && m.diagnostics === true;
+      me.lobbyPingUpdates = m.lobbyPingUpdates === true;
       me.protocol = MULTIPLAYER_PROTOCOL; me.session = crypto.randomBytes(16).toString('hex'); me.lastActionSeq = 0;
       send(me, { t: 'welcome', protocol: MULTIPLAYER_PROTOCOL, features: negotiation.features, session: me.session, id: me.id, host: me.host, max: MAX_PLAYERS });
       syncBots(); pushLobby();

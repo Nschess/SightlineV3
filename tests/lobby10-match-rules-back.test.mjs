@@ -103,3 +103,39 @@ test('Play shortcuts and Deploy reach the authoritative LAN rules route in both 
     assert.equal(context.SL82_HOST_SUBROUTE, 'multiplayer');
   }
 });
+
+test('Connected host keeps staged rule edits across Maps and Lobby and applies one config', () => {
+  for (const page of Object.values(pages)) {
+    const { context, transitions } = routeHarness(page, { connected: true });
+    const start = page.indexOf('function mpRulesDraft()');
+    const end = page.indexOf('function mpBombRulesHtml(', start);
+    const sent = [];
+    Object.assign(context, {
+      MP: { host: true, session: 'host-session', lobby: { phase: 'lobby', cash: 800, bots: { t0: 0 } } },
+      mpSend: packet => sent.push(JSON.parse(JSON.stringify(packet))), mpRefreshPanel() {}
+    });
+    vm.runInNewContext(page.slice(start, end), context);
+    context.sl82GoRoute('maps', false);
+    assert.equal(context.SL82_HOST_SUBROUTE, 'maps');
+    context.sl82GoRoute('rules', false);
+    context.mpRulesAction('cash', '2000');
+    context.mpRulesAction('bots', '2', 't0');
+    assert.equal(sent.length, 0);
+    assert.equal(context.MP.lobby.cash, 800);
+    assert.equal(context.mpRulesView(context.MP.lobby, context.MP.ruleEdits.patch).cash, 2000);
+    context.sl82ReturnFromRules();
+    context.sl82GoRoute('rules', false);
+    assert.equal(context.MP.ruleEdits.patch.cash, 2000);
+    assert(context.mpRulesAction('start'));
+    context.mpRulesAction('cancel-rules');
+    assert.deepEqual(Object.keys(context.MP.ruleEdits.patch), []);
+    context.mpRulesAction('cash', '5000');
+    context.mpRulesAction('apply-rules');
+    assert.deepEqual(sent, [{ t: 'cfg', cash: 5000 }]);
+    assert(context.mpRulesMatch({ cash: 5000 }, context.MP.ruleEdits.patch));
+    context.MP.host = false;
+    assert.equal(context.mpCanEditRules(), false);
+    assert.equal(context.mpRulesAction('cash', '9000'), false);
+    assert(transitions.every(({ tab }) => tab === 'net'));
+  }
+});
