@@ -17,8 +17,6 @@ jobs:
   diagnostic-apk:
     runs-on: windows-latest
     timeout-minutes: 50
-    env:
-      GRADLE_USER_HOME: ${{ runner.temp }}\sightline-gradle-home
     steps:
       - name: Check out feature checkpoint
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -72,6 +70,8 @@ jobs:
 
       - name: Build diagnostic APK
         shell: pwsh
+        env:
+          GRADLE_USER_HOME: ${{ runner.temp }}\sightline-gradle-home
         run: |
           $ErrorActionPreference = 'Stop'
           Push-Location AndroidProject
