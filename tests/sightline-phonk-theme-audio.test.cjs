@@ -80,7 +80,7 @@ test('Audio settings persist mute and control the mixer and menu music in both c
     const context = {
       G: settings, AC: {}, soundOn: true, master: gain(), busFx: gain(), busUi: gain(), slAmb: null,
       touchMode: true, $: () => button, objOf: () => settings, persist: () => { saved = { ...settings }; },
-      syncLobbyMusic() { musicUpdates++; }, slAmbTick() { ambienceUpdates++; }
+      syncLobbyMusic() { musicUpdates++; }, syncMenuAmbience() { ambienceUpdates++; }
     };
     vm.runInNewContext([fn('applyAudio'),fn('toggleSound'),fn('setVal'),fn('lobbyMusicLevel')].join('\n'),context);
     context.applyAudio();

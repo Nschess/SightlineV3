@@ -99,9 +99,10 @@ test('real host HTTP, browser-origin upgrade, v2 join, gameplay exchange and res
         await delay(120);
         const active=await(await fetch('http://127.0.0.1:'+PORT+'/status')).json();assert(active.stats.shots>=2);assert.equal(active.players,2);
         assert(peers.every(p=>p.events.some(m=>m.t==='s')));
-        await until(()=>peers.every(p=>p.events.some(m=>m.t==='ping'&&m.diagnostics?.rttMs!=null)));
-        const samples=peers.map(p=>p.events.find(m=>m.t==='ping'&&m.diagnostics?.rttMs!=null).diagnostics);
+        await until(()=>peers.every(p=>p.events.some(m=>m.t==='ping'&&m.diagnostics?.phase==='live'&&m.diagnostics.rttMs!=null)));
+        const samples=peers.map(p=>p.events.find(m=>m.t==='ping'&&m.diagnostics?.phase==='live'&&m.diagnostics.rttMs!=null).diagnostics);
         assert(samples[1].rttMs>=85 && samples[1].rttMs>samples[0].rttMs,samples);
+        assert(samples.every(s=>s.bundle===status.bundle&&s.server===status.server));
         assert(samples.every(s=>s.tickWorkMs>=0&&s.tickGapMs>0&&s.snapshotCadenceMs>0&&s.snapshotFrames>0));
         console.log('Loopback telemetry with 95 ms guest pong delay: '+JSON.stringify(samples));
         peers[1].ws.close();await until(()=>peers[1].ws.readyState===WebSocket.CLOSED);

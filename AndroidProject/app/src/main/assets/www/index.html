@@ -3832,6 +3832,7 @@ function saveMobileHud(){try{localStorage.setItem(MOBILE_HUD_KEY,JSON.stringify(
 function initMobileHudPositionEditor(){var pad=document.getElementById('touch');if(!pad||pad.dataset.hudEditor==='1')return;pad.dataset.hudEditor='1';var drag=null;function finish(e){if(!drag||!e||e.pointerId!==drag.pointerId)return;drag=null;saveMobileHud();}pad.addEventListener('pointerdown',function(e){if(!mobileHud.editing)return;var el=e.target&&e.target.closest?e.target.closest('.tb:not(#tb-menu)'):null;if(!el||el.hidden||el.disabled)return;e.preventDefault();e.stopImmediatePropagation();drag={pointerId:e.pointerId,el:el};try{el.setPointerCapture(e.pointerId);}catch(_capture){}},true);pad.addEventListener('pointermove',function(e){if(!drag||e.pointerId!==drag.pointerId)return;e.preventDefault();e.stopImmediatePropagation();var r=pad.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width),y=(e.clientY-r.top)/Math.max(1,r.height),q=clampMobileHudPoint(drag.el,pad,x,y);mobileHud.positions[drag.el.id]=q;applyHudPosition(drag.el,drag.el.id);},true);['pointerup','pointercancel','lostpointercapture'].forEach(function(type){pad.addEventListener(type,function(e){if(!drag||e.pointerId!==drag.pointerId)return;e.preventDefault();e.stopImmediatePropagation();finish(e);},true);});}
 initMobileHudPositionEditor();
 /* ---------- display, audio, crosshair and HUD settings ---------- */
+function slLegacyMenuAmbience() { try { return localStorage.getItem('sl-ambient') !== '0'; } catch (e) { return true; } }
 var DEF_G = {
   mobileFov: 75, // Independent horizontal gameplay FOV; desktop S.fov stays unchanged.
   renderScale: touchMode ? 85 : 100, shadows: touchMode ? 'off' : 'low', drawDist: 100, brightness: 100, viewBob: 100, shake: 100, flashAmt: 100, fps: false,
@@ -11849,6 +11850,7 @@ function applyXh() {
     if (pv) e.style.setProperty('--gap', (G.xhGap + (pv === 'move' ? (G.xhDynamic ? 24 : 4) : 4)) + 'px');
   });
 }
+var syncMenuAmbience = function () {};
 function applyAudio() {
   soundOn = !G.muted;
   if (AC) { master.gain.value = soundOn ? G.master / 100 : 0; busFx.gain.value = G.sfxVol / 100; busUi.gain.value = G.uiVol / 100; }
@@ -11858,8 +11860,7 @@ function applyAudio() {
     shortcut.textContent = soundOn ? 'Sound on' : 'Sound off';
     shortcut.setAttribute('aria-pressed', String(soundOn));
   }
-  if (slAmb && AC) slAmb.g.gain.setTargetAtTime(slAmbLevel(), AC.currentTime, .1);
-  slAmbTick();
+  syncMenuAmbience();
   syncLobbyMusic();
 }
 function applyHud() {
@@ -12047,7 +12048,18 @@ var LAN_DIAG = (function () {
   if (!/(?:\?|&)lanDiag=1(?:&|$)/.test(location.search)) return null;
   var CAP = 7200, stopped = false, started = new Date().toISOString(), lastFrame = 0, previousHost = null;
   function ring() { return { a: new Array(CAP), n: 0, p: 0, add: function (v) { if (!Number.isFinite(v)) return; this.a[this.p] = v; this.p = (this.p + 1) % CAP; if (this.n < CAP) this.n++; }, values: function () { var out = new Array(this.n), from = (this.p - this.n + CAP) % CAP; for (var i = 0; i < this.n; i++) out[i] = this.a[(from + i) % CAP]; return out; } }; }
-  var d = { startedAt: started, enabledBy: 'URL query lanDiag=1', frameMs: ring(), wsGapMs: ring(), wsHandlerMs: ring(), snapshotGapMs: ring(), hostSnapshotGapMs: ring(), zombieStepM: ring(), zombieTurnRad: ring(), frames: 0, snapshots: 0, sequenceMissed: 0, corrections: 0, correctionMaxM: 0, correctionMaxRad: 0, zombieDiscontinuities: 0, zombieTurns: 0, zombieStepMaxM: 0, zombieTurnMaxRad: 0, correctionsRecent: [], discontinuitiesRecent: [], hostSamples: [], heartbeatSamples: [], heartbeat: function (sample) { if (stopped) return; this.heartbeatSamples.push({ atMs: performance.now(), sample: sample }); if (this.heartbeatSamples.length > 180) this.heartbeatSamples.shift(); }, fingerprints: null, errors: [], stop: function () { stopped = true; }, stopped: function () { return stopped; }, frame: function (now, active) { if (stopped || !active) { lastFrame = 0; return; } if (lastFrame) this.frameMs.add(now - lastFrame); lastFrame = now; this.frames++; }, snapshot: function (rxGap, hostGap) { if (stopped) return; if (Number.isFinite(rxGap) && rxGap >= 0) this.snapshotGapMs.add(rxGap); if (Number.isFinite(hostGap) && hostGap > 0) this.hostSnapshotGapMs.add(hostGap); this.snapshots++; }, missed: function (n) { if (!stopped && n > 0) this.sequenceMissed += n; }, correction: function (distance, radians, source) { if (stopped) return; distance = Number.isFinite(distance) ? Math.max(0, distance) : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.corrections++; this.correctionMaxM = Math.max(this.correctionMaxM, distance); this.correctionMaxRad = Math.max(this.correctionMaxRad, radians); if (this.correctionsRecent.length >= 200) this.correctionsRecent.shift(); this.correctionsRecent.push({ atMs: Math.round(performance.now()), distanceM: distance, headingRad: radians, source: source }); }, zombieStep: function (distance, radians, dt, stateCode) { if (stopped) return; distance = Number.isFinite(distance) ? distance : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.zombieStepM.add(distance); this.zombieTurnRad.add(radians); this.zombieStepMaxM = Math.max(this.zombieStepMaxM, distance); this.zombieTurnMaxRad = Math.max(this.zombieTurnMaxRad, radians); var stepLimit = Math.max(.35, 14 * Math.max(0, dt || 0) * 1.8), turnLimit = Math.max(.8, 12 * Math.max(0, dt || 0)); if (distance > stepLimit) { this.zombieDiscontinuities++; if (this.discontinuitiesRecent.length >= 300) this.discontinuitiesRecent.shift(); this.discontinuitiesRecent.push({ atMs: Math.round(performance.now()), stepM: distance, frameMs: Math.round((dt || 0) * 1000), poseState: stateCode }); } if (radians > turnLimit) this.zombieTurns++; }, host: function (s) { if (stopped || !s || !s.ok) return; if (!this.fingerprints) this.fingerprints = { bundle: s.bundle || null, server: s.server || null }; var now = new Date().toISOString(), z = s.zombiePaths || {}, nav = s.navigation || {}, bot = s.bot || {}, delta = {}; if (previousHost) Object.keys(z).forEach(function (k) { if (Number.isFinite(z[k]) && Number.isFinite(previousHost.z[k])) delta['zombiePaths.' + k] = z[k] - previousHost.z[k]; }); if (previousHost && Number.isFinite(bot.stuck) && Number.isFinite(previousHost.stuck)) delta.botStuck = bot.stuck - previousHost.stuck; this.hostSamples.push({ at: now, phase: s.phase || null, mode: s.mode || null, players: s.players, bots: s.bots, zombies: s.zombies, botStuck: Number.isFinite(bot.stuck) ? bot.stuck : null, zombiePaths: z, zombiePathDelta: delta, navigation: nav, tick: s.liveTiming || s.stats || null, peer: (s.clients || []).find(function (p) { return p.id === MP.id; }) || null, snapshot: s.snapshot || null }); if (this.hostSamples.length > 180) this.hostSamples.shift(); previousHost = { z: z, stuck: bot.stuck }; }, summary: function (r) { var a = r.values().sort(function (x, y) { return x - y; }); function p(q) { return a.length ? a[Math.min(a.length - 1, Math.ceil(a.length * q) - 1)] : null; } return { count: a.length, p50: p(.50), p95: p(.95), p99: p(.99), max: a.length ? a[a.length - 1] : null }; } };
+  var d = { startedAt: started, enabledBy: 'URL query lanDiag=1', frameMs: ring(), wsGapMs: ring(), wsHandlerMs: ring(), snapshotGapMs: ring(), hostSnapshotGapMs: ring(), zombieStepM: ring(), zombieTurnRad: ring(), frames: 0, snapshots: 0, sequenceMissed: 0, corrections: 0, correctionMaxM: 0, correctionMaxRad: 0, zombieDiscontinuities: 0, zombieTurns: 0, zombieStepMaxM: 0, zombieTurnMaxRad: 0, correctionsRecent: [], discontinuitiesRecent: [], hostSamples: [], heartbeatSamples: [], heartbeat: function (sample) {
+    if (stopped) return;
+    this.heartbeatSamples.push({ atMs: performance.now(), sample: sample });
+    if (this.heartbeatSamples.length > 180) this.heartbeatSamples.shift();
+    if (sample.bundle && sample.server) this.fingerprints = { bundle: sample.bundle, server: sample.server };
+    var el = document.getElementById('sightline-lan-diag-state');
+    if (el) {
+      var phase = sample.phase === 'lobby' ? 'LAN lobby' : 'LAN ' + (sample.phase || 'connected');
+      var rtt = Number.isFinite(sample.rttMs) ? sample.rttMs + ' ms' : 'sampling';
+      el.textContent = phase + ' · RTT ' + rtt + ' · frames ' + this.frames + ' · snapshots ' + this.snapshots;
+    }
+  }, fingerprints: null, errors: [], stop: function () { stopped = true; }, stopped: function () { return stopped; }, frame: function (now, active) { if (stopped || !active) { lastFrame = 0; return; } if (lastFrame) this.frameMs.add(now - lastFrame); lastFrame = now; this.frames++; }, snapshot: function (rxGap, hostGap) { if (stopped) return; if (Number.isFinite(rxGap) && rxGap >= 0) this.snapshotGapMs.add(rxGap); if (Number.isFinite(hostGap) && hostGap > 0) this.hostSnapshotGapMs.add(hostGap); this.snapshots++; }, missed: function (n) { if (!stopped && n > 0) this.sequenceMissed += n; }, correction: function (distance, radians, source) { if (stopped) return; distance = Number.isFinite(distance) ? Math.max(0, distance) : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.corrections++; this.correctionMaxM = Math.max(this.correctionMaxM, distance); this.correctionMaxRad = Math.max(this.correctionMaxRad, radians); if (this.correctionsRecent.length >= 200) this.correctionsRecent.shift(); this.correctionsRecent.push({ atMs: Math.round(performance.now()), distanceM: distance, headingRad: radians, source: source }); }, zombieStep: function (distance, radians, dt, stateCode) { if (stopped) return; distance = Number.isFinite(distance) ? distance : 0; radians = Number.isFinite(radians) ? Math.abs(radians) : 0; this.zombieStepM.add(distance); this.zombieTurnRad.add(radians); this.zombieStepMaxM = Math.max(this.zombieStepMaxM, distance); this.zombieTurnMaxRad = Math.max(this.zombieTurnMaxRad, radians); var stepLimit = Math.max(.35, 14 * Math.max(0, dt || 0) * 1.8), turnLimit = Math.max(.8, 12 * Math.max(0, dt || 0)); if (distance > stepLimit) { this.zombieDiscontinuities++; if (this.discontinuitiesRecent.length >= 300) this.discontinuitiesRecent.shift(); this.discontinuitiesRecent.push({ atMs: Math.round(performance.now()), stepM: distance, frameMs: Math.round((dt || 0) * 1000), poseState: stateCode }); } if (radians > turnLimit) this.zombieTurns++; }, host: function (s) { if (stopped || !s || !s.ok) return; if (!this.fingerprints) this.fingerprints = { bundle: s.bundle || null, server: s.server || null }; var now = new Date().toISOString(), z = s.zombiePaths || {}, nav = s.navigation || {}, bot = s.bot || {}, delta = {}; if (previousHost) Object.keys(z).forEach(function (k) { if (Number.isFinite(z[k]) && Number.isFinite(previousHost.z[k])) delta['zombiePaths.' + k] = z[k] - previousHost.z[k]; }); if (previousHost && Number.isFinite(bot.stuck) && Number.isFinite(previousHost.stuck)) delta.botStuck = bot.stuck - previousHost.stuck; this.hostSamples.push({ at: now, phase: s.phase || null, mode: s.mode || null, players: s.players, bots: s.bots, zombies: s.zombies, botStuck: Number.isFinite(bot.stuck) ? bot.stuck : null, zombiePaths: z, zombiePathDelta: delta, navigation: nav, tick: s.liveTiming || s.stats || null, peer: (s.clients || []).find(function (p) { return p.id === MP.id; }) || null, snapshot: s.snapshot || null }); if (this.hostSamples.length > 180) this.hostSamples.shift(); previousHost = { z: z, stuck: bot.stuck }; }, summary: function (r) { var a = r.values().sort(function (x, y) { return x - y; }); function p(q) { return a.length ? a[Math.min(a.length - 1, Math.ceil(a.length * q) - 1)] : null; } return { count: a.length, p50: p(.50), p95: p(.95), p99: p(.99), max: a.length ? a[a.length - 1] : null }; } };
   var box = document.createElement('aside'); box.id = 'sightline-lan-diag'; box.style.cssText = 'position:fixed;right:8px;top:8px;z-index:2147483000;width:min(280px,calc(100vw - 16px));padding:8px;background:rgba(8,18,24,.94);border:1px solid #55cbb8;border-radius:6px;color:#e7f2ee;font:12px/1.35 Arial,sans-serif;box-shadow:0 2px 12px #0008';
   box.innerHTML = '<strong>LAN diagnostics · opt-in</strong><div id="sightline-lan-diag-state" style="margin:5px 0">Waiting for a live LAN match.</div><button id="sightline-lan-diag-save" type="button">Download JSON</button> <button id="sightline-lan-diag-stop" type="button">Stop capture</button><div style="margin-top:5px;opacity:.8">No gameplay changes. Host heartbeat samples arrive every 2 seconds.</div>';
   document.body.appendChild(box);
@@ -14160,7 +14172,6 @@ window.__slAudio = { cue: slCue };
 
 /* ambient bed: two low sines + filtered noise with a slow swell, only on the idle lobby */
 var slAmb = null;
-function slLegacyMenuAmbience() { try { return localStorage.getItem('sl-ambient') !== '0'; } catch (e) { return true; } }
 function slAmbLevel() { return .049 * Math.max(0, Math.min(1, G.musicVol / 100)) / .75; }
 function slAmbStart() {
   if (slAmb || !AC || !noiseBuf) return;
@@ -14186,6 +14197,10 @@ function slAmbTick() {
   var want = menuOpen() && state === 'idle' && G.uiSound && soundOn && G.menuAmbience && lobbyMusicLevel() > 0 && !document.hidden && AC && AC.state === 'running';
   if (want && !slAmb) slAmbStart(); else if (!want && slAmb) slAmbStop();
 }
+syncMenuAmbience = function () {
+  if (slAmb && AC) slAmb.g.gain.setTargetAtTime(slAmbLevel(), AC.currentTime, .1);
+  slAmbTick();
+};
 setInterval(slAmbTick, 800);
 document.addEventListener('pointerdown', function () { try { if (menuOpen() && G.uiSound && soundOn) audio(); } catch (e) {} }, { passive: true });
 (function () {
@@ -15371,11 +15386,11 @@ html body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav .mn-subtab[aria-se
 html body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail{grid-template-columns:auto minmax(0,1fr) auto!important}
 html body.sl-lobby-screen[data-sl-route] #ov-start .mn-tab:active,html body.sl-lobby-screen[data-sl-route] #ov-start .mn-subtab:active{transform:scale(.96)}
 @media (orientation:landscape) and (max-height:600px) {
-  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail { display:grid!important; grid-template-columns:minmax(0,1fr)!important; }
-  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-brand { display:none!important; }
-  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav { grid-column:1/-1!important; display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; width:100%; min-width:0; gap:3px!important; padding:0!important; }
-  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab { min-height:44px!important; min-width:0; padding:0 3px!important; }
-  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail { display:grid!important; grid-row:1!important; grid-column:1!important; inset:0 0 auto 0!important; grid-template-columns:minmax(0,1fr)!important; gap:4px!important; padding:0 max(6px,env(safe-area-inset-right,0px)) 0 max(6px,env(safe-area-inset-left,0px))!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav { grid-column:1!important; display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; width:100%; min-width:0; overflow:visible!important; gap:3px!important; padding:0!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab { min-width:0; min-height:44px!important; padding:0 3px!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-brand { display:none!important; }
 }
 /* Keep the mobile lobby inside the safe area and leave each subtab reachable. */
 html.touch-device body.sl-lobby-screen[data-sl-route=play] #ov-start #mn-context { display:block!important; padding-block:4px!important; }
@@ -15393,9 +15408,6 @@ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn
 
 /* Landscape touch navigation and compact match-rule layout. */
 @media (orientation:landscape) and (max-height:600px) {
- html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail { display:grid!important; grid-row:1!important; grid-column:1!important; inset:0 0 auto 0!important; grid-template-columns:minmax(0,1fr)!important; gap:4px!important; padding:0 max(6px,env(safe-area-inset-right,0px)) 0 max(6px,env(safe-area-inset-left,0px))!important; }
- html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav { grid-column:1!important; display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; width:100%; min-width:0; overflow:visible!important; gap:3px!important; padding:0!important; }
- html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab { min-width:0; min-height:44px!important; padding:0 3px!important; }
  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
  html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn:not([hidden]) { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:max-content!important; gap:6px 10px; align-content:start; }
  html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > :not(.srow) { grid-column:1/-1; }

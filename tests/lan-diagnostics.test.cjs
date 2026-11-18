@@ -72,3 +72,21 @@ test('opt-in diagnostics summarize frames, snapshots, corrections, zombie motion
   assert.equal(d.snapshots, 2, 'stopping freezes collection');
 });
 
+
+test('Android diagnostic status and host identity update from the socket heartbeat alone', () => {
+  const c = makeContext('?join=1&lanDiag=1');
+  const d = c.LAN_DIAG;
+  d.heartbeat({ phase: 'lobby', rttMs: null, bundle: 'host-page', server: 'host-server' });
+  const status = c.__elements.get('sightline-lan-diag-state');
+  assert.match(status.textContent, /^LAN lobby · RTT sampling/);
+  d.frame(10, true);
+  d.snapshot(20, 20);
+  d.heartbeat({ phase: 'live', rttMs: 103, bundle: 'host-page', server: 'host-server' });
+  assert.equal(status.textContent, 'LAN live · RTT 103 ms · frames 1 · snapshots 1');
+  assert.equal(d.fingerprints.bundle, 'host-page');
+  assert.equal(d.fingerprints.server, 'host-server');
+  d.stop();
+  d.heartbeat({ phase: 'lobby', rttMs: 200 });
+  assert.equal(d.heartbeatSamples.length, 2);
+  assert.match(status.textContent, /103 ms/);
+});

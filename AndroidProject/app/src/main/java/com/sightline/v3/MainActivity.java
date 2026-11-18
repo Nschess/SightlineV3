@@ -52,13 +52,14 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "7f8eb00a8815293d8f2a587adff1cb23a59cd9b51b00d2264e8c5d3a82d7d624";
+    private static final String HOST_BUNDLE_SHA256 = "322e46f69c878edbc2a726e0ac443807dda23f660b8185a58468b4fcb8489bca";
+    private static final String DEV18_2_HOST_BUNDLE_SHA256 = "9bcc0b6245a6934508c9fed3315a231625eff1b8a5d2a62b96bb96cc9b7544cc";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
     private static final String RECOVERY_HOST_BUNDLE_SHA256 = "a3606ca595d6973e71720c7adbd8c03b1949d08c748249e8365d1ba14284ec5b";
     private static final String HUD51_HOST_BUNDLE_SHA256 = "1be6c08ca8ef0460971f47c6f2986634003d22197c1b0b6e6dcd824a76a30b23";
     private static boolean acceptsHostBundle(String bundle) {
-        return HOST_BUNDLE_SHA256.equals(bundle) || "94bb8ce724496ef2fc14369ced4e729d8eecfad33d8fd5e972297295a7f23736".equals(bundle) || "b618ebb0f2a56ee3e00c52943e48eb5db6ddb59117c689781d6fe755f5486c1b".equals(bundle) || V17_HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);
+        return HOST_BUNDLE_SHA256.equals(bundle) || DEV18_2_HOST_BUNDLE_SHA256.equals(bundle) || "94bb8ce724496ef2fc14369ced4e729d8eecfad33d8fd5e972297295a7f23736".equals(bundle) || "b618ebb0f2a56ee3e00c52943e48eb5db6ddb59117c689781d6fe755f5486c1b".equals(bundle) || V17_HOST_BUNDLE_SHA256.equals(bundle) || RECOVERY_HOST_BUNDLE_SHA256.equals(bundle) || HUD51_HOST_BUNDLE_SHA256.equals(bundle);
     }
     private static final Set<String> FILES = new HashSet<>(Arrays.asList(
         "index.html", "three.min.js", "mp-transport-policy.js", "vr18-v31.js", "navigation.js", "squad-tactics.js", "bot-tactics.js", "character-poses.js", "zombie-counterplay.js", "thirdperson-hands.js", "character-prototypes.js", "character-realism.js", "character-realism-v12.js", "combat-foundation.js",

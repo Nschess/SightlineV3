@@ -2491,6 +2491,7 @@ if (require.main === module) {
       p.pingSent = now();
       const ping = { t: 'ping', s: p.pingSent };
       if (p.diagnostics) ping.diagnostics = {
+        phase: G.phase, bundle: HOST_BUNDLE_SHA256, server: HOST_SERVER_SHA256,
         rttMs: p.rttAt && t - p.rttAt <= 5000 ? p.lastRttMs : null,
         displayedRttMs: p.rttAt && t - p.rttAt <= 5000 ? Math.round(p.rtt) : null,
         tickWorkMs: r2(previousTickWorkMs), tickGapMs: stats.lastGap ?? null,
