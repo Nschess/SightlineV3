@@ -13,7 +13,7 @@ const end = html.lastIndexOf('})();', next);
 assert.ok(start >= 0 && next > start && end > start, 'diagnostic initializer can be isolated');
 const initializer = html.slice(start, end + '})();'.length);
 
-function makeContext(search) {
+function makeContext(search, userAgent = 'LAN diagnostics test') {
   const elements = new Map();
   const body = { appendChild(node) { elements.set(node.id, node); } };
   const document = {
@@ -25,7 +25,7 @@ function makeContext(search) {
   class FakeBlob { constructor(parts) { blobText = String(parts[0]); } }
   const context = {
     document, location: { search, origin: 'http://127.0.0.1:8080', pathname: '/' },
-    navigator: { userAgent: 'LAN diagnostics test' }, MP: { on: true, mode: 'outbreak' },
+    navigator: { userAgent }, window: {}, MP: { on: true, mode: 'outbreak' },
     performance: { now: (() => { let n = 0; return () => ++n * 10; })() },
     Date, Math, Number, String, Array, Object, JSON, Blob: FakeBlob,
     URL: { createObjectURL() { return 'blob:test'; }, revokeObjectURL() {} },
@@ -89,4 +89,24 @@ test('Android diagnostic status and host identity update from the socket heartbe
   d.heartbeat({ phase: 'lobby', rttMs: 200 });
   assert.equal(d.heartbeatSamples.length, 2);
   assert.match(status.textContent, /103 ms/);
+});
+
+test('Android saves the capture through its native bridge and Windows downloads JSON', () => {
+  const android = makeContext('?join=1&lanDiag=1', 'Test SightlineAndroid');
+  let saved;
+  android.window.SightlineLanDiagnostics = { postMessage(json) { saved = JSON.parse(json); } };
+  android.LAN_DIAG.heartbeat({ phase: 'live', rttMs: 94, bundle: 'page', server: 'inventory' });
+  android.__elements.get('sightline-lan-diag-save').onclick();
+  assert.equal(saved.schema, 'sightline-lan-diag-v1');
+  assert.equal(saved.hostFingerprints.server, 'inventory');
+  assert.equal(saved.heartbeatSamples[0].sample.rttMs, 94);
+  assert.equal(android.__blobText(), '');
+
+  delete android.window.SightlineLanDiagnostics;
+  android.__elements.get('sightline-lan-diag-save').onclick();
+  assert.match(android.__elements.get('sightline-lan-diag-state').textContent, /supported Android System WebView/);
+
+  const desktop = makeContext('?lanDiag=1');
+  desktop.__elements.get('sightline-lan-diag-save').onclick();
+  assert.equal(JSON.parse(desktop.__blobText()).schema, 'sightline-lan-diag-v1');
 });

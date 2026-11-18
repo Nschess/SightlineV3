@@ -41,6 +41,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+import androidx.webkit.WebMessageCompat;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.net.InetAddress;
@@ -52,7 +55,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "322e46f69c878edbc2a726e0ac443807dda23f660b8185a58468b4fcb8489bca";
+    private static final String HOST_BUNDLE_SHA256 = "88e15be18fde11843d72b6905be41d30bf277e11fae81d479a25c677ae2b5b3d";
     private static final String DEV18_2_HOST_BUNDLE_SHA256 = "9bcc0b6245a6934508c9fed3315a231625eff1b8a5d2a62b96bb96cc9b7544cc";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
     // Keep the recovered PC host compatible, alongside this exact development host.
@@ -736,11 +739,79 @@ public final class MainActivity extends Activity {
             return status;
         } finally { lanJoinConnection.compareAndSet(c,null);c.disconnect(); }
     }
+    private static final int SAVE_LAN_DIAGNOSTICS = 341;
+    private static final int MAX_LAN_DIAGNOSTIC_BYTES = 256 * 1024;
+    private byte[] pendingLanDiagnostics;
+
+    private void installLanDiagnosticExport(String host) {
+        if (!"diagnostic".equals(BuildConfig.BUILD_TYPE) || host == null
+                || !WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
+        Uri selectedOrigin = Uri.parse(LanPagePolicy.pageUrl(host, BuildConfig.SECURE_LAN_RELEASE, false));
+        String origin = selectedOrigin.getScheme() + "://" + selectedOrigin.getEncodedAuthority();
+        WebViewCompat.addWebMessageListener(web, "SightlineLanDiagnostics",
+                java.util.Collections.singleton(origin), (view, message, sourceOrigin, mainFrame, reply) -> {
+            if (!mainFrame || view != web || !host.equals(chosenLanHost)
+                    || !selectedOrigin.getScheme().equals(sourceOrigin.getScheme())
+                    || !selectedOrigin.getEncodedAuthority().equals(sourceOrigin.getEncodedAuthority())
+                    || pendingLanDiagnostics != null) return;
+            if (message.getType() != WebMessageCompat.TYPE_STRING) return;
+            String json = message.getData();
+            if (json == null || json.length() > MAX_LAN_DIAGNOSTIC_BYTES) {
+                toast("Diagnostic report is too large. Start a fresh capture and try again.");
+                return;
+            }
+            byte[] data = json.getBytes(StandardCharsets.UTF_8);
+            if (data.length > MAX_LAN_DIAGNOSTIC_BYTES) {
+                toast("Diagnostic report is too large. Start a fresh capture and try again.");
+                return;
+            }
+            try {
+                if (!"sightline-lan-diag-v1".equals(new org.json.JSONObject(json).optString("schema"))) return;
+            } catch (org.json.JSONException ignored) {
+                return;
+            }
+            Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("application/json").putExtra(Intent.EXTRA_TITLE,
+                            "sightline-lan-diagnostics-" + System.currentTimeMillis() + ".json");
+            pendingLanDiagnostics = data;
+            try {
+                startActivityForResult(save, SAVE_LAN_DIAGNOSTICS);
+            } catch (ActivityNotFoundException e) {
+                pendingLanDiagnostics = null;
+                toast("No document picker is available.");
+            }
+        });
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent result) {
+        super.onActivityResult(requestCode, resultCode, result);
+        if (requestCode != SAVE_LAN_DIAGNOSTICS) return;
+        byte[] data = pendingLanDiagnostics;
+        pendingLanDiagnostics = null;
+        if (resultCode != RESULT_OK || result == null || result.getData() == null) return;
+        if (data == null) {
+            toast("Capture expired. Return to the match and save again.");
+            return;
+        }
+        Uri destination = result.getData();
+        new Thread(() -> {
+            try (java.io.OutputStream stream = getContentResolver().openOutputStream(destination, "wt")) {
+                if (stream == null) throw new java.io.IOException("Document provider returned no stream");
+                stream.write(data);
+            } catch (java.io.IOException | SecurityException e) {
+                runOnUiThread(() -> toast("Could not save LAN diagnostics."));
+                return;
+            }
+            runOnUiThread(() -> toast("LAN diagnostics saved."));
+        }, "sightline-diagnostic-export").start();
+    }
+
     private void openVerifiedGame(String lanHost, boolean autoJoin) {
         chosenLanHost = lanHost;
         disposeWeb();
         root.removeAllViews();
         web = new WebView(this);
+        installLanDiagnosticExport(lanHost);
         web.setBackgroundColor(0xff111a1c);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setHapticFeedbackEnabled(false);

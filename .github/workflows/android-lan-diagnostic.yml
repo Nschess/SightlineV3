@@ -3,7 +3,9 @@ name: Android LAN diagnostic APK
 on:
   push:
     branches:
-      - feature/lan-ux-public-safe-20261117b
+      - codex/sightline-dev19-mobile-polish
+    paths:
+      - '.github/workflows/android-lan-diagnostic.yml'
   workflow_dispatch:
 
 permissions:
@@ -92,6 +94,25 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or $badging -notmatch "package: name='com\.sightline\.v3\.diagnostic\.visibility'") {
             throw 'Diagnostic APK package identity verification failed.'
           }
+          $signer = Join-Path $sdkRoot 'build-tools/36.0.0/apksigner.bat'
+          $certificate = (& $signer verify --print-certs $apks[0].FullName | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $certificate -notmatch 'certificate DN:.*CN=Android Debug') {
+            throw 'Diagnostic APK debug signature verification failed.'
+          }
+          $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
+          $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
+          try {
+            foreach ($file in @('index.html', 'server.js', 'SHA256SUMS')) {
+              $entry = $archive.GetEntry("assets/phone-host/$file")
+              if (-not $entry) { throw "Missing APK host asset: $file" }
+              $stream = $entry.Open()
+              try { $actual = (Get-FileHash -InputStream $stream -Algorithm SHA256).Hash } finally { $stream.Dispose() }
+              $source = (Get-FileHash -LiteralPath (Join-Path $hostRoot $file) -Algorithm SHA256).Hash
+              if ($actual -ne $source) { throw "APK host asset differs from the Windows checkout: $file" }
+            }
+          } finally { $archive.Dispose() }
+          $hostBundle = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'index.html') -Algorithm SHA256).Hash.ToLowerInvariant()
+          $hostInventory = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') -Algorithm SHA256).Hash.ToLowerInvariant()
           $sha256 = (Get-FileHash -LiteralPath $apks[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           $report = @(
             'variant=diagnostic'
@@ -99,6 +120,8 @@ jobs:
             "apk=$($apks[0].FullName)"
             "sha256=$sha256"
             "source_commit=$env:GITHUB_SHA"
+            "host_bundle_sha256=$hostBundle"
+            "host_inventory_sha256=$hostInventory"
             'runtime_acceptance=UNVERIFIED'
           ) -join "`n"
           $reportPath = Join-Path $apkDir 'diagnostic-build.txt'
