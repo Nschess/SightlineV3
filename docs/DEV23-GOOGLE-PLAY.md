@@ -35,5 +35,5 @@ Finalize the [privacy draft](DEV23-PRIVACY-POLICY-DRAFT.md) and use verified run
 - [ ] DEV22 startup, offline play, landscape sizing, settings persistence, pause/resume, audio and connection recovery across supported devices and WebView providers.
 - [ ] Confirm TLS deployment and data handling. Finalize rights, privacy policy, Data Safety, ratings, audience, ads and listing assets.
 - [ ] Verify Play identity, version and signing registration. Pass the repository acceptance gate, then run the signed AAB and package checks. Bind evidence to the candidate and artifact fingerprints.
-- [ ] Reconcile the release gate's package inventory with the public source manifest. The gate currently flags the local manifest sidecar and historical acceptance documents excluded by the public manifest generator. Preserve the historical evidence and all mandatory release checks.
+- [x] Align the release gate with the public source inventory. Historical acceptance documents remain available in the full local inventory, and release evidence must still match the public candidate fingerprint.
 - [ ] Obtain authorization before uploading the accepted candidate for Play testing. Review Play pre-launch findings and closed-test feedback before requesting production approval.

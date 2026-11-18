@@ -6,34 +6,10 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'sha256.ps1')
+. (Join-Path $PSScriptRoot 'source-package-inventory.ps1')
 
 $CommonChecks = @('sourceIntegrity','regressionSuite','gameplaySmoke','allModesAndObjectives','visualRuntime','performance','pcLanMultiplayer','audio','escapedDefectReview')
 $AndroidChecks = @('androidDeviceRuntime','touchControls','pcToAndroidLan','androidAssetParity','androidPerformance','androidSigningPackage')
-
-function Get-ProjectInventory([string]$Root) {
-  $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\','/')
-  $base = $rootFull + [IO.Path]::DirectorySeparatorChar
-  $excludedDirectories = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-  foreach ($name in @('.git','.gradle','build','outputs','.tmp')) { [void]$excludedDirectories.Add($name) }
-  $pending = [Collections.Generic.Stack[string]]::new()
-  $pending.Push($rootFull)
-  while ($pending.Count -gt 0) {
-    $directory = $pending.Pop()
-    foreach ($entry in [IO.Directory]::EnumerateFileSystemEntries($directory)) {
-      $attributes = [IO.File]::GetAttributes($entry)
-      $name = [IO.Path]::GetFileName($entry)
-      if (($attributes -band [IO.FileAttributes]::Directory) -ne 0) {
-        if ($excludedDirectories.Contains($name)) { continue }
-        if (($attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw "Candidate contains a directory link; refusing ambiguous release inventory: $entry" }
-        $pending.Push($entry)
-        continue
-      }
-      $rel = $entry.Substring($base.Length).Replace('\','/')
-      if ($rel -ieq 'PACKAGE-CONTENTS-SHA256.txt' -or $rel -ieq 'acceptance/RELEASE-READINESS.json' -or $rel -ieq 'acceptance/ENGINEERING-OUTCOMES.json') { continue }
-      $rel
-    }
-  }
-}
 
 function Get-Manifest([string]$Root, [System.Collections.Generic.List[string]]$Errors) {
   $path = Join-Path $Root 'PACKAGE-CONTENTS-SHA256.txt'
@@ -52,7 +28,7 @@ function Get-Manifest([string]$Root, [System.Collections.Generic.List[string]]$E
     if ($actual -ne $hash) { $Errors.Add("Manifest hash mismatch: $rel") }
     $map[$rel] = $hash
   }
-  $actualInventory = @(Get-ProjectInventory $Root | Sort-Object)
+  $actualInventory = @(Get-CandidateInventory $Root -PublicOnly)
   $manifestPaths = @($map.Keys | Sort-Object)
   $missing = @($actualInventory | Where-Object { $_ -notin $map.Keys })
   $extra = @($manifestPaths | Where-Object { $_ -notin $actualInventory })
@@ -121,26 +97,32 @@ function Invoke-SelfTest {
     & $write $ready
     $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
     if ($r.Passed) { Write-Host 'PASS: valid evidence accepted' } else { Write-Host 'FAIL: valid evidence accepted'; $failures++ }
+    New-Item -ItemType Directory -Path (Join-Path $testRoot 'AndroidProject') | Out-Null
+    $historical = Join-Path $testRoot 'AndroidProject/OWNER-ACCEPTANCE.md'
+    [IO.File]::WriteAllText($historical,'historical evidence')
+    [IO.File]::WriteAllText((Join-Path $testRoot 'PACKAGE-CONTENTS-SHA256.local.txt'),'local inventory')
+    $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
+    if ($r.Passed) { Write-Host 'PASS: local inventory and historical evidence are outside the public source scope' } else { Write-Host 'FAIL: public source scope rejected'; $failures++ }
     Remove-Item -LiteralPath $readyPath -Force
     $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
     if (-not $r.Passed) { Write-Host 'PASS: missing evidence blocked' } else { Write-Host 'FAIL: missing evidence blocked'; $failures++ }
     $bad = $ready.Clone(); $bad.candidateFingerprint = ('0'*64); & $write $bad
     $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
     if (-not $r.Passed) { Write-Host 'PASS: stale fingerprint blocked' } else { Write-Host 'FAIL: stale fingerprint blocked'; $failures++ }
-    $bad = $ready.Clone(); $bad.checks.regressionSuite.status = 'NOT_VERIFIED'; & $write $bad
+    $bad = $ready | ConvertTo-Json -Depth 8 | ConvertFrom-Json; $bad.checks.regressionSuite.status = 'NOT_VERIFIED'; & $write $bad
     $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
     if (-not $r.Passed) { Write-Host 'PASS: unverified required check blocked' } else { Write-Host 'FAIL: unverified required check blocked'; $failures++ }
-    $bad = $ready.Clone(); $bad.checks.audio.evidence[0].sha256 = ('0'*64); & $write $bad
+    $bad = $ready | ConvertTo-Json -Depth 8 | ConvertFrom-Json; $bad.checks.audio.evidence[0].sha256 = ('0'*64); & $write $bad
     $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
     if (-not $r.Passed) { Write-Host 'PASS: evidence hash mismatch blocked' } else { Write-Host 'FAIL: evidence hash mismatch blocked'; $failures++ }
     & $write $ready
     [IO.File]::WriteAllText((Join-Path $testRoot 'untracked.txt'),'untracked',[Text.UTF8Encoding]::new($false))
     $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
-    if (-not $r.Passed) { Write-Host 'PASS: untracked source blocked' } else { Write-Host 'FAIL: untracked source blocked'; $failures++ }
+    if (-not $r.Passed -and $r.Errors -contains 'Untracked package files: untracked.txt') { Write-Host 'PASS: untracked source blocked'; } else { Write-Host 'FAIL: untracked source blocked'; $failures++ }
     Remove-Item -LiteralPath (Join-Path $testRoot 'untracked.txt') -Force
     [IO.File]::WriteAllText($proof,'modified source',[Text.UTF8Encoding]::new($false))
     $r = Test-ReleaseCandidate $testRoot 'AndroidRelease' $readyPath
-    if (-not $r.Passed) { Write-Host 'PASS: modified tracked source blocked' } else { Write-Host 'FAIL: modified tracked source blocked'; $failures++ }
+    if (-not $r.Passed -and $r.Errors -contains 'Manifest hash mismatch: proof.txt') { Write-Host 'PASS: modified tracked source blocked' } else { Write-Host 'FAIL: modified tracked source blocked'; $failures++ }
     if ($failures) { return 1 }
     return 0
   } finally { Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue }

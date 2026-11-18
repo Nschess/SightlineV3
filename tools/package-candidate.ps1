@@ -7,49 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'sha256.ps1')
-. (Join-Path $PSScriptRoot 'local-android-studio-metadata.ps1')
-
-$script:PublicManifestExcludedEvidence = @(
-  'AndroidProject/DEVICE-UPDATE-ACCEPTANCE.md',
-  'AndroidProject/OWNER-ACCEPTANCE.md',
-  'AndroidProject/SAMSUNG-ACCEPTANCE.md',
-  'WIP-ACCEPTANCE-STATUS.txt',
-  'docs/EXPANSION-8.2-ACCEPTANCE-REPORT.md',
-  'docs/EXPANSION-8.3-ACCEPTANCE-REPORT.md'
-)
-
-function Get-CandidateInventory([string]$Root) {
-  $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\','/')
-  $prefix = $rootFull + [IO.Path]::DirectorySeparatorChar
-  $items = [System.Collections.Generic.List[string]]::new()
-  $excludedDirectories = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-  foreach ($name in @('.git','.gradle','.cxx','build','outputs','.tmp')) { [void]$excludedDirectories.Add($name) }
-  $pending = [Collections.Generic.Stack[string]]::new()
-  $pending.Push($rootFull)
-  while ($pending.Count -gt 0) {
-    $directory = $pending.Pop()
-    foreach ($entry in [IO.Directory]::EnumerateFileSystemEntries($directory)) {
-      $attributes = [IO.File]::GetAttributes($entry)
-      $name = [IO.Path]::GetFileName($entry)
-      if (($attributes -band [IO.FileAttributes]::Directory) -ne 0) {
-        if ($excludedDirectories.Contains($name)) { continue }
-        if (($attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw "Candidate contains a directory link; refusing ambiguous inventory: $entry" }
-        $pending.Push($entry)
-        continue
-      }
-      $relative = $entry.Substring($prefix.Length).Replace('\','/')
-      if ($relative -ieq '.git') { continue }
-      if (Test-SightlineLocalAndroidStudioMetadata $relative) { continue }
-      if ($relative -ieq 'PACKAGE-CONTENTS-SHA256.txt' -or
-          $relative -ieq 'PACKAGE-CONTENTS-SHA256.local.txt' -or
-          $relative -ieq 'acceptance/RELEASE-READINESS.json' -or
-          $relative -ieq 'acceptance/ENGINEERING-OUTCOMES.json') { continue }
-      $items.Add($relative)
-    }
-  }
-  $items.Sort([StringComparer]::Ordinal)
-  return @($items)
-}
+. (Join-Path $PSScriptRoot 'source-package-inventory.ps1')
 
 function Test-CandidateManifest([string]$Root,[switch]$PublicOnly) {
   $errors = [System.Collections.Generic.List[string]]::new()
@@ -81,9 +39,8 @@ function Test-CandidateManifest([string]$Root,[switch]$PublicOnly) {
     $map[$relative] = $hash
   }
   if (-not $map.ContainsKey('AGENTS.md')) { $errors.Add('Root AGENTS.md is absent from the source manifest') }
-  $actual = @(Get-CandidateInventory $rootFull)
+  $actual = @(Get-CandidateInventory $rootFull -PublicOnly:(-not $usingLocalFull))
   if (-not $usingLocalFull) {
-    foreach ($optional in $script:PublicManifestExcludedEvidence) { $actual = @($actual | Where-Object { $_ -ine $optional }) }
     foreach ($listedPath in $map.Keys) {
       if ($listedPath -iin $script:PublicManifestExcludedEvidence) { $errors.Add("Public manifest includes excluded historical evidence: $listedPath") }
     }
