@@ -133,4 +133,3 @@ test('offline and phone-host multiplayer connection handlers stay byte-identical
   function connectionHandler(html){const start=html.indexOf('function mpConnect() {'),end=html.indexOf('\nfunction mpRetry(',start+1);assert.ok(start>=0&&end>start,'connection handler is present');return html.slice(start,end).trim();}
   assert.equal(connectionHandler(clients[0].html),connectionHandler(clients[1].html),'shared socket lifecycle must remain in parity');
 });
-

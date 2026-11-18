@@ -165,4 +165,3 @@ test('offline and phone-host shared remote-pose pipeline remains byte-identical'
   function posePipeline(html){const start=html.indexOf('function mpQueueRemotePose('),end=html.indexOf('function mpEnsureZombie(',start+1);assert.ok(start>=0&&end>start,'remote-pose pipeline is present');return html.slice(start,end).trim();}
   assert.equal(posePipeline(clients[0].html),posePipeline(clients[1].html),'shared remote-pose functions remain in parity');
 });
-

@@ -113,4 +113,3 @@ jobs:
           path: AndroidProject/app/build/outputs/apk/diagnostic/*
           if-no-files-found: error
           retention-days: 14
-
