@@ -1,0 +1,121 @@
+name: Android LAN diagnostic APK
+
+on:
+  push:
+    branches:
+      - feature/lan-ux-public-safe-20261117b
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-lan-diagnostic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  diagnostic-apk:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    env:
+      GRADLE_USER_HOME: ${{ runner.temp }}\sightline-gradle-home
+    steps:
+      - name: Check out feature checkpoint
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Verify JDK 17
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $javaVersion = (& java -version 2>&1 | Out-String)
+          $javacVersion = (& javac -version 2>&1 | Out-String)
+          Write-Output $javaVersion
+          Write-Output $javacVersion
+          if ($javaVersion -notmatch 'version "17\.') { throw 'JDK 17 runtime is required.' }
+          if ($javacVersion -notmatch 'javac 17\.') { throw 'JDK 17 compiler is required.' }
+
+      - name: Set up Android SDK and pinned native toolchain
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
+          packages: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
+            ndk;28.2.13676358
+            cmake;3.22.1
+
+      - name: Verify Android SDK and stage pinned Node Mobile runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sdkRoot = $env:ANDROID_HOME
+          if (-not $sdkRoot) { $sdkRoot = $env:ANDROID_SDK_ROOT }
+          if (-not $sdkRoot -or -not (Test-Path -LiteralPath $sdkRoot)) { throw 'Android SDK root is unavailable.' }
+          $readelf = Join-Path $sdkRoot 'ndk/28.2.13676358/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-readelf.exe'
+          if (-not (Test-Path -LiteralPath $readelf)) { throw 'Pinned NDK 28.2.13676358 llvm-readelf is unavailable.' }
+          $env:ANDROID_HOME = $sdkRoot
+          $env:ANDROID_SDK_ROOT = $sdkRoot
+          $runtimeRoot = Join-Path $env:RUNNER_TEMP 'sightline-node-mobile-24.22.0-0'
+          & (Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/tools/setup-native-host-sdk.ps1') -RuntimeRoot $runtimeRoot -AndroidSdkRoot $sdkRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Node Mobile SDK verification failed.' }
+          "ANDROID_HOME=$sdkRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ANDROID_SDK_ROOT=$sdkRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "SIGHTLINE_PHONE_NODE_SDK=$runtimeRoot\sdk" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build diagnostic APK
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location AndroidProject
+          try {
+            & .\gradlew.bat --no-daemon --stacktrace -PenableLanHost=true "-PphoneNodeSdkRoot=$env:SIGHTLINE_PHONE_NODE_SDK" :app:assembleDiagnostic
+            if ($LASTEXITCODE -ne 0) { throw "Gradle diagnostic build failed with exit code $LASTEXITCODE." }
+          } finally {
+            Pop-Location
+          }
+
+      - name: Verify package identity and record checksum
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $apkDir = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/build/outputs/apk/diagnostic'
+          $apks = @(Get-ChildItem -LiteralPath $apkDir -Filter '*.apk' -File)
+          if ($apks.Count -ne 1) { throw "Expected one diagnostic APK, found $($apks.Count)." }
+          $sdkRoot = $env:ANDROID_HOME
+          if (-not $sdkRoot) { $sdkRoot = $env:ANDROID_SDK_ROOT }
+          $aapt = Join-Path $sdkRoot 'build-tools/36.0.0/aapt.exe'
+          if (-not (Test-Path -LiteralPath $aapt)) { throw 'Android Build Tools 36.0.0 aapt is unavailable.' }
+          $badging = (& $aapt dump badging $apks[0].FullName | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $badging -notmatch "package: name='com\.sightline\.v3\.diagnostic\.visibility'") {
+            throw 'Diagnostic APK package identity verification failed.'
+          }
+          $sha256 = (Get-FileHash -LiteralPath $apks[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          $report = @(
+            'variant=diagnostic'
+            'package=com.sightline.v3.diagnostic.visibility'
+            "apk=$($apks[0].FullName)"
+            "sha256=$sha256"
+            "source_commit=$env:GITHUB_SHA"
+            'runtime_acceptance=UNVERIFIED'
+          ) -join "`n"
+          $reportPath = Join-Path $apkDir 'diagnostic-build.txt'
+          [IO.File]::WriteAllText($reportPath, $report, [Text.UTF8Encoding]::new($false))
+          Write-Output $report
+          @('## Android diagnostic build', '', $report) -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Upload private diagnostic artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sightline-lan-diagnostic-${{ github.sha }}
+          path: AndroidProject/app/build/outputs/apk/diagnostic/*
+          if-no-files-found: error
+          retention-days: 14
+

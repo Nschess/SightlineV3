@@ -142,7 +142,7 @@ for (const client of clients) {
 
 test('new multiplayer session resets snapshot clock, sequence, and actor buffers on reconnect', () => {
   const html = clients[1].html;
-  const closeAt = html.indexOf('ws.onclose = function ()');
+  const closeAt = html.indexOf('ws.onclose = function (event) {');
   const retryAt = html.indexOf('function mpRetry(', closeAt);
   const beginAt = html.indexOf('function mpBegin(m) {');
   const cleanupAt = html.indexOf('function mpCleanup() {', beginAt);
@@ -165,3 +165,4 @@ test('offline and phone-host shared remote-pose pipeline remains byte-identical'
   function posePipeline(html){const start=html.indexOf('function mpQueueRemotePose('),end=html.indexOf('function mpEnsureZombie(',start+1);assert.ok(start>=0&&end>start,'remote-pose pipeline is present');return html.slice(start,end).trim();}
   assert.equal(posePipeline(clients[0].html),posePipeline(clients[1].html),'shared remote-pose functions remain in parity');
 });
+

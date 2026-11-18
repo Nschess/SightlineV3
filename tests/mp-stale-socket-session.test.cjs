@@ -45,6 +45,7 @@ for (const { name, html } of clients) {
       MP_PROTOCOL: 2,
       MP_FEATURES: ['session-generation', 'life-epoch', 'action-seq'],
       ME: { name: 'Tester' },
+      mpNativeLan: () => false,
       SightlineTransport: transportPolicy,
       WebSocket: MockWebSocket,
       location: { protocol: 'http:', host: '192.168.1.20:8080' },
@@ -64,7 +65,7 @@ for (const { name, html } of clients) {
     assert.equal(timers[0].ms, 5000, 'the connection initialization deadline is five seconds');
     timers[0].fn();
     assert.equal(socket.closed, true, 'a socket without a welcome or rejection is closed');
-    assert.match(context.MP.err, /did not finish the Sightline handshake within 5 seconds/);
+    assert.match(context.MP.err, /Connection timed out/);
     assert.equal(context.MP.status, '', 'the UI exits the indefinite connecting state');
   });
 
@@ -94,6 +95,7 @@ for (const { name, html } of clients) {
       MP_PROTOCOL: 2,
       MP_FEATURES: ['session-generation', 'life-epoch', 'action-seq'],
       ME: { name: 'Tester' },
+      mpNativeLan: () => false,
       SightlineTransport: transportPolicy,
       WebSocket: MockWebSocket,
       location: { protocol: 'http:', host: '127.0.0.1:8080' },
@@ -131,3 +133,4 @@ test('offline and phone-host multiplayer connection handlers stay byte-identical
   function connectionHandler(html){const start=html.indexOf('function mpConnect() {'),end=html.indexOf('\nfunction mpRetry(',start+1);assert.ok(start>=0&&end>start,'connection handler is present');return html.slice(start,end).trim();}
   assert.equal(connectionHandler(clients[0].html),connectionHandler(clients[1].html),'shared socket lifecycle must remain in parity');
 });
+
