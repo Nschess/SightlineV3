@@ -937,8 +937,6 @@ body:has(#ov-start:not([hidden])) #stage { position:absolute; inset:0; width:100
 #ov-start .mn-rail { position:relative; z-index:3; display:flex; align-items:center; gap:clamp(16px,3vw,54px); min-height:72px; padding:10px clamp(18px,3vw,48px); border:0; border-bottom:1px solid rgba(190,220,220,.16); background:linear-gradient(180deg,rgba(5,13,18,.82),rgba(5,13,18,.16)); }
 /* Bound the music control before route classes initialize too. Inline SVGs without
    intrinsic dimensions default to a large replaced-element box in WebView. */
-#ov-start .mn-sound { box-sizing:border-box; flex:0 0 38px; width:38px; height:38px; min-width:38px; min-height:38px; padding:0; display:grid; place-items:center; }
-#ov-start .mn-sound svg { display:block; flex:none; width:19px; height:19px; }
 #ov-start .mn-brand { flex:0 0 auto; gap:12px; padding:0; border:0; }
 #ov-start .mn-brand svg { width:34px; height:34px; color:#79ddc9; filter:drop-shadow(0 0 12px rgba(91,220,195,.34)); }
 #ov-start .mn-brand b { font:800 1.2rem/1 var(--f-label); letter-spacing:.18em; text-transform:uppercase; }
@@ -2109,7 +2107,7 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
           <aside class="mn-rail">
             <div class="mn-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M16 1v8M16 23v8M1 16h8M23 16h8" stroke="currentColor" stroke-width="2.5"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg><div><b>Sightline</b><span>TACTICAL OPERATIONS / V3</span></div></div>
             <nav class="mn-nav" id="mn-nav" role="tablist" aria-label="Main menu"></nav>
-            <div class="mn-card" id="mn-card"></div><button type="button" class="mn-sound" id="mn-sound" aria-pressed="true" aria-label="Menu music" title="Menu music"><svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path class="w" d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="x" d="M17 9l5 6M22 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <div class="mn-card" id="mn-card"></div>
           </aside>
           <section class="mn-main">
             <div class="mn-context" id="mn-context">
@@ -3837,7 +3835,7 @@ initMobileHudPositionEditor();
 var DEF_G = {
   mobileFov: 75, // Independent horizontal gameplay FOV; desktop S.fov stays unchanged.
   renderScale: touchMode ? 85 : 100, shadows: touchMode ? 'off' : 'low', drawDist: 100, brightness: 100, viewBob: 100, shake: 100, flashAmt: 100, fps: false,
-  master: 55, sfxVol: 100, uiVol: 70, hitSound: true, uiSound: true, legendaryAudio: true, legendaryEffects: true,
+  master: 55, musicVol: 75, sfxVol: 100, uiVol: 70, muted: false, menuAmbience: slLegacyMenuAmbience(), hitSound: true, uiSound: true, legendaryAudio: true, legendaryEffects: true,
   xhStyle: 'cross', xhColor: '#f4f0dc', xhSize: 9, xhThick: 2, xhGap: 0, xhAlpha: 100, xhOutline: true, xhDot: false, xhDynamic: true,
   hudScale: 100, radar: true, radarSize: 100, feed: true, hitMarker: true, dmgDir: true, banners: true, marker: 'team',
   autoReload: true, rawInput: false, pauseOnHide: true, adaptive: true,
@@ -4293,7 +4291,7 @@ function setMap(id) {
 document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-map]'); if (b && !b.disabled) setMap(b.getAttribute('data-map')); });
 
 /* ---------- audio ---------- */
-var AC = null, master = null, busFx = null, busUi = null, noiseBuf = null, soundOn = true, legendAudioPending = [], legendAudioStateBound = false, legendaryAudioBus = null, legendaryAudioLimiter = null;
+var AC = null, master = null, busFx = null, busUi = null, noiseBuf = null, soundOn = !G.muted, legendAudioPending = [], legendAudioStateBound = false, legendaryAudioBus = null, legendaryAudioLimiter = null;
 function audio() {
   if (!AC) {
     try {
@@ -11828,7 +11826,7 @@ $('#buy-list').addEventListener('click', function (e) {
 $('#buy-list').addEventListener('mouseover', function (e) { var b = e.target.closest('[data-buy]'); if (b && detailId !== b.getAttribute('data-buy')) { detailId = b.getAttribute('data-buy'); $('#st-detail').innerHTML = detailHtml(detailId); } });
 $('#st-crumb').addEventListener('click', function (e) { if (e.target.closest('[data-back]')) storeBack(); });
 function toggleSound() {
-  soundOn = !soundOn; var b = $('#btn-sound'); b.textContent = soundOn ? 'Sound on' : 'Sound off'; b.setAttribute('aria-pressed', String(soundOn)); applyAudio();
+  setVal('G', 'muted', soundOn);
 }
 $('#btn-sound').addEventListener('click', toggleSound);
 $('#btn-full').addEventListener('click', function () {
@@ -11852,8 +11850,16 @@ function applyXh() {
   });
 }
 function applyAudio() {
-  if (AC) { master.gain.value = G.master / 100; busFx.gain.value = G.sfxVol / 100; busUi.gain.value = G.uiVol / 100; }
-
+  soundOn = !G.muted;
+  if (AC) { master.gain.value = soundOn ? G.master / 100 : 0; busFx.gain.value = G.sfxVol / 100; busUi.gain.value = G.uiVol / 100; }
+  var shortcut = $('#btn-sound');
+  if (shortcut) {
+    shortcut.hidden = touchMode;
+    shortcut.textContent = soundOn ? 'Sound on' : 'Sound off';
+    shortcut.setAttribute('aria-pressed', String(soundOn));
+  }
+  if (slAmb && AC) slAmb.g.gain.setTargetAtTime(slAmbLevel(), AC.currentTime, .1);
+  slAmbTick();
   syncLobbyMusic();
 }
 function applyHud() {
@@ -11925,8 +11931,10 @@ var SPEC = {
   ],
   audio: [
     { t: 'range', k: 'master', l: 'Master volume', min: 0, max: 100, step: 5, f: pc },
-    { t: 'range', k: 'sfxVol', l: 'Weapons and world', min: 0, max: 100, step: 5, f: pc },
+    { t: 'range', k: 'musicVol', l: 'Music volume', min: 0, max: 100, step: 5, f: pc },
+    { t: 'range', k: 'sfxVol', l: 'Effects volume', min: 0, max: 100, step: 5, f: pc },
     { t: 'range', k: 'uiVol', l: 'Menu sounds', min: 0, max: 100, step: 5, f: pc },
+    { t: 'check', k: 'menuAmbience', l: 'Menu ambience' },
     { t: 'check', k: 'hitSound', l: 'Hit tick when you damage an enemy' },
     { t: 'check', k: 'legendaryAudio', l: 'Legendary weapon audio', h: 'Distinct, restrained finish cues. Base weapon reports remain audible when this is off.' },
     { t: 'check', k: 'legendaryEffects', l: 'Legendary visual effects', h: 'Disable skin-only pulses and particles. Standard combat and hit feedback remain.' },
@@ -12012,7 +12020,7 @@ function setVal(o, k, v, commit) {
   if (o === 'S' && k === 'fov') baseFov = S.fov;
   if (o === 'S') renderStrip();
   if (o === 'R') { applyRules(); refreshSpec(); renderOps(); }
-  else if (o === 'G') { if (k === 'fpsCap') { renderNextDue = 0; renderCap = -1; resetFpsWindow(); scheduleVideoApply(); } else if (k === 'renderScale' || k === 'adaptive' || k === 'fastMode') scheduleVideoApply(); else if (k === 'shadows' || k === 'brightness') applyG(); else if (k.indexOf('xh') === 0) applyXh(); else if (k === 'master' || k === 'sfxVol' || k === 'uiVol') applyAudio(); else applyHud(); }
+  else if (o === 'G') { if (k === 'fpsCap') { renderNextDue = 0; renderCap = -1; resetFpsWindow(); scheduleVideoApply(); } else if (k === 'renderScale' || k === 'adaptive' || k === 'fastMode') scheduleVideoApply(); else if (k === 'shadows' || k === 'brightness') applyG(); else if (k.indexOf('xh') === 0) applyXh(); else if (['master', 'musicVol', 'sfxVol', 'uiVol', 'muted', 'menuAmbience', 'uiSound'].includes(k)) applyAudio(); else applyHud(); }
 }
 function squadText() {
   if (R.mode === 'infection') { var count=Math.max(2,Math.min(64,R.bots||6)); return 'Zombie Infection · The selected number is AI bots, in addition to you ('+count+' bots = '+(count+1)+' participants). Bots start as allied Red/Blue survivors; two become Patient Zero after 10 seconds. If infected, you respawn as Hollowed and can hunt survivors; sunrise awards the survivor side.'; }
@@ -14152,19 +14160,20 @@ window.__slAudio = { cue: slCue };
 
 /* ambient bed: two low sines + filtered noise with a slow swell, only on the idle lobby */
 var slAmb = null;
-function slAmbPref() { try { return localStorage.getItem('sl-ambient') !== '0'; } catch (e) { return true; } }
+function slLegacyMenuAmbience() { try { return localStorage.getItem('sl-ambient') !== '0'; } catch (e) { return true; } }
+function slAmbLevel() { return .049 * Math.max(0, Math.min(1, G.musicVol / 100)) / .75; }
 function slAmbStart() {
   if (slAmb || !AC || !noiseBuf) return;
   try {
     var g = AC.createGain(), mix = AC.createGain(), o1 = AC.createOscillator(), o2 = AC.createOscillator(), lfo = AC.createOscillator(), lg = AC.createGain(),
       n = AC.createBufferSource(), nf = AC.createBiquadFilter(), ng = AC.createGain();
-    g.gain.value = 0; mix.gain.value = .5; g.connect(busUi); mix.connect(g);
+    g.gain.value = 0; mix.gain.value = .5; g.connect(master); mix.connect(g);
     o1.type = 'sine'; o1.frequency.value = 55; o2.type = 'sine'; o2.frequency.value = 82.6; o2.detune.value = 7;
     lfo.frequency.value = .07; lg.gain.value = .2; lfo.connect(lg); lg.connect(mix.gain);
     n.buffer = noiseBuf; n.loop = true; nf.type = 'lowpass'; nf.frequency.value = 260; ng.gain.value = .22;
     o1.connect(mix); o2.connect(mix); n.connect(nf); nf.connect(ng); ng.connect(mix);
     o1.start(); o2.start(); lfo.start(); n.start();
-    g.gain.setTargetAtTime(.07, AC.currentTime, .9);
+    g.gain.setTargetAtTime(slAmbLevel(), AC.currentTime, .9);
     slAmb = { g: g, nodes: [o1, o2, lfo, n] };
   } catch (e) { slAmb = null; }
 }
@@ -14174,20 +14183,11 @@ function slAmbStop() {
   setTimeout(function () { a.nodes.forEach(function (n) { try { n.stop(); } catch (e) {} }); try { a.g.disconnect(); } catch (e) {} }, 1300);
 }
 function slAmbTick() {
-  var want = menuOpen() && state === 'idle' && G.uiSound && soundOn && slAmbPref() && !document.hidden && AC && AC.state === 'running';
+  var want = menuOpen() && state === 'idle' && G.uiSound && soundOn && G.menuAmbience && lobbyMusicLevel() > 0 && !document.hidden && AC && AC.state === 'running';
   if (want && !slAmb) slAmbStart(); else if (!want && slAmb) slAmbStop();
 }
 setInterval(slAmbTick, 800);
 document.addEventListener('pointerdown', function () { try { if (menuOpen() && G.uiSound && soundOn) audio(); } catch (e) {} }, { passive: true });
-function slSoundBtn() {
-  var b = $('#mn-sound'); if (!b) return; var on = slAmbPref();
-  b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Menu music on' : 'Menu music off';
-}
-(function () {
-  var b = $('#mn-sound'); if (!b) return;
-  b.addEventListener('click', function () { try { localStorage.setItem('sl-ambient', slAmbPref() ? '0' : '1'); } catch (e) {} slSoundBtn(); slAmbTick(); slCue('tap'); });
-  slSoundBtn();
-})();
 (function () {
   var ov = $('#ov-start'); if (!ov) return;
   ov.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.mn-tab,.mn-subtab')) slCue('tab'); }, true);
@@ -14255,7 +14255,7 @@ function slRenderV8() {
   var brief = $('#mode-brief');
   if (brief && !brief.querySelector('.sl-maplinks')) brief.insertAdjacentHTML('beforeend', '<div class="sl-maplinks"><button type="button" data-sl-goto="maps">Change map</button>' + (mpConnected() ? '' : '<button type="button" data-sl-goto="rules">Match rules</button>') + '<button type="button" data-sl-goto="multiplayer">LAN</button></div>');
   var lan = $('#sl-lan'), on = mpConnected();
-  if (!lan) { var card = $('#mn-card'); if (card) { card.insertAdjacentHTML('afterend', '<button type="button" class="sl-lan" id="sl-lan" data-sl-goto="multiplayer" title="LAN lobby"><i></i><span></span></button>'); lan = $('#sl-lan'); } }
+  if (!touchMode && !lan) { var card = $('#mn-card'); if (card) { card.insertAdjacentHTML('afterend', '<button type="button" class="sl-lan" id="sl-lan" data-sl-goto="multiplayer" title="LAN lobby"><i></i><span></span></button>'); lan = $('#sl-lan'); } }
   if (lan) { lan.classList.toggle('on', on); lan.lastChild.textContent = on ? 'LAN connected' : 'Offline \u00b7 LAN'; }
   var pp = $('#pn-play');
   if (pp && !$('#sl-hints')) { pp.insertAdjacentHTML('beforeend', '<div class="sl-hints" id="sl-hints"><button type="button" data-sl-goto="rules"><i>R</i>Rules</button></div>'); var ib = $('#btn-intro'); if (ib) $('#sl-hints').appendChild(ib); }
@@ -15047,15 +15047,6 @@ html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-lay
 @keyframes mf-fill{from{width:0}to{width:100%}}
 @keyframes mf-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 
-/* sound toggle in the rail */
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail{grid-template-columns:auto minmax(0,1fr) auto auto!important}
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound{display:grid;place-items:center;width:38px;height:38px;padding:0;cursor:pointer;color:var(--l10-mute);background:rgba(255,255,255,.04);border:1px solid var(--l10-line);border-radius:50%;transition:color .16s,background .16s}
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound:hover{color:#fff;background:rgba(255,255,255,.1)}
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound[aria-pressed=true]{color:var(--l10-teal)}
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound svg{width:19px;height:19px}
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound[aria-pressed=true] .x,html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound[aria-pressed=false] .w{display:none}
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound:focus-visible{outline:2px solid var(--l10-teal);outline-offset:2px}
-
 /* deploy card: real rule stats */
 html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .mode-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 14px;margin:6px 0 0;padding:14px 0 0;border-top:1px solid var(--l10-line)}
 html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .mode-stats div{min-width:0}
@@ -15116,7 +15107,6 @@ html body.sl-lobby-screen[data-sl-route] #ov-start .loadout-share .btn:hover{bac
 html body.sl-lobby-screen[data-sl-route] #ov-start #pn-dyn:not([hidden]){animation:none}
 html body.sl-lobby-screen[data-sl-route] #ov-start .mn-main.sl-route-in #pn-dyn:not([hidden]){animation:l10-route .36s ease-out both}
 html body.sl-lobby-screen[data-sl-route] #ov-start .mn-main.sl-route-in #pn-play:not([hidden]){animation:l10-route-up .4s ease-out both}
-html body.sl-lobby-screen[data-sl-route] #ov-start .mn-tab:active,html body.sl-lobby-screen[data-sl-route] #ov-start .mn-subtab:active,html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound:active{transform:scale(.96)}
 html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .mode-choice:active:not(:disabled){transform:scale(.985)}
 html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .lp-change:active,html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-layout .ls-btn:active,html body.sl-lobby-screen[data-sl-route] #ov-start .loadout-share .btn:active{transform:scale(.96)}
 
@@ -15130,7 +15120,6 @@ html body.sl-lobby-screen[data-sl-route] #ov-start #pn-play.lobby-fullscreen-lay
  html body.sl-lobby-screen[data-sl-route] #ov-start .mn-tab .mn-glyph{display:none}
  html body.sl-lobby-screen[data-sl-route] #ov-start .mn-tab{padding:0 8px!important}
  html body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail{gap:4px}
- html body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound{width:32px;height:32px}
  html body.sl-lobby-screen[data-sl-route] #ov-start .mn-card{display:none}
 }
 @media(prefers-reduced-motion:reduce){
@@ -15379,13 +15368,35 @@ html body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav .mn-subtab[aria-se
 
 .mn-panel .sl-match-rules-back{justify-self:start;min-height:42px}
 
+html body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail{grid-template-columns:auto minmax(0,1fr) auto!important}
+html body.sl-lobby-screen[data-sl-route] #ov-start .mn-tab:active,html body.sl-lobby-screen[data-sl-route] #ov-start .mn-subtab:active{transform:scale(.96)}
+@media (orientation:landscape) and (max-height:600px) {
+  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail { display:grid!important; grid-template-columns:minmax(0,1fr)!important; }
+  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-brand { display:none!important; }
+  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav { grid-column:1/-1!important; display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; width:100%; min-width:0; gap:3px!important; padding:0!important; }
+  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab { min-height:44px!important; min-width:0; padding:0 3px!important; }
+  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
+}
+/* Keep the mobile lobby inside the safe area and leave each subtab reachable. */
+html.touch-device body.sl-lobby-screen[data-sl-route=play] #ov-start #mn-context { display:block!important; padding-block:4px!important; }
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-main {
+  padding-left:max(12px,env(safe-area-inset-left,0px))!important;
+  padding-right:max(12px,env(safe-area-inset-right,0px))!important;
+  padding-bottom:max(12px,env(safe-area-inset-bottom,0px))!important;
+}
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-context-row { min-width:0; }
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav {
+  flex:0 1 auto; min-width:0; max-width:100%; overflow-x:auto; justify-content:flex-start;
+}
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav .mn-subtab { flex:none; min-height:44px!important; }
+html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn input[type=range] { min-height:44px; }
+
 /* Landscape touch navigation and compact match-rule layout. */
 @media (orientation:landscape) and (max-height:600px) {
- html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail { display:grid!important; grid-row:1!important; grid-column:1!important; inset:0 0 auto 0!important; grid-template-columns:minmax(0,1fr) 42px!important; gap:4px!important; padding:0 max(6px,env(safe-area-inset-right,0px)) 0 max(6px,env(safe-area-inset-left,0px))!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail { display:grid!important; grid-row:1!important; grid-column:1!important; inset:0 0 auto 0!important; grid-template-columns:minmax(0,1fr)!important; gap:4px!important; padding:0 max(6px,env(safe-area-inset-right,0px)) 0 max(6px,env(safe-area-inset-left,0px))!important; }
  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav { grid-column:1!important; display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; width:100%; min-width:0; overflow:visible!important; gap:3px!important; padding:0!important; }
  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab { min-width:0; min-height:44px!important; padding:0 3px!important; }
  html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
- html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-sound { grid-column:2!important; justify-self:center; }
  html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn:not([hidden]) { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:max-content!important; gap:6px 10px; align-content:start; }
  html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > :not(.srow) { grid-column:1/-1; }
  html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .sl-mobile-rule-group { margin:4px 0 0; padding:4px 0; font:700 12px/1.2 system-ui,sans-serif; color:#bcd8ce; border-bottom:1px solid rgba(205,224,215,.18); }

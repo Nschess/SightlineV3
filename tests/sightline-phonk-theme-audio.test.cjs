@@ -65,3 +65,52 @@ test('Android and phone-host request routing permit the current MP3 asset', () =
   const service = fs.readFileSync(path.join(root, 'AndroidProject/app/src/main/java/com/sightline/v3/LanHostService.java'), 'utf8');
   assert.match(service, /hashes\.containsKey\("sightline-theme\.mp3"\)/);
 });
+
+test('Audio settings persist mute and control the mixer and menu music in both clients', () => {
+  for (const page of [offline, phone]) {
+    const fn = name => {
+      const match = page.match(new RegExp('^function ' + name + '\\([^\\r\\n]*\\)[ \\t]*\\{[\\s\\S]*?^\\}', 'm'));
+      assert.ok(match, name + ' is defined');
+      return match[0];
+    };
+    const button = { setAttribute(name, value) { this[name] = value; } };
+    let saved, ambienceUpdates = 0, musicUpdates = 0;
+    const gain = () => ({ gain: { value: 0 } });
+    const settings = { master: 50, musicVol: 30, sfxVol: 80, uiVol: 60, muted: false };
+    const context = {
+      G: settings, AC: {}, soundOn: true, master: gain(), busFx: gain(), busUi: gain(), slAmb: null,
+      touchMode: true, $: () => button, objOf: () => settings, persist: () => { saved = { ...settings }; },
+      syncLobbyMusic() { musicUpdates++; }, slAmbTick() { ambienceUpdates++; }
+    };
+    vm.runInNewContext([fn('applyAudio'),fn('toggleSound'),fn('setVal'),fn('lobbyMusicLevel')].join('\n'),context);
+    context.applyAudio();
+    assert.equal(context.master.gain.value, .5);
+    assert.equal(context.lobbyMusicLevel(), .15);
+    assert.equal(button.hidden, true);
+    context.toggleSound();
+    assert.equal(saved.muted, true);
+    assert.equal(context.soundOn, false);
+    assert.equal(context.master.gain.value, 0);
+    context.setVal('G', 'musicVol', 60);
+    assert.equal(saved.musicVol, 60);
+    assert.equal(context.lobbyMusicLevel(), .3);
+    context.toggleSound();
+    assert.equal(saved.muted, false);
+    assert.equal(context.master.gain.value, .5);
+    assert.equal(context.busFx.gain.value, .8);
+    assert.equal(context.busUi.gain.value, .6);
+    assert.equal(ambienceUpdates, 4);
+    assert.equal(musicUpdates, 4);
+    assert.match(page, /k: 'musicVol', l: 'Music volume'/);
+  }
+});
+
+test('Mobile Play exposes its navigation after removing the redundant rail shortcuts', () => {
+  for (const page of [offline, phone]) {
+    assert.doesNotMatch(page, /id="mn-sound"/);
+    assert.match(page, /if \(!touchMode && !lan\)/);
+    assert.match(page, /\['multiplayer','Multiplayer'\]/);
+    assert.match(page, /html\.touch-device[^\r\n]+data-sl-route=play[^\r\n]+#mn-context\s*\{ display:block!important/);
+    for (const [, script] of page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) new vm.Script(script);
+  }
+});
