@@ -4,7 +4,7 @@ Use the debug diagnostic APK and the Windows checkout from the workflow's `sourc
 
 ## Run both directions
 
-- **Windows host, Android client.** On Windows, run `START-HOST.bat` from the matching checkout. Open `http://localhost:8080/?lanDiag=1`, go to Play → Multiplayer and connect first so Windows owns the match. On Android, use Play → Multiplayer → Find LAN Match and select the Windows room. Use the displayed private IP if discovery is unavailable.
+- **Windows host, Android client.** On Windows, run `START-HOST.bat` from the matching checkout. Open `http://WINDOWS_LAN_IP:8080/?lanDiag=1` using the bound adapter's private IPv4 address, go to Play → Multiplayer and connect first so Windows owns the match. On Android, use Play → Multiplayer → Find LAN Match and select the Windows room. Use the displayed private IP if discovery is unavailable.
 - **Android host, Windows client.** In the diagnostic APK, use Play → Multiplayer → Create Match. Wait for the phone to join its own room. On Windows, open `http://PHONE_IP:8080/?lanDiag=1` and connect in Multiplayer. The phone owns Match Rules and Start Match.
 
 Use the same trusted private network for both peers. For each direction, let the host choose the rules and start. Play for about 90 seconds with both peers moving and firing. Record any waits, snaps, action delays or disconnects and roughly when they occurred. Include one leave/rejoin while the host remains up, followed by a host shutdown check. Capture one run per direction before changing settings or network conditions.

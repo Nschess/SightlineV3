@@ -15,7 +15,7 @@ node --version
 START-HOST.bat
 ```
 
-Open `http://localhost:8080/?lanDiag=1` when the host reports ready. Use one trusted private network for LAN tests, allow Node on Windows Private networks if prompted, and use Ctrl+C in the host CMD window to stop this session. For Android-host testing, stop the Windows host and browse to `http://PHONE_IP:8080/?lanDiag=1`.
+On the Windows host itself, open `http://WINDOWS_LAN_IP:8080/?lanDiag=1`, using the private IPv4 address printed by the host for the bound adapter. The LAN host listens on that address. Use one trusted private network, allow Node on Windows Private networks if prompted, and use Ctrl+C in the host CMD window to stop this session. For Android-host testing, stop the Windows host and browse to `http://PHONE_IP:8080/?lanDiag=1`.
 
 ## One test sequence
 
