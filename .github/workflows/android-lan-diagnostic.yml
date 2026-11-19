@@ -138,7 +138,7 @@ jobs:
           $sourceCommit = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0 -or $sourceCommit -ne $env:GITHUB_SHA) { throw 'Runner checkout differs from the workflow commit.' }
           $versionCode = [regex]::Match($badging, "versionCode='(\d+)'").Groups[1].Value
-          if ([int]$versionCode -le 18) { throw 'DEV24.7 diagnostic version code must be newer than DEV24.4.' }
+          if ([int]$versionCode -le 19 -or $badging -notmatch "versionName='[^']+-dev24\.9-diagnostic'") { throw 'Expected an update-compatible DEV24.9 diagnostic version.' }
           $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
           $hostPaths = Get-Content -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') | ForEach-Object { $_.Substring(66) }
           $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
@@ -177,7 +177,7 @@ jobs:
               throw 'Packaged Android page differs from the generated diagnostics page.'
             }
             $pageText = Get-Content -LiteralPath $generated -Raw
-            foreach ($marker in @('sightline-lan-diag-v1', 'hostFingerprints', 'clientSnapshotReceiveGapMs', 'totalInterval>0', 'Start / stop frame diagnostics', 'drawingBufferDeviceScalePercent', 'MOBILE_CLARITY_SCALE', 'mobileCharacterAtlasScale', 'MOBILE_COMPETITIVE_SCALE', 'androidHighRefreshHintSent', 'mobileSettingsHtml', 'mpConfirmRules', '--left-action-base')) {
+            foreach ($marker in @('sightline-lan-diag-v1', 'hostFingerprints', 'clientSnapshotReceiveGapMs', 'totalInterval>0', 'Start / stop frame diagnostics', 'drawingBufferDeviceScalePercent', 'MOBILE_CLARITY_SCALE', 'mobileCharacterAtlasScale', 'MOBILE_COMPETITIVE_SCALE', 'androidEffectiveHz', 'androidSelectedCap', 'androidBatterySaver', 'androidThermalStatus', 'tickAndroidPerformance', 'finishAndroidFpsProbe', 'mobileSettingsHtml', 'mpConfirmRules', '--left-action-base')) {
               if (-not $pageText.Contains($marker)) { throw "Missing packaged capture marker: $marker" }
             }
           } finally { $archive.Dispose() }
@@ -187,7 +187,7 @@ jobs:
           $hostInventory = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') -Algorithm SHA256).Hash.ToLowerInvariant()
           $windowsArtifact = 'sightline-windows-host.zip'
           $hostArchive = Join-Path $deliverables.FullName $windowsArtifact
-          git archive --format=zip --output=$hostArchive $sourceCommit -- AGENTS.md START-HOST.bat SIGHTLINE.bat docs/DEV20-LAN-ACCEPTANCE.md docs/DEV24-DEVICE-ACCEPTANCE.md AndroidProject/app/src/main/assets/phone-host
+          git archive --format=zip --output=$hostArchive $sourceCommit -- AGENTS.md START-HOST.bat SIGHTLINE.bat docs/DEV20-LAN-ACCEPTANCE.md docs/DEV24-DEVICE-ACCEPTANCE.md docs/ANDROID-DEVICE-FPS.md AndroidProject/app/src/main/assets/phone-host
           if ($LASTEXITCODE -ne 0) { throw 'Matching Windows host archive failed.' }
           $windowsSha = (Get-FileHash -LiteralPath $hostArchive -Algorithm SHA256).Hash.ToLowerInvariant()
           $sha256 = (Get-FileHash -LiteralPath $apks[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -199,7 +199,7 @@ jobs:
             "sha256=$sha256"
             "signing_certificate_sha256=$signerHash"
             'dev24_0_installation=side-by-side'
-            'dev24_4_installation=in-place-update-with-data-retention'
+            'dev24_4_and_24_7_installation=in-place-update-with-data-retention'
             "source_commit=$sourceCommit"
             "workflow_commit=$env:GITHUB_SHA"
             "windows_host=$windowsArtifact"
@@ -212,15 +212,15 @@ jobs:
           [IO.File]::WriteAllText($reportPath, $report, [Text.UTF8Encoding]::new($false))
           Copy-Item -LiteralPath 'docs/DEV24-DIAGNOSTIC-MIGRATION.md' -Destination (Join-Path $deliverables.FullName 'MIGRATION.md')
           Copy-Item -LiteralPath 'docs/DEV24-DEVICE-ACCEPTANCE.md' -Destination (Join-Path $deliverables.FullName 'DEVICE-ACCEPTANCE.md')
-          Copy-Item -LiteralPath 'tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
+          Copy-Item -LiteralPath 'docs/ANDROID-DEVICE-FPS.md','tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
           $instructions = @(
-            '# Sightline V3 DEV24.7 consolidated diagnostic'
+            '# Sightline V3 DEV24.9 performance acceptance diagnostic'
             ''
             'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-lan-acceptance.apk SHA256'
             ''
             'Leave DEV24.0 installed. It uses a separate package and its data is independent.'
-            'To keep the DEV24.4 APK installed exactly as it is, use another compatible phone for DEV24.7.'
-            'For an in-place update on the same phone, confirm the Sightline Acceptance update prompt or run adb install -r sightline-lan-acceptance.apk using an already authorized connection. Android replaces the DEV24.4 APK and retains its app data. Keep the DEV24.4 archive for reference. Never uninstall either app or clear app data.'
+            'Use a separate compatible phone to keep the prior Sightline Acceptance APK installed exactly as it is. Keep the previous artifact for comparison.'
+            'For an in-place update on the same phone, confirm the Sightline Acceptance update prompt or run adb install -r sightline-lan-acceptance.apk using an already authorized connection. Android replaces the installed Sightline Acceptance APK and retains its app data. Never uninstall either app or clear app data.'
             'See MIGRATION.md for optional transfer of offline settings and records.'
             ''
             'Follow DEVICE-ACCEPTANCE.md for the physical-device checks and Windows CMD commands.'
