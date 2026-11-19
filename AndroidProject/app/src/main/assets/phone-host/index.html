@@ -3886,13 +3886,23 @@ function framePixelBudget() {
   var hz = Math.min(Number(G.fpsCap) || 60, Math.max(60, (typeof rafHzBest === 'number' && rafHzBest) || 60));
   if (touchMode) {
     if (G.mobileQuality === 'low') return 650000;
-    if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1200000 : 1500000;
-    return !G.adaptive || Number(G.fpsCap) === 30 ? 1200000 : hz > 75 ? 850000 : 1050000;
+    if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1450000 : 1850000;
+    return Number(G.fpsCap) === 30 ? 1450000 : G.adaptive && hz > 75 ? 1050000 : 1250000;
   }
   return !G.adaptive || Number(G.fpsCap) === 30 ? 3600000 : hz > 75 ? 1800000 : 2400000;
 }
 function mobileDprLimit() {
-  return G.mobileQuality === 'low' ? 1.5 : G.mobileQuality === 'high' ? 2.2 : 1.8;
+  return G.mobileQuality === 'low' ? 1.5 : G.mobileQuality === 'high' ? 2.75 : 2.25;
+}
+var MOBILE_CLARITY_SCALE = [1, 1, 0.96, 0.90];
+function mobileClarityEnabled() {
+  return touchMode && G.mobileQuality !== 'low' && !G.fastMode;
+}
+function effectiveAdaptiveScale() {
+  if (!touchMode) return perfScale;
+  if (!G.adaptive) return 1;
+  // First reduce shadow and effect costs. Only sustained pressure reduces pixels.
+  return mobileClarityEnabled() ? MOBILE_CLARITY_SCALE[perfLvl] : perfScale;
 }
 function pixelRatio() {
   var w = Math.max(1, stage.clientWidth || window.innerWidth || 640);
@@ -3901,7 +3911,7 @@ function pixelRatio() {
   if (touchMode) {
     var scale = Math.max(0.5, Math.min(1, (Number(G.renderScale) || 90) / 100));
     var target = Math.min(window.devicePixelRatio || 1, mobileDprLimit(), Math.sqrt(maxPixels / (w * h)));
-    return target * scale * perfScale;
+    return target * scale * effectiveAdaptiveScale();
   }
   var requested = Math.min(window.devicePixelRatio || 1, 1.75) * G.renderScale / 100 * perfScale;
   return Math.max(0.4, Math.min(requested, Math.sqrt(maxPixels / (w * h))));
@@ -11604,7 +11614,7 @@ function scheduleVideoApply() {
    stage of the quality recovery: keep user settings, adjust runtime cost. */
 function effectiveShadowTier(){
   if(!G.adaptive || perfLvl <= 0) return G.shadows;
-  if(perfLvl >= 2) return 'off';
+  if(perfLvl >= 2 || mobileClarityEnabled()) return 'off';
   return G.shadows === 'high' ? 'low' : G.shadows;
 }
 function applyShadowBudget(){
@@ -13860,7 +13870,9 @@ function performanceInfo() {
   var gl = renderer.getContext();
   var stageWidth = stage.clientWidth || 640, stageHeight = stage.clientHeight || 360;
   var actualPixelRatio = renderer.getPixelRatio();
-  var selectedPixelRatio = dprCap * (G.renderScale / 100) * perfScale;
+  var adaptiveScale = effectiveAdaptiveScale();
+  var selectedPixelRatio = dprCap * (G.renderScale / 100) * adaptiveScale;
+  var contextAttributes = gl.getContextAttributes();
   return { build: 'P11.5.7', measuredGameFps: fpsMeasured, requestedLimitFps: Number(G.fpsCap) || 0,
     activeRenderLimitFps: (state === 'live' || state === 'roundend') ? effectiveRenderCap(Number(G.fpsCap) || 0,rafHzBest,rafCount) : effectiveRenderCap(menuFrameCap(G.fpsCap),rafHzBest,rafCount),
     adaptiveBudgetMs: Math.round(frameBudgetMs(G.fpsCap,rafHzBest)*100)/100,
@@ -13873,13 +13885,15 @@ function performanceInfo() {
     effectsCpuMs: Math.round(effectsCpuEma * 100) / 100,
     offlineBotCadenceHz: MP.on ? 'multiplayer per frame' : units.length > 48 ? 15 : units.length > 32 ? 20 : 30,
     cpuSubmissionMs: Math.round(frameStats.renderCpuMs * 100) / 100,
-    selectedRenderScalePercent: Math.round(G.renderScale), adaptiveScalePercent: Math.round(perfScale * 100),
+    selectedRenderScalePercent: Math.round(G.renderScale), adaptiveScalePercent: Math.round(adaptiveScale * 100),
     effectiveRenderScalePercent: Math.round(actualPixelRatio / Math.max(0.01, dprCap) * 100),
     effectivePixelRatio: Math.round(actualPixelRatio * 100) / 100,
     pixelBudgetLimited: actualPixelRatio + 0.0001 < selectedPixelRatio,
     devicePixelRatio: deviceDpr, mobileQuality: touchMode ? (G.mobileQuality || 'balanced') : null,
     stageCssSize: [stageWidth, stageHeight], stageDeviceSize: [Math.round(stageWidth * deviceDpr), Math.round(stageHeight * deviceDpr)],
     drawingBufferSize: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+    drawingBufferDeviceScalePercent: Math.round(100 * gl.drawingBufferWidth / Math.max(1, stageWidth * deviceDpr)),
+    webglAntialias: contextAttributes ? contextAttributes.antialias : null,
     framebufferPixels: gl.drawingBufferWidth * gl.drawingBufferHeight,
     allocatedGeometries: renderer.info.memory.geometries, allocatedTextures: renderer.info.memory.textures,
     fastFramebufferEnabled: !!G.fastMode,
@@ -14025,7 +14039,7 @@ function frame(now) {
   }
   if (fpsT >= 0.5) { fpsMeasured = Math.round(fpsN / fpsT);
     if (inPlay) lastLivePerf = { fps: fpsMeasured, rAF: rafHz, p95ms: frameStats.p95, simCpuMs: Math.round(simCpuEma*100)/100, botCpuMs: Math.round(botCpuEma*100)/100, playerCpuMs: Math.round(playerCpuEma*100)/100, effectsCpuMs: Math.round(effectsCpuEma*100)/100, webglSubmissionMs: Math.round(frameStats.renderCpuMs*100)/100, renderCalls: frameStats.drawCalls, triangles: frameStats.triangles, effectivePixelRatio: Math.round(pixelRatio()*100)/100, adaptiveLevel: perfLvl };
-    if (G.fps) fpsEl.textContent = fpsMeasured + ' FPS' + (G.fpsCap ? ' · limit ' + G.fpsCap : ' · uncapped') + (perfLvl ? ' · adaptive ' + Math.round(perfScale * 100) + '% detail' : '') + (!SL_PLAY_BUILD && location.search.indexOf('debug') >= 0 ? ' · rAF ' + (rafHz || '?') + ' · sim ' + simCpuEma.toFixed(1) + 'ms (bots ' + botCpuEma.toFixed(1) + ') · WebGL submit ' + frameStats.renderCpuMs.toFixed(1) + 'ms' : ''); fpsN = 0; fpsT = 0; }
+    if (G.fps) fpsEl.textContent = fpsMeasured + ' FPS' + (G.fpsCap ? ' · limit ' + G.fpsCap : ' · uncapped') + (perfLvl ? ' · adaptive ' + Math.round(effectiveAdaptiveScale() * 100) + '% detail' : '') + (!SL_PLAY_BUILD && location.search.indexOf('debug') >= 0 ? ' · rAF ' + (rafHz || '?') + ' · sim ' + simCpuEma.toFixed(1) + 'ms (bots ' + botCpuEma.toFixed(1) + ') · WebGL submit ' + frameStats.renderCpuMs.toFixed(1) + 'ms' : ''); fpsN = 0; fpsT = 0; }
   var simStarted = performance.now();
   if (state === 'live' || state === 'roundend') {
     T += dt;
