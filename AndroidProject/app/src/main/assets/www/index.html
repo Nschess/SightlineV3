@@ -3927,6 +3927,7 @@ function colorTexture(texture) { return texture; }
 // changes, not on adaptive frame steps, which would cause repeated uploads.
 var mobileTextureLimit = touchMode ? renderer.capabilities.getMaxAnisotropy() : 0;
 var mobileSurfaceTextures = touchMode ? new Set() : null;
+var mobileAngledMapTextures = touchMode ? new WeakSet() : null;
 function mobileCharacterAtlasScale() {
   // The 384px mipmapped atlas requires WebGL 2. Use a stable device tier
   // so preset and mode changes never rebake cached actors or add duplicates.
@@ -3939,15 +3940,18 @@ function mobileSurfaceAnisotropy() {
 }
 function applySurfaceFiltering(texture) {
   var samples = mobileSurfaceAnisotropy();
+  if (mobileAngledMapTextures.has(texture) && G.mobileQuality !== 'high') samples = Math.min(2, samples);
   if (texture.anisotropy === samples) return;
   texture.anisotropy = samples;
   texture.needsUpdate = true;
 }
-function mobileSurfaceTexture(texture) {
+function mobileSurfaceTexture(texture, angledMapSurface) {
   if (mobileSurfaceTextures && texture && !mobileSurfaceTextures.has(texture)) {
     mobileSurfaceTextures.add(texture);
+    if (angledMapSurface) mobileAngledMapTextures.add(texture);
     texture.addEventListener('dispose', function releaseSurfaceTexture() {
       mobileSurfaceTextures.delete(texture);
+      mobileAngledMapTextures.delete(texture);
       texture.removeEventListener('dispose', releaseSurfaceTexture);
     });
     applySurfaceFiltering(texture);
@@ -4037,18 +4041,18 @@ var TEX = {
   floor: ctex(128, 128, function (g, w, h) { g.fillStyle = '#9d936f'; g.fillRect(0, 0, w, h); speckle(g, w, h, 900, 0.1); g.strokeStyle = 'rgba(50,42,25,.35)'; g.lineWidth = 2; g.strokeRect(0, 0, w, h); }, 30, 40)
 };
 var mobileMapTextures = touchMode ? new Map() : null;
-function ctexTint(base, rx, ry) {
+function ctexTint(base, rx, ry, angledMapSurface) {
   // The WebGL renderer allocates storage for each Texture.clone(), even if
   // the clones have the same canvas and UV repeat. Share within one map.
   var variants, key;
   if (mobileMapTextures) {
     variants = mobileMapTextures.get(base);
     if (!variants) { variants = new Map(); mobileMapTextures.set(base, variants); }
-    key = rx + ':' + ry;
+    key = rx + ':' + ry + (angledMapSurface ? ':map' : '');
     if (variants.has(key)) return variants.get(key);
   }
   var t = base.clone(); t.needsUpdate = true; t.repeat.set(rx, ry);
-  if (variants) variants.set(key, mobileSurfaceTexture(t));
+  if (variants) variants.set(key, mobileSurfaceTexture(t, angledMapSurface));
   return t;
 }
 
@@ -4271,6 +4275,18 @@ function buildDeco(m) {
     o.position.set(sg[1], sg[2], sg[3]); o.rotation.y = sg[6]; scene.add(o); worldObjs.push(o);
   });
 }
+function mobileTilesBoxFaces(spec) {
+  return touchMode && /^(brick|stone|plaster|stucco|asphalt|cobble|plate)$/.test(spec.t);
+}
+function tileMapBoxFaces(geometry, width, height, depth) {
+  // Three BoxGeometry uses the axes in each face's plane for U and V.
+  // Use one repeat per three world units, even on a narrow return or tread.
+  var uv = geometry.getAttribute('uv').array, normals = geometry.getAttribute('normal').array;
+  for (var i = 0; i < uv.length / 2; i++) {
+    uv[i * 2] *= (normals[i * 3] ? depth : width) / 3;
+    uv[i * 2 + 1] *= (normals[i * 3 + 1] ? depth : height) / 3;
+  }
+}
 function buildWorld(m) {
   clearWorld();
   var w = AREA.x1 - AREA.x0, d = AREA.z1 - AREA.z0, cx = (AREA.x0 + AREA.x1) / 2, cz = (AREA.z0 + AREA.z1) / 2;
@@ -4281,25 +4297,26 @@ function buildWorld(m) {
      to reduce world draw calls while leaving authoritative BOXES/nav unchanged.
      The merged world-space meshes remain individually raycastable surfaces. */
   if(m.cdoPremium){
-    var solidGroups=new Map();
+    var solidGroups=new Map(), repeatsInGeometry=m.id==='horror_city'||m.id==='blackwater_old_quarter';
     OBST.forEach(function(o){
       if(o.vis===false)return;
-      var spec=texFor(m,o.k),bottom=o.bottom||0;
+      var spec=texFor(m,o.k), tiled=mobileTilesBoxFaces(spec);
       var rx=Math.max(1,Math.round(Math.max(o.w,o.d)/3)),ry=Math.max(1,Math.round(o.h/3));
-      var key=spec.t+'|'+spec.c+((m.id==='horror_city'||m.id==='blackwater_old_quarter')?'':'|'+rx+'|'+ry);
+      var key=spec.t+'|'+spec.c+(tiled||repeatsInGeometry?'':'|'+rx+'|'+ry);
       var grp=solidGroups.get(key);
-      if(!grp){grp={spec:spec,rx:rx,ry:ry,items:[]};solidGroups.set(key,grp);}
+      if(!grp){grp={spec:spec,rx:rx,ry:ry,tiled:tiled,items:[]};solidGroups.set(key,grp);}
       grp.items.push(o);
     });
     solidGroups.forEach(function(grp){
       var positions=[],normals=[],uvs=[],indices=[],base=0;
       grp.items.forEach(function(o){
         var lo=o.bottom||0,part=new THREE.BoxGeometry(o.w,o.h-lo,o.d);
+        if (grp.tiled) tileMapBoxFaces(part,o.w,o.h-lo,o.d);
         part.translate(o.x,(o.h+lo)/2,o.z);
         var p=part.getAttribute('position').array,n=part.getAttribute('normal').array,u=part.getAttribute('uv').array,idx=part.index.array;
         for(var i=0;i<p.length;i++)positions.push(p[i]);
         for(var i=0;i<n.length;i++)normals.push(n[i]);
-        for(var i=0;i<u.length;i++)uvs.push(u[i]*((m.id==='horror_city'||m.id==='blackwater_old_quarter')?(i%2?Math.max(1,(o.h-lo)/3):Math.max(1,Math.max(o.w,o.d)/3)):1));
+        for(var i=0;i<u.length;i++)uvs.push(u[i]*(!grp.tiled&&repeatsInGeometry?(i%2?Math.max(1,(o.h-lo)/3):Math.max(1,Math.max(o.w,o.d)/3)):1));
         for(var i=0;i<idx.length;i++)indices.push(idx[i]+base);
         base+=p.length/3;part.dispose();
       });
@@ -4308,7 +4325,8 @@ function buildWorld(m) {
       geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
       geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
       geometry.setIndex(indices);geometry.computeBoundingSphere();
-      var mat=new THREE.MeshLambertMaterial({map:ctexTint(mkTex(grp.spec),(m.id==='horror_city'||m.id==='blackwater_old_quarter')?1:grp.rx,(m.id==='horror_city'||m.id==='blackwater_old_quarter')?1:grp.ry)});
+      var map=ctexTint(mkTex(grp.spec),grp.tiled||repeatsInGeometry?1:grp.rx,grp.tiled||repeatsInGeometry?1:grp.ry,grp.tiled);
+      var mat=new THREE.MeshLambertMaterial({map:map});
       var mesh=new THREE.Mesh(geometry,mat);mesh.castShadow=true;mesh.receiveShadow=true;
       scene.add(mesh);obstacleMeshes.push(mesh);worldObjs.push(mesh);
     });
@@ -4316,8 +4334,10 @@ function buildWorld(m) {
     OBST.forEach(function(o){
       var spec=texFor(m,o.k),bottom=o.bottom||0;
       var rx=Math.max(1,Math.round(Math.max(o.w,o.d)/3)),ry=Math.max(1,Math.round(o.h/3));
-      var mat=new THREE.MeshLambertMaterial({map:ctexTint(mkTex(spec),rx,ry)});
-      var mesh=new THREE.Mesh(new THREE.BoxGeometry(o.w,o.h-bottom,o.d),mat);
+      var geometry=new THREE.BoxGeometry(o.w,o.h-bottom,o.d), tiled=mobileTilesBoxFaces(spec);
+      if (tiled) tileMapBoxFaces(geometry,o.w,o.h-bottom,o.d);
+      var map=ctexTint(mkTex(spec),tiled?1:rx,tiled?1:ry,tiled);
+      var mesh=new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({map:map}));
       mesh.position.set(o.x,(o.h+bottom)/2,o.z);mesh.castShadow=o.vis!==false;mesh.receiveShadow=true;
       if(o.vis===false)mesh.visible=false;
       scene.add(mesh);obstacleMeshes.push(mesh);worldObjs.push(mesh);

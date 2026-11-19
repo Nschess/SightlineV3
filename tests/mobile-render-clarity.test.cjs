@@ -19,6 +19,7 @@ test('Both clients share the bounded mobile policy, presets and drawing buffer r
     ['function framePixelBudget()', 'function fail(msg)'],
     ['var mobileTextureLimit', 'if (!touchMode) renderer.setPixelRatio'],
     ['var mobileMapTextures', '/* ---------- sky, zones'],
+    ['function mobileTilesBoxFaces', '/* ---------- map picker'],
     ['var lastMobileBufferWidth', 'if (window.ResizeObserver)'],
     ['function effectiveShadowTier()', 'function applyShadowBudget()'],
     ['var QUALITY = touchMode', 'function qualityNow()']
@@ -98,9 +99,15 @@ test('Mobile texture variants are shared, cap filtering at device support and le
   assert.notEqual(v.ctexTint(base,2,3),tex);
   assert.notEqual(v.ctexTint(new Texture(),3,2),tex);
   assert.deepEqual(tex.uv,[3,2]);
+  const angled=v.ctexTint(base,3,2,true);
+  assert.notEqual(angled,tex);
+  assert.equal(v.ctexTint(base,3,2,true),angled);
+  assert.equal(angled.anisotropy,2);
+  assert.equal(tex.anisotropy,4);
   G.mobileQuality = 'high';
   v.mobileSurfaceTextures.forEach(v.applySurfaceFiltering);
   assert.equal(tex.anisotropy,6);
+  assert.equal(angled.anisotropy,6);
   const previousUploads = tex.uploads;
   v.mobileSurfaceTextures.forEach(v.applySurfaceFiltering);
   assert.equal(tex.uploads,previousUploads);
@@ -109,10 +116,47 @@ test('Mobile texture variants are shared, cap filtering at device support and le
   assert.equal(base.anisotropy,4);
   G.fastMode = true;
   assert.equal(v.mobileSurfaceAnisotropy(),2);
+  const noAniso = vm.createContext({ G, renderer:{capabilities:{getMaxAnisotropy:()=>0}}, touchMode:true });
+  vm.runInContext(filtering+pool,noAniso);
+  assert.equal(noAniso.ctexTint(base,3,2,true).anisotropy,1);
 
   const desktop = vm.createContext({ G, touchMode: false });
   vm.runInContext(filtering+pool,desktop);
   const desktopTexture = desktop.ctexTint(base,3,2);
   assert.notEqual(desktop.ctexTint(base,3,2),desktopTexture);
   assert.equal(desktopTexture.anisotropy,4);
+});
+
+test('map masonry uses each box face dimensions without changing positions or indices', () => {
+  const THREE = require(path.join(assets,'www/three.min.js'));
+  const policy = section(pages[0],'function mobileTilesBoxFaces','function buildWorld(');
+  const v=vm.createContext({touchMode:true});
+  vm.runInContext(policy,v);
+  for (const type of ['brick','stone','plaster','stucco','asphalt','cobble','plate'])
+    assert.equal(v.mobileTilesBoxFaces({t:type}),true,type);
+  for (const type of ['crate','shop','glass','balcony','cont'])
+    assert.equal(v.mobileTilesBoxFaces({t:type}),false,type);
+  v.touchMode=false;
+  assert.equal(v.mobileTilesBoxFaces({t:'brick'}),false);
+
+  const geometry = new THREE.BoxGeometry(12,6,1.5);
+  const position = geometry.attributes.position.array.slice();
+  const index = geometry.index.array.slice();
+  v.tileMapBoxFaces(geometry,12,6,1.5);
+  const uv = geometry.attributes.uv;
+  const normals = geometry.attributes.normal;
+  for (const [axis,expected] of [[0,[.5,2]],[1,[4,.5]],[2,[4,2]]]) {
+    const scale = [0,0];
+    for (let i=0;i<normals.count;i++) {
+      if (![normals.getX(i),normals.getY(i),normals.getZ(i)][axis]) continue;
+      scale[0]=Math.max(scale[0],uv.getX(i));
+      scale[1]=Math.max(scale[1],uv.getY(i));
+    }
+    assert.deepEqual(scale,expected);
+  }
+  assert.deepEqual(geometry.attributes.position.array,position);
+  assert.deepEqual(geometry.index.array,index);
+  const canvasTexture=new THREE.CanvasTexture({});
+  assert.equal(canvasTexture.generateMipmaps,true);
+  assert.equal(canvasTexture.minFilter,THREE.LinearMipmapLinearFilter);
 });
