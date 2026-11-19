@@ -3872,12 +3872,12 @@ function framePixelBudget() {
   if (touchMode) {
     if (G.mobileQuality === 'low') return 650000;
     if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1450000 : 1850000;
-    return Number(G.fpsCap) === 30 ? 1450000 : G.adaptive && hz > 75 ? 1050000 : 1250000;
+    return Number(G.fpsCap) === 30 ? 1250000 : G.adaptive && hz > 75 ? 950000 : 1150000;
   }
   return !G.adaptive || Number(G.fpsCap) === 30 ? 3600000 : hz > 75 ? 1800000 : 2400000;
 }
 function mobileDprLimit() {
-  return G.mobileQuality === 'low' ? 1.5 : G.mobileQuality === 'high' ? 2.75 : 2.25;
+  return G.mobileQuality === 'low' ? 1.5 : G.mobileQuality === 'high' ? 2.75 : 2.35;
 }
 var MOBILE_CLARITY_SCALE = [1, 1, 0.96, 0.90];
 function mobileClarityEnabled() {
@@ -3895,8 +3895,12 @@ function pixelRatio() {
   var maxPixels = framePixelBudget();
   if (touchMode) {
     var scale = Math.max(0.5, Math.min(1, (Number(G.renderScale) || 90) / 100));
-    var target = Math.min(window.devicePixelRatio || 1, mobileDprLimit(), Math.sqrt(maxPixels / (w * h)));
-    return target * scale * effectiveAdaptiveScale();
+    var requestedDpr = Math.min(window.devicePixelRatio || 1, mobileDprLimit()) * scale;
+    var budgetDpr = Math.sqrt(maxPixels / (w * h));
+    // Apply the hard ceiling once. A scale smaller than 100% can still fill it.
+    // Keep the original cost of Low and the emergency fast framebuffer.
+    var target = mobileClarityEnabled() ? Math.min(requestedDpr, budgetDpr) : Math.min(requestedDpr, budgetDpr * scale);
+    return target * effectiveAdaptiveScale();
   }
   var requested = Math.min(window.devicePixelRatio || 1, 1.75) * G.renderScale / 100 * perfScale;
   return Math.max(0.4, Math.min(requested, Math.sqrt(maxPixels / (w * h))));
@@ -3914,6 +3918,38 @@ if (!renderer) { fail('WebGL is not available in this browser, so the range cann
 // conversion changed the perceived palette on the active game build; keep
 // texture construction calls routed through this compatibility helper.
 function colorTexture(texture) { return texture; }
+
+// Only mipmapped surface textures need this treatment. Update on settings
+// changes, not on adaptive frame steps, which would cause repeated uploads.
+var mobileTextureLimit = touchMode ? renderer.capabilities.getMaxAnisotropy() : 0;
+var mobileSurfaceTextures = touchMode ? new Set() : null;
+function mobileCharacterAtlasScale() {
+  // The 384px mipmapped atlas requires WebGL 2. Use a stable device tier
+  // so preset and mode changes never rebake cached actors or add duplicates.
+  return touchMode && renderer.capabilities.isWebGL2 && navigator.deviceMemory >= 4 ? 1.5 : undefined;
+}
+function mobileSurfaceAnisotropy() {
+  if (!mobileTextureLimit) return 1;
+  var samples = G.fastMode || G.mobileQuality === 'low' ? 2 : G.mobileQuality === 'high' ? 8 : 4;
+  return Math.min(samples, mobileTextureLimit);
+}
+function applySurfaceFiltering(texture) {
+  var samples = mobileSurfaceAnisotropy();
+  if (texture.anisotropy === samples) return;
+  texture.anisotropy = samples;
+  texture.needsUpdate = true;
+}
+function mobileSurfaceTexture(texture) {
+  if (mobileSurfaceTextures && texture && !mobileSurfaceTextures.has(texture)) {
+    mobileSurfaceTextures.add(texture);
+    texture.addEventListener('dispose', function releaseSurfaceTexture() {
+      mobileSurfaceTextures.delete(texture);
+      texture.removeEventListener('dispose', releaseSurfaceTexture);
+    });
+    applySurfaceFiltering(texture);
+  }
+  return texture;
+}
 if (!touchMode) renderer.setPixelRatio(pixelRatio());
 renderer.shadowMap.enabled = !touchMode;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -3996,7 +4032,21 @@ var TEX = {
   metal: ctex(128, 128, function (g, w, h) { g.fillStyle = '#58684a'; g.fillRect(0, 0, w, h); speckle(g, w, h, 300, 0.1); g.strokeStyle = 'rgba(20,30,15,.7)'; g.lineWidth = 3; for (var x = 8; x < w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } g.fillStyle = 'rgba(230,220,180,.55)'; g.fillRect(0, 0, w, 6); }),
   floor: ctex(128, 128, function (g, w, h) { g.fillStyle = '#9d936f'; g.fillRect(0, 0, w, h); speckle(g, w, h, 900, 0.1); g.strokeStyle = 'rgba(50,42,25,.35)'; g.lineWidth = 2; g.strokeRect(0, 0, w, h); }, 30, 40)
 };
-function ctexTint(base, rx, ry) { var t = base.clone(); t.needsUpdate = true; t.repeat.set(rx, ry); return t; }
+var mobileMapTextures = touchMode ? new Map() : null;
+function ctexTint(base, rx, ry) {
+  // The WebGL renderer allocates storage for each Texture.clone(), even if
+  // the clones have the same canvas and UV repeat. Share within one map.
+  var variants, key;
+  if (mobileMapTextures) {
+    variants = mobileMapTextures.get(base);
+    if (!variants) { variants = new Map(); mobileMapTextures.set(base, variants); }
+    key = rx + ':' + ry;
+    if (variants.has(key)) return variants.get(key);
+  }
+  var t = base.clone(); t.needsUpdate = true; t.repeat.set(rx, ry);
+  if (variants) variants.set(key, mobileSurfaceTexture(t));
+  return t;
+}
 
 /* ---------- sky, zones and per-map world ---------- */
 function shade(hex, f) {
@@ -4114,6 +4164,7 @@ function clearWorld() {
   geometries.forEach(function(g){g.dispose();});
   materials.forEach(function(m){m.dispose();});
   textures.forEach(function(t){t.dispose();});
+  if (mobileMapTextures) mobileMapTextures.clear();
   worldObjs = []; obstacleMeshes = [];
 }
 
@@ -4122,7 +4173,7 @@ function paintTex(m) {
   var w = m.area.x1 - m.area.x0, d = m.area.z1 - m.area.z0, sx = c.width / w, sz = c.height / d;
   g.setTransform(sx, 0, 0, sz, -m.area.x0 * sx, -m.area.z0 * sz);
   m.paint(g, m.area);
-  var t = colorTexture(new THREE.CanvasTexture(c)); t.anisotropy = 8; return t;
+  var t = colorTexture(new THREE.CanvasTexture(c)); t.anisotropy = 8; return mobileSurfaceTexture(t);
 }
 function textTex(txt, bg, fg) {
   var c = document.createElement('canvas'); c.width = 512; c.height = 128; var g = c.getContext('2d');
@@ -4575,11 +4626,14 @@ function fpCamoTexture(design) {
   var cols=(design.uni||[]).slice(0,4).map(fpRGBHex);while(cols.length<4)cols.push(cols[cols.length-1]||'#343a35');
   var key=(design.camo||'solid')+':'+cols.join(':');
   if(!fpSleeveTexture){
-    var canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+    var canvas=document.createElement('canvas');canvas.width=canvas.height=touchMode?128:64;
     fpSleeveTexture=colorTexture(new THREE.CanvasTexture(canvas));fpSleeveTexture.wrapS=fpSleeveTexture.wrapT=THREE.RepeatWrapping;fpSleeveTexture.repeat.set(1,1);fpSleeveTexture.anisotropy=2;
+    mobileSurfaceTexture(fpSleeveTexture);
   }
   if(fpSleevePatternKey!==key){
-    var canvas=fpSleeveTexture.image,ctx=canvas.getContext('2d');ctx.clearRect(0,0,64,64);ctx.fillStyle=cols[0];ctx.fillRect(0,0,64,64);
+    var canvas=fpSleeveTexture.image,ctx=canvas.getContext('2d');
+    if(touchMode)ctx.setTransform(canvas.width/64,0,0,canvas.height/64,0,0);
+    ctx.clearRect(0,0,64,64);ctx.fillStyle=cols[0];ctx.fillRect(0,0,64,64);
     var seed=(design.seed||1)>>>0;function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
     var pattern=design.camo||'solid',i,x,y,w,h;
     if(pattern==='digital'){
@@ -7859,7 +7913,11 @@ function bakeOp(op) {
   // Use the uploaded Claude v12.8 geometry for humans and Hollowed. Only the
   // arm split/pivot metadata is adapted to Sightline's existing grip pose.
   if (window.SightlineClaudeCharacterV128) {
-    try { return (BAKED[op.id] = window.SightlineClaudeCharacterV128.bake(op, THREE)); }
+    try {
+      var baked = window.SightlineClaudeCharacterV128.bake(op, THREE, mobileCharacterAtlasScale());
+      mobileSurfaceTexture(baked.mat.map);
+      return (BAKED[op.id] = baked);
+    }
     catch (assetError) { visualModelFault('claude-original-v12.8-character', op.id, assetError); }
   }
   var rig = op.zombie ? buildZRig(op) : buildRig(op), g = rig.g;
@@ -7883,6 +7941,7 @@ function bakeOp(op) {
    var characterMap = p10Mat ? atlas.map : atlas;
    var tpl = { body: body, legL: legL, legR: legR,armR:armR,armL:armL,phase10Character:!!rig.phase10Character,phase11ClaudeCharacter:!!rig.phase11ClaudeCharacter,mat: p10Mat || new THREE.MeshLambertMaterial({ map: characterMap, vertexColors: true }), hurt: p10Mat ? new THREE.MeshLambertMaterial({ map: atlas.map, vertexColors: true, emissive: 0x992211 }) : new THREE.MeshLambertMaterial({ map: characterMap, vertexColors: true, emissive: 0x992211 }) };
   if (op.zombie) tpl.mat = new THREE.MeshLambertMaterial({ map: atlas, vertexColors: true, emissive: 0x0b2f26 });
+  mobileSurfaceTexture(tpl.mat.map);
   BAKED[op.id] = tpl;
   return tpl;
 }
@@ -9683,7 +9742,7 @@ function stepOutbreakZombie(u, dt) {
     if (selected) { target = selected; SightlineZombieHunt.seen(h, selected, performance.now()); outbreakHuntStats.visible++; }
     u.tgt = target;
   }
-  target = u.tgt && u.tgt.alive && performance.now() - h.seenAt < 1100 ? u.tgt : null;
+  target = h.seen && u.tgt && u.tgt.alive && performance.now() - h.seenAt < 1100 ? u.tgt : null;
   if (target && live) {
     var dx = target.x - u.x, dz = target.z - u.z, d = Math.hypot(dx, dz) || 0.001;
     if (d < 28) u.shownT = 0.5;
@@ -11935,13 +11994,14 @@ function applyShadowBudget(){
   var quality=effectiveShadowTier(),enabled=quality!=='off';
   renderer.shadowMap.enabled=enabled;sun.castShadow=enabled;
   if(!enabled)return;
-  var size=quality==='high'?1536:768;
+  var size=quality==='high'?(touchMode?1024:1536):(touchMode?512:768);
   if(sun.shadow.mapSize.x!==size){
     sun.shadow.mapSize.set(size,size);
     if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}
   }
 }
 function applyG() {
+  if (mobileSurfaceTextures) mobileSurfaceTextures.forEach(applySurfaceFiltering);
   resize();
   applyShadowBudget();
   canvas.style.filter = G.brightness === 100 ? '' : 'brightness(' + (G.brightness / 100) + ')';
@@ -11960,10 +12020,10 @@ function qualityNow() { var r = 'custom'; Object.keys(QUALITY).forEach(function 
 var pc = function (v) { return Math.round(v) + '%'; };
 var SPEC = {
   video: [
-    { t: 'preset', l: 'Quality preset', h: touchMode ? 'Low reduces GPU workload. Balanced improves clarity. High uses a larger pixel budget. Frame rate is a separate setting.' : 'Sets render scale, shadows and fog horizon. The pixel budget can cap the actual internal resolution on high-DPI screens.' },
+    { t: 'preset', l: 'Quality preset', h: touchMode ? 'Low reduces GPU workload. Balanced prioritizes clarity within a smaller pixel budget. High uses a larger budget and stronger texture filtering when supported.' : 'Sets render scale, shadows and fog horizon. The pixel budget can cap the actual internal resolution on high-DPI screens.' },
     touchMode ? { t: 'range', k: 'mobileFov', l: 'Mobile field of view', h: 'Horizontal degrees. Lower values make distant enemies larger; ADS keeps its relative magnification.', min: 65, max: 95, step: 1, f: function (v) { return Math.round(v) + '° horizontal'; } } :
     { t: 'range', o: 'S', k: 'fov', l: 'Field of view', min: 65, max: 100, step: 1, f: function (v) { return Math.round(v) + '°'; } },
-    { t: 'range', k: 'renderScale', l: 'Render scale', h: touchMode ? 'Percentage of the resolution allowed by the device and preset. Lower it if the game stutters.' : 'Lower this first if the game stutters.', min: 50, max: 100, step: 5, f: pc },
+    { t: 'range', k: 'renderScale', l: 'Render scale', h: touchMode ? 'Scales the device resolution. The preset caps the final pixel count. Lower this setting if the game stutters.' : 'Lower this first if the game stutters.', min: 50, max: 100, step: 5, f: pc },
     { t: 'seg', k: 'shadows', l: 'Shadows', opts: [['off', 'Off'], ['low', 'Low'], ['high', 'High']] },
     { t: 'range', k: 'drawDist', l: 'Fog horizon', h: 'Changes map fog range only. It does not cull distant geometry or reduce draw calls.', min: 50, max: 150, step: 10, f: pc },
     { t: 'range', k: 'brightness', l: 'Brightness', min: 70, max: 140, step: 5, f: pc },
@@ -14324,6 +14384,9 @@ function performanceInfo() {
     drawingBufferSize: [gl.drawingBufferWidth, gl.drawingBufferHeight],
     drawingBufferDeviceScalePercent: Math.round(100 * gl.drawingBufferWidth / Math.max(1, stageWidth * deviceDpr)),
     webglAntialias: contextAttributes ? contextAttributes.antialias : null,
+    surfaceAnisotropy: touchMode ? mobileSurfaceAnisotropy() : null,
+    maxSurfaceAnisotropy: touchMode ? mobileTextureLimit : null,
+    mobileCharacterAtlasSize: touchMode ? (mobileCharacterAtlasScale() || 1) * 256 : null,
     framebufferPixels: gl.drawingBufferWidth * gl.drawingBufferHeight,
     allocatedGeometries: renderer.info.memory.geometries, allocatedTextures: renderer.info.memory.textures,
     fastFramebufferEnabled: !!G.fastMode,

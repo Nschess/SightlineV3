@@ -778,9 +778,9 @@ function paintFace(g, D, rnd) {
   g.restore();
 }
 
-var SC = 1, CURQ = 1;
-function paintAtlas(D, doc) {
-  var c = doc.createElement('canvas'); SC = CURQ >= .75 ? 2 : 1; c.width = c.height = ATL * SC; var g = c.getContext('2d');
+var SC = 1;
+function paintAtlas(D, doc, scale) {
+  var c = doc.createElement('canvas'); SC = scale; c.width = c.height = ATL * SC; var g = c.getContext('2d');
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, ATL * SC, ATL * SC); g.setTransform(SC, 0, 0, SC, 0, 0);
   var rnd = RNG(D.seed ^ 0x9E3779B9);
   paintCloth(g, D.camo, D.uni, rnd);
@@ -1530,8 +1530,8 @@ function detailLevel() {
   return .55;
 }
 var QUALITY = null;
-function bake(op, T) {
-  var q = QUALITY === null ? detailLevel() : QUALITY, doc = document; CURQ = q;
+function bake(op, T, atlasScale) {
+  var q = QUALITY === null ? detailLevel() : QUALITY, doc = document;
   var body, legR, legL, D;
   if (op.zombie) { if (typeof buildZombie !== 'function') throw new Error('zombie kit unavailable'); D = zombieDesign(op); var zb = buildZombie(D, q); body = zb.body; legR = zb.legR; legL = zb.legL; }
   else {
@@ -1549,7 +1549,7 @@ function bake(op, T) {
   if (armL && D._armAnchors && D._armAnchors[-1]) armL.translate(-D._armAnchors[-1][0], -D._armAnchors[-1][1], -D._armAnchors[-1][2]);
   function handPose(side) { var h = D._handSpecs && D._handSpecs[side], a = D._armAnchors && D._armAnchors[side]; if (!h || !a) return null; return { offset: [h.wrist[0] - a[0], h.wrist[1] - a[1], h.wrist[2] - a[2]], direction: h.direction, lateral: h.lateral, normal: h.normal, gloveColor: h.gloveColor, skinColor: h.skinColor, style: h.style, side: side }; }
   if (!(bg.attributes.position.count > 100) || !(bb.max.y > 1.5 && bb.max.y < 2.3 && bb.min.y > -0.1)) throw new Error('character bake sanity failed (' + op.id + ') n=' + bg.attributes.position.count + ' y=' + bb.min.y.toFixed(3) + '..' + bb.max.y.toFixed(3));
-  var atlas = paintAtlas(D, doc), tex = new T.CanvasTexture(atlas); tex.anisotropy = 4;
+  var atlas = paintAtlas(D, doc, atlasScale || (q >= .75 ? 2 : 1)), tex = new T.CanvasTexture(atlas); tex.anisotropy = 4;
   var mat = new T.MeshLambertMaterial({ map: tex, vertexColors: true }), hurt = new T.MeshLambertMaterial({ map: tex, vertexColors: true, emissive: 0x992211 });
   if (op.zombie) mat = new T.MeshLambertMaterial({ map: tex, vertexColors: true, emissive: 0x04140f });
   return { body: bg, legL: gL, legR: gR, armR: armR, armL: armL, handR: handPose(1), handL: handPose(-1),

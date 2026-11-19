@@ -13,8 +13,12 @@ function section(page, start, end) {
   return page.slice(a,b).replace(/\r\n/g,'\n');
 }
 test('Both clients share the bounded mobile policy, presets and drawing buffer resize', () => {
+  const atlas = tree => readFileSync(path.join(assets,tree,'character-realism-v12.js'));
+  assert.deepEqual(atlas('www'),atlas('phone-host'));
   for (const [start,end] of [
     ['function framePixelBudget()', 'function fail(msg)'],
+    ['var mobileTextureLimit', 'if (!touchMode) renderer.setPixelRatio'],
+    ['var mobileMapTextures', '/* ---------- sky, zones'],
     ['var lastMobileBufferWidth', 'if (window.ResizeObserver)'],
     ['function effectiveShadowTier()', 'function applyShadowBudget()'],
     ['var QUALITY = touchMode', 'function qualityNow()']
@@ -30,7 +34,10 @@ test('Both clients share the bounded mobile policy, presets and drawing buffer r
   });
   const shadows = section(pages[0],'function effectiveShadowTier()','function applyShadowBudget()');
   vm.runInContext(code+resize+shadows,v);
-  const balanced = Math.sqrt(1250000/(667*375))*.85;
+  const balanced = 2.35*.85;
+  v.G.renderScale = 100;
+  assert.equal(v.pixelRatio(), Math.sqrt(1150000/(667*375)));
+  v.G.renderScale = 85;
   assert.equal(v.pixelRatio(),balanced);
   assert.ok(balanced > 1.53);
   v.resize(); v.resize();
@@ -43,7 +50,7 @@ test('Both clients share the bounded mobile policy, presets and drawing buffer r
   assert.equal(writes.length,1,'effects-first stage does not reallocate the drawing buffer');
   v.stage.clientWidth=1200; v.stage.clientHeight=720; v.G.renderScale=100;
   const initial=v.pixelRatio();
-  assert.ok(Math.abs(initial**2*1200*720-1250000)<0.01);
+  assert.ok(Math.abs(initial**2*1200*720-1150000)<0.01);
   v.perfLvl=2; v.perfScale=.94;
   assert.equal(v.pixelRatio(),initial*.96);
   v.perfLvl=3; v.perfScale=.9;
@@ -52,6 +59,7 @@ test('Both clients share the bounded mobile policy, presets and drawing buffer r
   assert.equal(v.pixelRatio(),initial);
   v.G.adaptive=true;
   v.G.mobileQuality='low'; assert.equal(v.framePixelBudget(),650000);
+  assert.equal(v.pixelRatio(),Math.sqrt(650000/(1200*720))*.9);
   assert.equal(v.effectiveAdaptiveScale(),.9);
   v.G.fastMode=true; assert.equal(v.framePixelBudget(),600000);
   v.G.fastMode=false;
@@ -61,4 +69,50 @@ test('Both clients share the bounded mobile policy, presets and drawing buffer r
   v.touchMode=false; v.G.fpsCap=60; v.perfScale=1; v.window.devicePixelRatio=2;
   assert.equal(v.framePixelBudget(),2400000);
   assert.equal(v.pixelRatio(),Math.min(1.75,Math.sqrt(2400000/(1200*720))));
+});
+
+test('Mobile texture variants are shared, cap filtering at device support and leave desktop clones unchanged', () => {
+  const filtering = section(pages[0], 'var mobileTextureLimit', 'if (!touchMode) renderer.setPixelRatio');
+  const pool = section(pages[0], 'var mobileMapTextures', '/* ---------- sky, zones');
+  class Texture extends EventTarget {
+    anisotropy = 4;
+    uploads = 0;
+    repeat = { set: (x,y) => { this.uv = [x,y]; } };
+    set needsUpdate(changed) { if (changed) this.uploads++; }
+    clone() { return new Texture(); }
+  }
+  const G = { mobileQuality: 'balanced' };
+  const renderer = { capabilities: { isWebGL2: true, getMaxAnisotropy: () => 6 } };
+  const navigator = { deviceMemory: 4 };
+  const v = vm.createContext({ G, renderer, navigator, touchMode: true });
+  vm.runInContext(filtering+pool,v);
+  assert.equal(v.mobileCharacterAtlasScale(),1.5);
+  navigator.deviceMemory = 2;
+  assert.equal(v.mobileCharacterAtlasScale(),undefined);
+  navigator.deviceMemory = 8;
+  renderer.capabilities.isWebGL2 = false;
+  assert.equal(v.mobileCharacterAtlasScale(),undefined);
+  const base = new Texture();
+  const tex = v.ctexTint(base,3,2);
+  assert.equal(v.ctexTint(base,3,2),tex);
+  assert.notEqual(v.ctexTint(base,2,3),tex);
+  assert.notEqual(v.ctexTint(new Texture(),3,2),tex);
+  assert.deepEqual(tex.uv,[3,2]);
+  G.mobileQuality = 'high';
+  v.mobileSurfaceTextures.forEach(v.applySurfaceFiltering);
+  assert.equal(tex.anisotropy,6);
+  const previousUploads = tex.uploads;
+  v.mobileSurfaceTextures.forEach(v.applySurfaceFiltering);
+  assert.equal(tex.uploads,previousUploads);
+  tex.dispatchEvent(new Event('dispose'));
+  assert.ok(!v.mobileSurfaceTextures.has(tex));
+  assert.equal(base.anisotropy,4);
+  G.fastMode = true;
+  assert.equal(v.mobileSurfaceAnisotropy(),2);
+
+  const desktop = vm.createContext({ G, touchMode: false });
+  vm.runInContext(filtering+pool,desktop);
+  const desktopTexture = desktop.ctexTint(base,3,2);
+  assert.notEqual(desktop.ctexTint(base,3,2),desktopTexture);
+  assert.equal(desktopTexture.anisotropy,4);
 });

@@ -3,6 +3,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
+const Hunt = require('../AndroidProject/app/src/main/assets/phone-host/zombie-hunt.js');
 const root = path.resolve(__dirname, '..');
 const assets = path.join(root, 'AndroidProject/app/src/main/assets');
 const host = path.join(assets, 'phone-host');
@@ -40,6 +42,24 @@ test('offline and phone-host shared Outbreak AI paths and hunt module remain byt
   assert.deepEqual(fs.readFileSync(path.join(host, 'zombie-hunt.js')), fs.readFileSync(path.join(offline, 'zombie-hunt.js')));
   const hostPage=fs.readFileSync(path.join(host,'index.html'),'utf8'),offlinePage=fs.readFileSync(path.join(offline,'index.html'),'utf8');
   function declaration(html,name){const start=html.indexOf(`function ${name}(`);assert.ok(start>=0,`${name} is present`);const end=html.indexOf('\nfunction ',start+1);return html.slice(start,end<0?html.length:end).trim();}
-  for(const name of ['infectionSoloTick','stepZombie','runOfflineBots','outbreakTick'])
+  for(const name of ['infectionSoloTick','stepOutbreakZombie','stepZombie','runOfflineBots','outbreakTick'])
     assert.equal(declaration(hostPage,name),declaration(offlinePage,name),`${name} shared AI path`);
+});
+
+test('Outbreak recovery ignores a stale target after its last-seen position is cleared', () => {
+  const start = page.indexOf('function stepOutbreakZombie(');
+  const code = page.slice(start,page.indexOf('function stepZombie(',start));
+  const player = { x: 100, z: 0, alive: true };
+  const hunt = Hunt.create(1);
+  Hunt.seen(hunt,player,10);
+  for (let i=0;i<3;i++) Hunt.blocked(hunt,20+i);
+  assert.equal(hunt.seen,null);
+  assert.equal(hunt.state,'recover');
+  const u = { x: 0, z: 0, tr: { reach: 1.6 }, tgt: player, hunt, huntScan: 1,
+    shT: 1, yaw: 0, g: { position: {}, rotation: {} } };
+  const context = { P: player, state: 'live', SightlineZombieHunt: Hunt, NAV: null,
+    performance: { now: () => 30 }, finishSpit() {}, separate() {}, settleUnitHeight() {} };
+  vm.runInNewContext(code+'\nstepOutbreakZombie(u,0.016);',{ ...context, u });
+  assert.equal(u.g.position.x,0);
+  assert.equal(hunt.state,'recover');
 });
