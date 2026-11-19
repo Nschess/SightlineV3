@@ -1,6 +1,15 @@
 <!doctype html>
-<html lang="en" class="p11-game"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>[hidden]{display:none!important}html,body{margin:0}</style>
+<html lang="en" class="p11-game sl-booting"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+[hidden]{display:none!important}html,body{margin:0}
+#sl-boot{display:none}
+html.sl-booting{background:#081216}
+html.sl-booting body>*:not(#sl-boot),html.sl-booting #ov-start{visibility:hidden!important}
+html.sl-booting #sl-boot{position:fixed;inset:0;display:grid;place-content:center;gap:14px;text-align:center;background:#081216;color:#ecf7f2;font:600 16px system-ui;z-index:2147483001}
+#sl-boot b{font-size:clamp(24px,7vw,56px);letter-spacing:.3em;color:#9deed8}
+html.sl-intro-active #ov-start{visibility:hidden!important}
+html.sl-intro-active #sl-intro:not(.si-out){background:#081216}
+</style>
 <title>Sightline Range — Tactical FPS</title>
 <meta name="theme-color" content="#0b151c">
 <meta name="sightline-route" content="lan-host">
@@ -2010,6 +2019,7 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
 @media(max-width:650px){#ov-start #pn-play.lobby-fullscreen-layout .mode-grid{grid-template-columns:repeat(3,minmax(0,1fr));}#ov-start #pn-play.lobby-fullscreen-layout .mode-brief{grid-template-columns:minmax(0,.72fr) minmax(0,1.48fr);}#ov-start #pn-play.lobby-fullscreen-layout .mode-setup-link{padding-inline:5px;}#ov-start #pn-play.lobby-fullscreen-layout .mode-setup-action{font-size:.42rem;}}
 @media(prefers-reduced-motion:reduce){#ov-start #pn-play.lobby-fullscreen-layout .mode-setup-link{transition:none;}}
 </style>
+<div id="sl-boot" role="status"><b>SIGHTLINE</b><span>Initializing tactical operations</span></div>
 <div class="wrap">
   <header class="top">
     <a class="logo" href="#top" id="top">
@@ -3909,6 +3919,7 @@ function slLegacyMenuAmbience() { try { return localStorage.getItem('sl-ambient'
 var DEF_G = {
   mobileFov: 75, // Independent horizontal gameplay FOV; desktop S.fov stays unchanged.
   offlineAim: 'off',
+  touchLayout: 'compact', touchAutoSprint: true, touchAdsMode: 'toggle', touchFireDrag: true,
   renderScale: touchMode ? 90 : 100, mobileQuality: 'balanced', shadows: touchMode ? 'off' : 'low', drawDist: 100, brightness: 100, viewBob: 100, shake: 100, flashAmt: 100, fps: false,
   master: 55, musicVol: 75, sfxVol: 100, uiVol: 70, muted: false, menuAmbience: slLegacyMenuAmbience(), hitSound: true, uiSound: true, legendaryAudio: true, legendaryEffects: true,
   xhStyle: 'cross', xhColor: '#f4f0dc', xhSize: 9, xhThick: 2, xhGap: 0, xhAlpha: 100, xhOutline: true, xhDot: false, xhDynamic: true,
@@ -3931,6 +3942,14 @@ try {
     localStorage.setItem(FPS_STABILITY_MIGRATION_KEY, '1');
   }
 } catch (e) {}
+if (touchMode && (Object.keys(mobileHud.positions).length || mobileHud.fire2)) {
+  try {
+    var layoutSettings = JSON.parse(localStorage.getItem(G_KEY) || '{}');
+    if (!Object.prototype.hasOwnProperty.call(layoutSettings, 'touchLayout')) {
+      G.touchLayout = 'advanced'; saveObj(G_KEY, G);
+    }
+  } catch (_) {}
+}
 var perfLvl = 0, perfScale = 1;
 /* P11.5.5: Prioritize a usable 60-FPS GPU workload when adaptive quality is ON.
    The old 3.6M-pixel desktop budget could require two large render passes.
@@ -11582,19 +11601,37 @@ function touchById(list, id) { for (var i = 0; i < list.length; i++) if (list[i]
 var tzm = $('#tz-move'), tzl = $('#tz-look'), joy = $('#touch-joystick'), joyKnob = joy.querySelector('i');
 function resetTouchMotion() {
   clearMobileAim();
+  if (touchMode) clearTimeout(touchStanceTimer);
   stick.id = null; stick.x = stick.y = 0; lookTouch.id = null;
   joy.classList.remove('active'); joyKnob.style.transform = 'translate(0px,0px)'; joyKnob._stickX = joyKnob._stickY = null;
   for (var i = 0; i < touchButtonResets.length; i++) touchButtonResets[i]();
   if (touchMode) { jumpQ = false; touchCrouch = false; touchRun = false; touchActionLook = null; }
   fireHeld = false; touchFireOwners.clear();
 }
+// Keep analog velocity continuous when crossing the quiet-walk threshold.
+function touchQuietWalk() {
+  if (!touchMode || touchRun) return false;
+  var magnitude = Math.hypot(stick.x, stick.y);
+  return magnitude > 0 && magnitude < .5;
+}
+function touchForwardSprint() {
+  return touchMode && G.touchAutoSprint && -stick.y > .80 && -stick.y > Math.abs(stick.x) * 1.25;
+}
+function touchMoveGain() {
+  if (!touchMode) return 1;
+  var magnitude = Math.hypot(stick.x, stick.y);
+  if (touchRun && magnitude > 0) return 1 + (1 / magnitude - 1) * Math.min(1, magnitude * 4);
+  if (touchForwardSprint()) {
+    var blend = Math.min(1, (-stick.y - .8) / .2) * Math.min(1, (-stick.y - Math.abs(stick.x) * 1.25) / .20);
+    return 1 + (1 / magnitude - 1) * blend;
+  }
+  return 1;
+}
 function setStick(t) {
   var dx = t.clientX - stick.ox, dy = t.clientY - stick.oy;
   var dist = Math.hypot(dx, dy), radius = 44;
-  if (dist < 5) { stick.x = stick.y = 0; } else {
-    var clamp = Math.min(1, dist / radius);
-    stick.x = (dx / dist) * clamp; stick.y = (dy / dist) * clamp;
-  }
+  var scale = dist > 5 ? Math.min(1, (dist - 5) / (radius - 5)) / dist : 0;
+  stick.x = dx * scale; stick.y = dy * scale;
   if (Math.hypot(stick.x, stick.y) > 0.25) mobileGuide.action('move');
   var knobX = Math.round(stick.x * radius), knobY = Math.round(stick.y * radius);
   if (joyKnob._stickX !== knobX || joyKnob._stickY !== knobY) {
@@ -11653,7 +11690,7 @@ function tbtn(id, down, up, options) {
     if (b.hidden || b.disabled || (mobileHud.editing && b.id !== 'tb-menu') || activePointers.has(id)) return;
     var firstOwner = activePointers.size === 0;
     activePointers.add(id);
-    if (options && options.lookDrag && !touchActionLook && event.pointerType === 'touch')
+    if (options && options.lookDrag && (typeof options.lookDrag !== 'function' || options.lookDrag()) && !touchActionLook && event.pointerType === 'touch')
       touchActionLook = { id:id, x:event.clientX, y:event.clientY };
     if (nativeEvent) { nativeEvent.preventDefault(); nativeEvent.stopPropagation(); }
     b.classList.add('pressed'); if (down && (perPointer || firstOwner)) down(event);
@@ -11720,8 +11757,15 @@ function updateTouchActions() {
   if (!touchMode) return;
   updateTouchToggle($('#tb-aim'), scoped);
   updateTouchToggle($('#tb-prone'), proneOn);
-  updateTouchToggle($('#tb-crouch'), touchCrouch && !proneOn);
+  updateTouchToggle($('#tb-crouch'), touchCrouch || proneOn && G.touchLayout !== 'advanced');
   updateTouchToggle($('#tb-run'), touchRun);
+  var advanced = G.touchLayout === 'advanced', positions = mobileHud.positions;
+  touchActionAvailable('#tb-run', advanced || !G.touchAutoSprint || !!positions['tb-run']);
+  touchActionAvailable('#tb-slide', advanced || !!positions['tb-slide']);
+  touchActionAvailable('#tb-prone', advanced || !!positions['tb-prone']);
+  var stance = $('#tb-crouch'), stanceLabel = advanced ? 'Crouch' : 'Tap to crouch or slide while sprinting. Hold to go prone.';
+  if (stance.getAttribute('aria-label') !== stanceLabel) stance.setAttribute('aria-label', stanceLabel);
+  setT(stance.querySelector('.tb-label'), advanced ? 'CROUCH' : proneOn ? 'PRONE' : 'STANCE');
   var reloadButton = $('#tb-rel'), touchWeapon = WEAPONS[cur], touchAmmo = ammo[cur];
   var isReloading = !!(P.alive && reloading > 0), needsReload = !!(P.alive && touchWeapon && !touchWeapon.melee && touchAmmo && touchAmmo.res > 0 && touchAmmo.mag <= Math.max(3, Math.ceil((touchWeapon.mag || 1) * 0.15)));
   setCls(reloadButton, 'reload-active', isReloading); setCls(reloadButton, 'reload-needed', !isReloading && needsReload);
@@ -11764,8 +11808,9 @@ document.addEventListener('visibilitychange', function () {
 function touchActionActive() { return state === 'live' && P.alive && !(MP.on && MP.menu); }
 function touchFireDown(e) { if (!touchActionActive() || !e || e.pointerId === undefined) return; mobileGuide.action('fire'); var alreadyHeld=touchFireOwners.size>0; touchFireOwners.add(e.pointerId); fireHeld = true; if(!alreadyHeld)tryFire(true); }
 function touchFireUp(e) { touchFireOwners.delete(e&&e.pointerId); fireHeld=touchFireOwners.size>0; }
-tbtn('#tb-fire', touchFireDown, touchFireUp, { perPointer: true, lookDrag:true });
-tbtn('#tb-fire-alt', touchFireDown, touchFireUp, { perPointer: true, lookDrag:true });
+function touchFireAimDrag() { return G.touchFireDrag; }
+tbtn('#tb-fire', touchFireDown, touchFireUp, { perPointer: true, lookDrag: touchFireAimDrag });
+tbtn('#tb-fire-alt', touchFireDown, touchFireUp, { perPointer: true, lookDrag: touchFireAimDrag });
 tbtn('#tb-jump', function () {
   if (!touchActionActive()) return;
   if (proneOn || P.prone >= .3) { proneOn = false; updateTouchActions(); return; }
@@ -11776,9 +11821,11 @@ tbtn('#tb-rel', function () { if (touchActionActive()) startReload(); });
 tbtn('#tb-aim', function () {
   if (!touchActionActive()) return;
   legendCancelInspect();
-  if (WEAPONS[cur].melee) meleeAttack(true); else if (reloading <= 0) scoped = !scoped;
+  if (WEAPONS[cur].melee) meleeAttack(true); else if (reloading <= 0) scoped = G.touchAdsMode === 'hold' || !scoped;
   updateTouchActions();
-}, null, { lookDrag:true });
+}, function () {
+  if (G.touchAdsMode === 'hold') { scoped = false; clearMobileAim(); updateTouchActions(); }
+}, { lookDrag:true });
 // Open the pause layer on click so the release cannot hit its navigation.
 $('#tb-menu').addEventListener('click', function () {
   if (mobileHud.editing) {
@@ -11794,18 +11841,28 @@ tbtn('#tb-inspect', function () { startLegendaryInspection(); });
 tbtn('#tb-objective', function () { if(state==='live'&&P.alive){mpBombUse();updateHud();} }, function(){mpBombCancel();updateHud();});
 tbtn('#tb-dropbomb', function () { if(state==='live'&&P.alive){mpBombDrop();updateHud();} });
 tbtn('#tb-slide', function () { if (touchActionActive()) trySlide(false); });
-tbtn('#tb-crouch', function () {
-  if (!touchActionActive() || sliding) return;
-  touchCrouch = proneOn || !touchCrouch;
-  proneOn = false;
-  updateTouchActions();
-});
-tbtn('#tb-prone', function () {
+var touchStanceTimer = 0, touchStanceHeld = false;
+function toggleTouchProne() {
   if (!touchActionActive() || sliding) return;
   proneOn = !proneOn;
   if (proneOn) { scoped = false; touchCrouch = false; }
   updateTouchActions();
+}
+tbtn('#tb-crouch', function () {
+  touchStanceHeld = false;
+  if (touchActionActive() && G.touchLayout !== 'advanced')
+    touchStanceTimer = setTimeout(function () { touchStanceHeld = true; toggleTouchProne(); }, 360);
+}, function (event) {
+  clearTimeout(touchStanceTimer);
+  if (event.cancelled || event.type === 'pointercancel' || event.type === 'lostpointercapture' ||
+      touchStanceHeld || !touchActionActive() || sliding) return;
+  if (G.touchLayout !== 'advanced' && !touchCrouch && !proneOn &&
+      (touchRun || touchForwardSprint()) && trySlide(false)) return;
+  touchCrouch = proneOn || !touchCrouch;
+  proneOn = false;
+  updateTouchActions();
 });
+tbtn('#tb-prone', toggleTouchProne);
 tbtn('#tb-run', function () { if (touchActionActive()) { touchRun = !touchRun; updateTouchActions(); } });
 tbtn('#tb-score', function () { if (state === 'live' || state === 'roundend') showScore(true); }, function () { showScore(false); });
 tbtn('#tb-swap', function () {
@@ -11982,6 +12039,10 @@ var SPEC = {
   touch: [
     { t: 'range', k: 'touchSens', l: 'Look sensitivity', min: 40, max: 180, step: 5, f: pc, h: 'How far your view turns when dragging the right thumb.' },
     { t: 'range', k: 'touchAdsSens', l: 'Aimed sensitivity', min: 35, max: 120, step: 5, f: pc },
+    { t: 'seg', k: 'touchLayout', l: 'Combat layout', opts: [['compact', 'Two thumbs'], ['advanced', 'Advanced / claw']], h: 'Two thumbs combines stance actions. Advanced shows separate Run, Slide and Prone.' },
+    { t: 'check', k: 'touchAutoSprint', l: 'Forward joystick sprint' },
+    { t: 'seg', k: 'touchAdsMode', l: 'Aim button', opts: [['toggle', 'Tap to toggle'], ['hold', 'Hold to aim']] },
+    { t: 'check', k: 'touchFireDrag', l: 'Look while dragging Fire' },
     { t: 'range', k: 'touchSize', l: 'Button size', min: 85, max: 115, step: 5, f: pc },
     { t: 'check', o: 'S', k: 'invertY', l: 'Invert vertical look' }
   ],
@@ -12159,29 +12220,53 @@ function mobileConsole(title, actions, tabs, content, footer, label) {
 var MOBILE_SETUP_KEY = 'sightline.mobileSetup.previous.v1';
 var MOBILE_SETUP_PROFILES = {
   beginner: { name: 'Beginner', summary: 'Slower aim and larger buttons while you learn.',
-    fov: 72, look: 85, ads: 60, size: 105, opacity: 92, quality: 'medium', graphics: 'Balanced' },
+    fov: 72, look: 85, ads: 60, size: 105, opacity: 92, quality: 'medium', graphics: 'Balanced', audio: [55, 45, 95, 55], autoSwitch: true, aim: 'standard' },
   competitive: { name: 'Competitive', summary: 'Quick turns and a lighter graphics workload.',
-    fov: 80, look: 110, ads: 70, size: 100, opacity: 88, quality: 'competitive', graphics: 'Competitive' },
+    fov: 80, look: 110, ads: 70, size: 100, opacity: 88, quality: 'competitive', graphics: 'Competitive', audio: [60, 25, 100, 40], autoSwitch: false, aim: 'off' },
   immersive: { name: 'Immersive', summary: 'More surface detail and a quieter HUD.',
-    fov: 76, look: 95, ads: 65, size: 100, opacity: 78, quality: 'high', graphics: 'High Quality' }
+    fov: 76, look: 95, ads: 65, size: 100, opacity: 78, quality: 'high', graphics: 'High Quality', audio: [60, 70, 95, 55], autoSwitch: true, aim: 'off' }
 };
 var mobileSetupDraft = '', mobileSetupReplaceLayout = false, mobileSetupMessage = '';
+var mobileSetupSelection = [];
+var MOBILE_SETUP_CATEGORIES = {
+  graphics: 'Graphics', controls: 'Controls', sensitivity: 'Sensitivity', audio: 'Audio', gameplay: 'Gameplay'
+};
 function mobileSetupBackup() {
   try { return JSON.parse(localStorage.getItem(MOBILE_SETUP_KEY) || 'null'); } catch (_) { return null; }
 }
-function mobileSetupValues(profile, replaceLayout) {
-  var values = Object.assign({}, QUALITY[profile.quality], {
-    mobileFov: profile.fov, touchSens: profile.look, touchAdsSens: profile.ads,
+function mobileSetupGroups(profile, replaceLayout) {
+  var graphics = Object.assign({}, QUALITY[profile.quality], {
     fpsCap: profile.quality === 'competitive' && androidRefreshBridge ? 0 : 60, adaptive: true
   });
-  // Preserve custom geometry as a unit unless the player explicitly replaces it.
+  var competitive = profile.quality === 'competitive';
+  var controls = {touchAutoSprint: true, touchAdsMode: competitive ? 'hold' : 'toggle', touchFireDrag: true};
   var previousSetup = mobileSetupBackup();
   var changedSize = G.touchSize !== DEF_G.touchSize && G.touchSize !== (previousSetup && previousSetup.appliedSize);
   if (replaceLayout || !(Object.keys(mobileHud.positions).length || mobileHud.fire2 || changedSize ||
-      mobileHud.opacity !== MOBILE_HUD_DEFAULT.opacity)) {
-    values.touchSize = profile.size;
+      mobileHud.opacity !== MOBILE_HUD_DEFAULT.opacity || G.touchLayout !== DEF_G.touchLayout)) {
+    controls.touchSize = profile.size;
+    controls.touchLayout = competitive ? 'advanced' : 'compact';
   }
+  return {
+    graphics: graphics,
+    controls: controls,
+    sensitivity: {mobileFov: profile.fov, touchSens: profile.look, touchAdsSens: profile.ads},
+    audio: {master: profile.audio[0], musicVol: profile.audio[1], sfxVol: profile.audio[2], uiVol: profile.audio[3]},
+    gameplay: {autoReload: true, autoSwitch: profile.autoSwitch, offlineAim: profile.aim}
+  };
+}
+function mobileSetupValues(profile, replaceLayout, selection) {
+  var groups = mobileSetupGroups(profile, replaceLayout), values = {};
+  (selection || Object.keys(groups)).forEach(function (id) {
+    if (Object.prototype.hasOwnProperty.call(MOBILE_SETUP_CATEGORIES, id)) Object.assign(values, groups[id]);
+  });
   return values;
+}
+function mobileSetupDefaultSelection(profile) {
+  var groups = mobileSetupGroups(profile, true);
+  return Object.keys(groups).filter(function (id) {
+    return Object.keys(groups[id]).every(function (key) { return G[key] === DEF_G[key]; });
+  });
 }
 function persistMobileSetup() {
   saveObj(G_KEY, G);
@@ -12190,9 +12275,11 @@ function persistMobileSetup() {
   // Keep Android's sampled recovery and power limits across setup selections.
   applyG();
 }
-function applyMobileSetup(id, replaceLayout) {
+function applyMobileSetup(id, replaceLayout, selection) {
   if (!touchMode || !Object.prototype.hasOwnProperty.call(MOBILE_SETUP_PROFILES, id)) return false;
-  var profile = MOBILE_SETUP_PROFILES[id], values = mobileSetupValues(profile, replaceLayout), previous = { settings: {} };
+  replaceLayout = replaceLayout && (!selection || selection.includes('controls'));
+  var profile = MOBILE_SETUP_PROFILES[id], values = mobileSetupValues(profile, replaceLayout, selection), previous = { settings: {} };
+  if (!Object.keys(values).length) return false;
   Object.keys(values).forEach(function (key) { previous.settings[key] = G[key]; });
   if (values.touchSize) previous.appliedSize = values.touchSize;
   if (replaceLayout) previous.hud = { opacity: mobileHud.opacity, fire2: mobileHud.fire2, positions: mobileHud.positions };
@@ -12228,8 +12315,9 @@ function restoreMobileSetup() {
   return true;
 }
 function mobileSetupLayoutLabel(profile, values) {
-  return mobileSetupReplaceLayout ? 'Default ' + mobileHud.hand + '-handed layout · ' + values.touchSize + '% buttons · ' +
-    profile.opacity + '% opacity' : values.touchSize ? 'Current layout · ' + values.touchSize + '% buttons' : 'Keep your customized layout and button size';
+  if (!values.touchSize) return 'Keep your layout and button size.';
+  return (values.touchLayout === 'advanced' ? 'Advanced' : 'Two thumbs') + ' · ' + mobileHud.hand + ' hand · ' +
+    values.touchSize + '% buttons' + (mobileSetupReplaceLayout ? ' · ' + profile.opacity + '% opacity · one Fire button' : '');
 }
 function mobileSetupHtml() {
   var profile = MOBILE_SETUP_PROFILES[mobileSetupDraft];
@@ -12239,17 +12327,28 @@ function mobileSetupHtml() {
       return '<button class="sl-setup-choice" type="button" data-mobile-setup="' + id + '"><b>' + item.name + '</b><span>' + item.summary + '</span></button>';
     }).join('') + (mobileSetupBackup() ? '<button class="btn ghost" type="button" data-act="setup-restore">Restore previous settings</button>' : '') +
     '<p role="status">' + mobileSetupMessage + '</p></div>';
-  var values = mobileSetupValues(profile, mobileSetupReplaceLayout);
-  var fps = values.fpsCap || 120, cap = Math.min(fps, androidDisplay ? androidDisplay.maxHz : 60,
+  var groups = mobileSetupGroups(profile, mobileSetupReplaceLayout), graphics = groups.graphics;
+  var fps = graphics.fpsCap || 120, cap = Math.min(fps, androidDisplay ? androidDisplay.maxHz : 60,
     androidPowerCap, androidDisplay && androidDisplay.batterySaver ? 60 : 120);
-  var frameLabel = 'Up to ' + cap + ' FPS' + (!values.fpsCap && !androidDisplay ? ' until the display is detected' : '');
-  var layout = mobileSetupLayoutLabel(profile, values);
-  return '<div class="sl-setup"><h3 tabindex="-1" id="sl-setup-preview">' + profile.name + ' preview</h3><dl><dt>Frame rate</dt><dd>' + frameLabel +
-    ' · adaptive</dd><dt>Field of view</dt><dd>' + values.mobileFov + '° horizontal</dd><dt>Look / aim sensitivity</dt><dd>' +
-    values.touchSens + '% / ' + values.touchAdsSens + '%</dd><dt>Graphics</dt><dd>' + profile.graphics +
-    ' · ' + values.renderScale + '% render scale</dd><dt>HUD</dt><dd id="sl-setup-layout">' + layout + '</dd></dl>' +
-    '<label class="sl-setup-replace"><input type="checkbox" data-mobile-setup-layout ' + (mobileSetupReplaceLayout ? 'checked' : '') +
-    '> Use this profile’s default HUD</label><p>Your preferred hand stays the same. Display, Battery Saver and temperature can lower the frame target.</p></div>';
+  var frameLabel = 'Up to ' + cap + ' FPS' + (!graphics.fpsCap && !androidDisplay ? ' until the display is detected' : '');
+  var onOff = function (enabled) { return enabled ? 'On' : 'Off'; };
+  var detail = {
+    graphics: profile.graphics + ' · ' + graphics.renderScale + '% scale · ' + frameLabel +
+      ' · adaptive on · low effects · shadows off · 100% fog horizon · fast GPU fallback off',
+    controls: 'Forward sprint on · ' + (groups.controls.touchAdsMode === 'hold' ? 'Hold ADS' : 'Toggle ADS') +
+      ' · manual Fire with aim drag. <span id="sl-setup-layout">' + mobileSetupLayoutLabel(profile, groups.controls) + '</span>',
+    sensitivity: profile.fov + '° horizontal FOV · ' + profile.look + '% look · ' + profile.ads + '% ADS',
+    audio: profile.audio.map(function (level, i) { return ['Master ', 'Music ', 'Effects ', 'UI '][i] + level + '%'; }).join(' · '),
+    gameplay: 'Auto reload on · auto switch ' + onOff(profile.autoSwitch).toLowerCase() + ' · offline aim ' + profile.aim
+  };
+  return '<div class="sl-setup"><h3 tabindex="-1" id="sl-setup-preview">' + profile.name + ' preview</h3>' +
+    '<p>Choose categories. Customized categories start unchecked.</p><button class="btn ghost" type="button" data-act="setup-select-all">Select all categories</button>' +
+    Object.keys(MOBILE_SETUP_CATEGORIES).map(function (id) {
+      return '<label class="sl-setup-category"><input type="checkbox" data-mobile-setup-category="' + id + '"' +
+        (mobileSetupSelection.includes(id) ? ' checked' : '') + '><span><b>' + MOBILE_SETUP_CATEGORIES[id] +
+        '</b><small>' + detail[id] + '</small></span></label>';
+    }).join('') + '<label class="sl-setup-replace"><input type="checkbox" data-mobile-setup-layout ' + (mobileSetupReplaceLayout ? 'checked' : '') +
+    '> Replace custom HUD if applying Controls</label><p>Your preferred hand stays the same. Display, Battery Saver and temperature can lower the frame target.</p></div>';
 }
 
 function mobileSettingsHtml(content) {
@@ -12261,7 +12360,7 @@ function mobileSettingsHtml(content) {
   var backLabel = state === 'paused' || (MP.on && MP.menu) ? 'Back to Match Menu' : 'Back to Lobby';
   return mobileConsole('Settings', '<button type="button" class="btn ghost" data-act="mobile-settings-back">' + backLabel + '</button>',
     '<div class="subtabs sl-mobile-console-tabs" role="tablist" aria-orientation="vertical" aria-label="Settings categories">' + tabs + '</div>', content, setTab === 'setup' && mobileSetupDraft ?
-    '<button type="button" class="btn ghost" data-act="setup-cancel">Cancel</button><button type="button" class="btn" data-act="setup-apply">Apply setup</button>' : '', current[1]);
+    '<button type="button" class="btn ghost" data-act="setup-cancel">Cancel</button><button type="button" class="btn" data-act="setup-apply"' + (mobileSetupSelection.length ? '' : ' disabled') + '>Apply setup</button>' : '', current[1]);
 }
 function mobileRulesHtml(actions, sections, status, footer) {
   var items = [['match', 'Match'], ['roster', 'AI roster'], ['timing', 'Timing']].filter(function (item) { return sections[item[0]]; });
@@ -12727,6 +12826,7 @@ $('.mn-main').addEventListener('click', function (e) {
   if ((b = t.closest('[data-go]'))) { if (!menuLocked(b.getAttribute('data-go'))) goTab(b.getAttribute('data-go')); return; }
   if (touchMode && menuTab === 'settings' && setTab === 'setup' && (b = t.closest('[data-mobile-setup]'))) {
     mobileSetupDraft = b.dataset.mobileSetup;
+    mobileSetupSelection = mobileSetupDefaultSelection(MOBILE_SETUP_PROFILES[mobileSetupDraft]);
     mobileSetupReplaceLayout = false;
     renderBody(false); $('#sl-setup-preview')?.focus({preventScroll:true}); uiTick(true); return;
   }
@@ -12747,9 +12847,10 @@ $('.mn-main').addEventListener('click', function (e) {
   if ((b = t.closest('[data-act]'))) {
     var a = b.getAttribute('data-act');
     if (touchMode && menuTab === 'settings' && setTab === 'setup' &&
-        ['setup-apply', 'setup-cancel', 'setup-restore'].includes(a)) {
+        ['setup-apply', 'setup-cancel', 'setup-restore', 'setup-select-all'].includes(a)) {
+      if (a === 'setup-select-all') { mobileSetupSelection = Object.keys(MOBILE_SETUP_CATEGORIES); renderBody(true); return; }
       var setupChoice = mobileSetupDraft;
-      if (a === 'setup-apply') mobileSetupMessage = applyMobileSetup(setupChoice, mobileSetupReplaceLayout) ?
+      if (a === 'setup-apply') mobileSetupMessage = applyMobileSetup(setupChoice, mobileSetupReplaceLayout, mobileSetupSelection) ?
         'Setup applied. You can restore the previous settings here.' : 'Setup could not be saved.';
       if (a === 'setup-restore') mobileSetupMessage = restoreMobileSetup() ? 'Previous settings restored.' : 'Previous settings could not be restored.';
       mobileSetupDraft = ''; mobileSetupReplaceLayout = false;
@@ -12793,10 +12894,17 @@ $('.mn-main').addEventListener('input', function (e) {
 });
 $('.mn-main').addEventListener('change', function (e) {
   var t = e.target;
+  if (t.hasAttribute('data-mobile-setup-category') && mobileSetupDraft) {
+    var category = t.dataset.mobileSetupCategory;
+    mobileSetupSelection = mobileSetupSelection.filter(function (id) { return id !== category; });
+    if (t.checked) mobileSetupSelection.push(category);
+    $('[data-act=setup-apply]').disabled = !mobileSetupSelection.length;
+    return;
+  }
   if (t.hasAttribute('data-mobile-setup-layout') && mobileSetupDraft) {
     mobileSetupReplaceLayout = t.checked;
     var profile = MOBILE_SETUP_PROFILES[mobileSetupDraft];
-    $('#sl-setup-layout').textContent = mobileSetupLayoutLabel(profile, mobileSetupValues(profile, t.checked));
+    $('#sl-setup-layout').textContent = mobileSetupLayoutLabel(profile, mobileSetupGroups(profile, t.checked).controls);
     return;
   }
   if(t.matches('select[data-loadout-weapon]')){if(chooseLobbyWeapon(t.value)){lobbyAudioCue('weapon');loadoutCategory='all';renderBody(true);}return;}
@@ -13658,7 +13766,7 @@ function mpUpdate(dt) {
   if (state === 'buy') mpBuyButton();
   if ((state === 'live' || state === 'roundend') && P.alive && now - MP.lastSend >= SEND_MS) {
     MP.lastSend = now;
-    var walkIntent = held('walk') || (touchMode && !touchRun && Math.hypot(stick.x, stick.y) < 0.5 && Math.hypot(stick.x, stick.y) > 0.05);
+    var walkIntent = held('walk') || touchQuietWalk();
     mpSend({ t: 'in', ep: MP.ep, x: r4(P.x), y: r4(P.y), z: r4(P.z), yaw: r4(P.yaw), pitch: r4(P.pitch), cr: Math.round(P.crouch * 100) / 100, pr: Math.round(P.prone * 100) / 100, wk: walkIntent ? 1 : 0, w: cur });
   }
 }
@@ -14170,13 +14278,12 @@ function updatePlayer(dt) {
   }
   var f = 0, s = 0;
   if (alive) {
-    var stickLength = touchMode && touchRun ? Math.hypot(stick.x, stick.y) : 0;
-    var runScale = stickLength > .05 ? 1 / stickLength : 1;
+    var runScale = touchMoveGain();
     f = (held('fwd') ? 1 : 0) - (held('back') ? 1 : 0) - stick.y * runScale;
     s = (held('right') ? 1 : 0) - (held('left') ? 1 : 0) + stick.x * runScale;
     var l = Math.hypot(f, s); if (l > 1) { f /= l; s /= l; }
   }
-  var w = WEAPONS[cur], walk = held('walk') || (touchMode && !touchRun && Math.hypot(stick.x, stick.y) < 0.5 && Math.hypot(stick.x, stick.y) > 0.05);
+  var w = WEAPONS[cur], walk = held('walk'), quietWalk = walk || touchQuietWalk();
       var infectedPlayer = soloInfectionPlayer() || MP.on && MP.mode==='infection' && MP.myInfected;
       var top = (infectedPlayer && P.tagUntil>performance.now() ? .8 : 1) * (infectedPlayer && (SOLO_INF.on&&SOLO_INF.dawnRush || MP.infStatus&&MP.infStatus.surge) ? 1.08 : 1) * 5.2 * w.speed * (walk ? 0.5 : 1) * (scoped ? 0.7 : 1) * (1 - P.crouch * 0.55) * (1 - P.prone * 0.45);
   var sy = Math.sin(P.yaw), cy = Math.cos(P.yaw);
@@ -14205,7 +14312,7 @@ function updatePlayer(dt) {
   if (P.y <= gy) { P.y = gy; P.vy = 0; P.onGround = true; } else P.onGround = false;
   speedFrac = Math.min(1, Math.hypot(P.vx, P.vz) / 5.2);
   if (walk) speedFrac *= 0.4;
-  if (alive && P.onGround && speedFrac > 0.45) {
+  if (alive && P.onGround && !quietWalk && speedFrac > 0.45) {
     stepT -= dt * (0.7 + speedFrac);
     if (stepT <= 0) { stepT = 0.42; sfxNoise(0.07, 700, 0.14); hearPlayer(18); }
   }
@@ -15188,6 +15295,7 @@ new MutationObserver(function () {
 }catch(slFeatErr){if(window.console)console.warn('lobby features',slFeatErr);}
 idleCamera(0);
 requestAnimationFrame(frame);
+document.documentElement.dataset.slBootReady = '1';
 })();
 </script>
 
@@ -16263,11 +16371,12 @@ function startCards(){el.setAttribute('data-phase','cards');idx=-1;next();skip.f
 function open(){
  if(isOpen)return;isOpen=true;returnFocus=document.activeElement;
  el.setAttribute('data-phase','splash');el.hidden=false;el.classList.remove('si-out');
- requestAnimationFrame(function(){requestAnimationFrame(function(){el.classList.add('si-in');});});
+ el.classList.add('si-in');
  begin.focus();
 }
 function close(){
  if(!isOpen)return;clearTimeout(timer);mark();el.classList.add('si-out');el.classList.remove('si-in');
+ document.documentElement.classList.remove('sl-intro-active');
  setTimeout(function(){el.hidden=true;el.classList.remove('si-out');isOpen=false;
   try{if(returnFocus&&returnFocus.focus)returnFocus.focus();}catch(e){}},650);
 }
@@ -16283,13 +16392,18 @@ document.addEventListener('keydown',function(e){
 },true);
 var replay=document.getElementById('btn-intro');
 if(replay)replay.addEventListener('click',open);
-// auto-open once for new players, only on the lobby, never when auto-joining a LAN match
-setTimeout(function(){
- var ov=document.getElementById('ov-start');
- if(seen()||/[?&]join=1/.test(location.search))return;
- if(!ov||ov.hidden)return;
- open();
-},900);
+document.addEventListener('DOMContentLoaded',function(){
+ var root=document.documentElement, ov=document.getElementById('ov-start');
+ if(root.dataset.slBootReady!=='1'){
+  document.querySelector('#sl-boot span').textContent='Could not initialize Sightline. Reload to try again.';
+  return;
+ }
+ if(!seen()&&!/[?&]join=1/.test(location.search)&&ov&&!ov.hidden){
+  root.classList.add('sl-intro-active');
+  open();
+ }
+ root.classList.remove('sl-booting');
+},{once:true});
 })();
 </script><style id="android51-restored-hud">
 /* Visual source: Android 5.1 v4 APK; current input and gameplay retained. */
@@ -16467,6 +16581,9 @@ html.touch-device #ov-start .sl-setup dl { display:grid; grid-template-columns:m
 html.touch-device #ov-start .sl-setup dt { color:#b9d4d1; }
 html.touch-device #ov-start .sl-setup dd { margin:0; overflow-wrap:anywhere; }
 html.touch-device #ov-start .sl-setup-replace { display:flex; align-items:center; gap:8px; min-height:44px; width:fit-content; padding:0 8px; border:1px solid #42626a; border-radius:6px; }
+html.touch-device #ov-start .sl-setup-category { display:flex; align-items:center; min-height:44px; gap:9px; padding:5px 8px; border:1px solid #42626a; border-radius:6px; }
+html.touch-device #ov-start .sl-setup-category input { inline-size:20px; block-size:20px; margin:0; flex:none; }
+html.touch-device #ov-start .sl-setup-category small { display:block; color:#b9d4d1; }
 html.touch-device #ov-start .sl-setup-replace input { width:20px; height:20px; margin:0; flex:none; }
 </style>
 <style id="mobile-combat-hud">

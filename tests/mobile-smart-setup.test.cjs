@@ -182,7 +182,7 @@ test('all profiles persist only intended settings and can be restored after a fr
       ['immersive', 76, 95, 65, 'high', 100, 60]
     ]) {
       const storage = new Map([['sightline.settings.v1', JSON.stringify(previous)]]);
-      assert.equal(setupContext(page, storage, {}).applyMobileSetup(id, false), true);
+      assert.equal(setupContext(page, storage, {}).applyMobileSetup(id, false, ['graphics', 'controls', 'sensitivity']), true);
       const restarted = setupContext(page, storage, {});
       const g = restarted.G;
       assert.deepEqual([g.mobileFov, g.touchSens, g.touchAdsSens, g.mobileQuality, g.renderScale,
@@ -191,6 +191,25 @@ test('all profiles persist only intended settings and can be restored after a fr
       const restored = setupContext(page, storage, {}).G;
       for (const [key, value] of Object.entries(previous)) assert.equal(restored[key], value, id + '/' + key);
     }
+  }
+});
+
+test('customized categories start unchecked and selected categories undo independently', () => {
+  for (const page of pages) {
+    const storage = new Map([['sightline.settings.v1', JSON.stringify({master: 30, offlineAim: 'training', touchAdsMode: 'hold'})]]);
+    const app = setupContext(page, storage, {});
+    assert.deepEqual(Array.from(app.mobileSetupDefaultSelection(app.MOBILE_SETUP_PROFILES.beginner)), ['graphics', 'sensitivity']);
+    assert.equal(app.applyMobileSetup('beginner', false, []), false);
+    assert.equal(app.applyMobileSetup('beginner', true, ['audio', 'gameplay']), true);
+    const restarted = setupContext(page, storage, {});
+    assert.equal(restarted.G.master, 55);
+    assert.equal(restarted.G.musicVol, 45);
+    assert.equal(restarted.G.offlineAim, 'standard');
+    assert.equal(restarted.G.touchAdsMode, 'hold');
+    assert.equal(restarted.G.mobileFov, 75);
+    assert.equal(restarted.restoreMobileSetup(), true);
+    assert.equal(restarted.G.master, 30);
+    assert.equal(restarted.G.offlineAim, 'training');
   }
 });
 

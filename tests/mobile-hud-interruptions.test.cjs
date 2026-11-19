@@ -25,7 +25,7 @@ test('Opening the live store releases all mobile inputs and preserves PC input b
       stick: { id: 1, x: 1, y: 1 }, lookTouch: { id: 2 },
       joy: { classList: { remove() {} } }, joyKnob: { style: {} },
       touchFireOwners: new Set([3, 4]), touchButtonResets: [() => heldReleaseCalls++],
-      canBuyNow: () => true, storeNote() {}, renderBuy() {}, clearMobileAim() {},
+      canBuyNow: () => true, storeNote() {}, renderBuy() {}, clearMobileAim() {}, clearTimeout() {}, touchStanceTimer: 0,
       showOverlay(id) { assert.equal(id, '#ov-buy'); storeOpens++; }
     });
     vm.runInContext(section(page, 'function resetTouchMotion()', 'function setStick('), context);
