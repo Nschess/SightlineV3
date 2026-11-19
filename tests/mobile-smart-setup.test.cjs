@@ -146,6 +146,7 @@ test('cover, smoke, hidden actors, allies and network transitions release or pre
       c => { c.MP.on = true; },
       c => { c.MP.sock = {}; },
       c => { c.MP.id = 17; },
+      c => { c.MP.retryT = 1; },
       c => { c.M = {}; },
       c => { c.touchMode = false; },
       c => { c.scoped = false; },
@@ -167,6 +168,53 @@ test('cover, smoke, hidden actors, allies and network transitions release or pre
       assert.equal(context.mobileAimTarget, null);
       assert.equal(context.P.yaw, yaw);
     }
-    assert.match(section(page, 'function mpBegin(m)', '  if (MP.on) mpCleanup();'), /offlineAimMatch = null;\s+clearMobileAim\(\);/);
+    assert.match(section(page, 'function mpBegin(m)', '  if (MP.on) mpCleanup();'), /blockMobileAimForLan\(\);/);
+  }
+});
+
+test('all profiles persist only intended settings and can be restored after a fresh load', () => {
+  const previous = {mobileFov: 83, touchSens: 120, touchAdsSens: 75, mobileQuality: 'low',
+    renderScale: 85, fpsCap: 30, adaptive: false, touchSize: 110, offlineAim: 'training'};
+  for (const page of pages) {
+    for (const [id, fov, look, ads, quality, scale, fps] of [
+      ['beginner', 72, 85, 60, 'balanced', 90, 60],
+      ['competitive', 80, 110, 70, 'competitive', 100, 0],
+      ['immersive', 76, 95, 65, 'high', 100, 60]
+    ]) {
+      const storage = new Map([['sightline.settings.v1', JSON.stringify(previous)]]);
+      assert.equal(setupContext(page, storage, {}).applyMobileSetup(id, false), true);
+      const restarted = setupContext(page, storage, {});
+      const g = restarted.G;
+      assert.deepEqual([g.mobileFov, g.touchSens, g.touchAdsSens, g.mobileQuality, g.renderScale,
+        g.fpsCap, g.adaptive, g.touchSize, g.offlineAim], [fov, look, ads, quality, scale, fps, true, 110, 'training']);
+      assert.equal(restarted.restoreMobileSetup(), true);
+      const restored = setupContext(page, storage, {}).G;
+      for (const [key, value] of Object.entries(previous)) assert.equal(restored[key], value, id + '/' + key);
+    }
+  }
+});
+
+test('a queued reconnect revokes an active offline lock and saved Training cannot rearm it', () => {
+  for (const page of pages) {
+    const {context, bot} = aimContext(page);
+    let retry;
+    Object.assign(context, {
+      clearTimeout() {}, setTimeout(cb) { retry = cb; return 1; },
+      mpRefreshPanel() {}, mpConnect() { context.MP.sock = {}; }
+    });
+    vm.runInContext(section(page, 'function mpRetry(n)', 'setInterval('), context);
+    context.updateMobileAim(.016, 1.22);
+    assert.equal(context.mobileAimTarget, bot);
+    context.mpRetry(0);
+    assert.equal(context.mobileAimTarget, null);
+    assert.equal(context.offlineAimMatch, null);
+    assert.equal(context.MP.retryT, 1);
+    assert.equal(context.mobileAimPolicy(), null);
+    retry();
+    assert.equal(context.MP.retryT, 0);
+    assert.equal(context.mobileAimPolicy(), null);
+    context.MP.sock = null;
+    assert.equal(context.G.offlineAim, 'training');
+    assert.equal(context.mobileAimPolicy(), null);
   }
 });

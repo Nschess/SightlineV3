@@ -36,7 +36,7 @@ jobs:
           exit $LASTEXITCODE
 
       - name: Verify critical mobile regressions
-        run: node --test tests/mobile-render-clarity.test.cjs tests/android-refresh-lifecycle.test.cjs tests/phase3-outbreak-integration.test.cjs tests/lobby10-match-rules-back.test.mjs tests/mobile-hud-interruptions.test.cjs
+        run: node --test tests/mobile-render-clarity.test.cjs tests/android-refresh-lifecycle.test.cjs tests/phase3-outbreak-integration.test.cjs tests/lobby10-match-rules-back.test.mjs tests/mobile-hud-interruptions.test.cjs tests/mobile-smart-setup.test.cjs
 
       - name: Set up JDK 17
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
@@ -145,7 +145,7 @@ jobs:
           $sourceCommit = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0 -or $sourceCommit -ne $env:GITHUB_SHA) { throw 'Runner checkout differs from the workflow commit.' }
           $versionCode = [regex]::Match($badging, "versionCode='(\d+)'").Groups[1].Value
-          if ([int]$versionCode -le 20 -or $badging -notmatch "versionName='[^']+-dev25\.2-diagnostic'") { throw 'Expected an update-compatible DEV25.2 diagnostic version.' }
+          if ([int]$versionCode -le 21 -or $badging -notmatch "versionName='[^']+-dev25\.4-diagnostic'") { throw 'Expected an update-compatible DEV25.4 diagnostic version.' }
           $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
           $hostPaths = Get-Content -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') | ForEach-Object { $_.Substring(66) }
           $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
@@ -187,6 +187,9 @@ jobs:
             foreach ($marker in @('sightline-lan-diag-v1', 'hostFingerprints', 'clientSnapshotReceiveGapMs', 'totalInterval>0', 'Start / stop frame diagnostics', 'drawingBufferDeviceScalePercent', 'MOBILE_CLARITY_SCALE', 'mobileCharacterAtlasScale', 'MOBILE_COMPETITIVE_SCALE', 'androidEffectiveHz', 'androidSelectedCap', 'androidBatterySaver', 'androidThermalStatus', 'tickAndroidPerformance', 'finishAndroidFpsProbe', 'mobileSettingsHtml', 'mpConfirmRules', '--left-action-base')) {
               if (-not $pageText.Contains($marker)) { throw "Missing packaged capture marker: $marker" }
             }
+            foreach ($marker in @('MOBILE_SETUP_PROFILES', 'restoreMobileSetup', 'Training Aim Lock', 'blockMobileAimForLan')) {
+              if (-not $pageText.Contains($marker)) { throw "Missing packaged Smart Setup or aim training marker: $marker" }
+            }
           } finally { $archive.Dispose() }
           $deliverables = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'sightline-acceptance')
           Copy-Item -LiteralPath $apks[0].FullName -Destination (Join-Path $deliverables.FullName 'sightline-lan-acceptance.apk')
@@ -221,7 +224,7 @@ jobs:
           Copy-Item -LiteralPath 'docs/DEV24-DEVICE-ACCEPTANCE.md' -Destination (Join-Path $deliverables.FullName 'DEVICE-ACCEPTANCE.md')
           Copy-Item -LiteralPath 'docs/ANDROID-DEVICE-FPS.md','tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
           $instructions = @(
-            '# Sightline V3 DEV25.2 mobile acceptance diagnostic'
+            '# Sightline V3 DEV25.4 mobile acceptance diagnostic'
             ''
             'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-lan-acceptance.apk SHA256'
             ''
@@ -231,7 +234,9 @@ jobs:
             'See MIGRATION.md for optional transfer of offline settings and records.'
             ''
             'Follow DEVICE-ACCEPTANCE.md for the physical-device checks and Windows CMD commands.'
-            'For DEV25.2, compare ground, road, and wall clarity while moving. On a small landscape screen, check the new two-thumb layout, direct actions, and saved custom HUD.'
+            'Compare map clarity while moving and check the two-thumb HUD on a small landscape screen.'
+            'In Settings, apply each Smart Setup profile, restart and confirm the saved settings, then restore the previous setup.'
+            'In offline bot practice, select Training Aim Lock, use ADS and swipe near a visible opponent. You still fire each shot. Leave the setting enabled and verify that there is no assistance in LAN play, including after reconnecting.'
             ''
             'Windows LAN: extract sightline-windows-host.zip, run START-HOST.bat in CMD and open http://WINDOWS_LAN_IP:8080/?lanDiag=1 using the bound private IPv4 address.'
             'Physical-device acceptance: UNVERIFIED.'

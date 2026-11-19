@@ -11200,8 +11200,12 @@ var OFFLINE_AIM = {
 function clearMobileAim() {
   mobileAimTarget = null; mobileAimUntil = 0; mobileAimScan = 0;
 }
+function blockMobileAimForLan() {
+  offlineAimMatch = null;
+  clearMobileAim();
+}
 function mobileAimPolicy() {
-  if (!touchMode || !M || M !== offlineAimMatch || MP.on || MP.sock || MP.id ||
+  if (!touchMode || !M || M !== offlineAimMatch || MP.on || MP.sock || MP.id || MP.retryT ||
       !P.alive || state !== 'live' || document.hidden || whiteT > 0 ||
       !scoped || reloading > 0 || WEAPONS[cur].melee) return null;
   return Object.prototype.hasOwnProperty.call(OFFLINE_AIM, G.offlineAim) ? OFFLINE_AIM[G.offlineAim] : null;
@@ -11262,7 +11266,7 @@ function startMatch() {
   lobbyAudioCue('deploy'); setLobbyMusicActive(false);
   M = { opS: {}, round: 0, you: 0, bots: 0, money: CFG.startMoney, stats: { shots: 0, hits: 0, hs: 0, kills: 0, deaths: 0 } };
   clearMobileAim();
-  offlineAimMatch = touchMode && !MP.on && !MP.sock && !MP.id ? M : null;
+  offlineAimMatch = touchMode && !MP.on && !MP.sock && !MP.id && !MP.retryT ? M : null;
   owned = { pistol: true, knife: true }; P.armor = 0; cur = 'pistol'; resetNades(); curBuys = []; lastBuys = []; mel.t = 0;
   mpBuildSupplies(offlineAmmoStations());
   nextRound();
@@ -13358,8 +13362,8 @@ $('#supply').addEventListener('click', function (e) { e.stopPropagation(); mpBuy
 
 /* ---- connection ---- */
 function mpConnect() {
-  if(MP.sock)return;clearTimeout(MP.retryT);if(typeof mpCancelLanScan==='function')mpCancelLanScan();
-  if (mpNativeLan()) { location.href='sightlinelan://join?host='+encodeURIComponent(String(MP.addr||'').trim()); return; }
+  if(MP.sock)return;clearTimeout(MP.retryT);MP.retryT=0;if(typeof mpCancelLanScan==='function')mpCancelLanScan();
+  if (mpNativeLan()) { blockMobileAimForLan(); location.href='sightlinelan://join?host='+encodeURIComponent(String(MP.addr||'').trim()); return; }
   if (MP.sock) return;
   var securePage = location.protocol === 'https:';
   var addr = securePage ? location.host : String(MP.addr || '').trim();
@@ -13374,14 +13378,14 @@ function mpConnect() {
   MP.err = ''; MP.status = 'Connecting…';
   var ws;
   try { ws = new WebSocket(endpoint.url); } catch (e) { MP.err = 'That address does not look right.'; MP.status = ''; mpRefreshPanel(); return; }
-  MP.sock = ws; MP.id = 0; MP.names = {}; clearMobileAim();
+  MP.sock = ws; MP.id = 0; MP.names = {}; blockMobileAimForLan();
   var to = setTimeout(function () { if (MP.sock === ws && !MP.id && !MP.err) { MP.err = 'Connection timed out — check that both devices use the same Wi-Fi.'; MP.status = ''; try { ws.close(); } catch (e) {} mpRefreshPanel(); } }, 5000);
   ws.onopen = function () { if (MP.sock !== ws) return; MP.status = 'Joining lobby…'; mpRefreshPanel(); ws.send(JSON.stringify({ t: 'hello', v: MP_PROTOCOL, features: MP_FEATURES, name: MP.name, diagnostics: !!LAN_DIAG, lobbyPingUpdates: true })); };
   ws.onmessage = function (ev) { if (MP.sock !== ws) return; var m, previousRx = MP.net.lastRx; MP.net.lastRx = performance.now(); var receivedAt = MP.net.lastRx, diag = LAN_DIAG && MP.on && !LAN_DIAG.stopped(); try { m = JSON.parse(ev.data); } catch (e) { return; } if (!MP.id && (m.t === 'welcome' || m.t === 'err')) clearTimeout(to); mpMsg(m); if (diag) { if (previousRx) LAN_DIAG.wsGapMs.add(receivedAt - previousRx); LAN_DIAG.wsHandlerMs.add(performance.now() - receivedAt); } };
   ws.onerror = function () { if (MP.sock === ws && !MP.id) { if(!MP.err)MP.err = 'Host unavailable — try again.'; MP.status = ''; try{ws.close();}catch(e){} mpRefreshPanel(); } };
   ws.onclose = function (event) {
     clearTimeout(to); if (MP.sock !== ws) return;
-    var full=!!(event&&event.code===4403)||!!MP.matchFull;MP.matchFull=false;if(full){MP.userLeft=true;MP.retryN=0;clearTimeout(MP.retryT);MP.err='Match is full. Choose another room.';}
+    var full=!!(event&&event.code===4403)||!!MP.matchFull;MP.matchFull=false;if(full){MP.userLeft=true;MP.retryN=0;clearTimeout(MP.retryT);MP.retryT=0;MP.err='Match is full. Choose another room.';}
     var was = MP.id; MP.sock = null; MP.id = 0; MP.session=''; MP.actionSeq=0; MP.lobby = null; MP.status = '';
     if (MP.on) { mpCleanup(); MP.err = 'Connection lost — reconnect or return to lobby.'; menuTab = 'net'; showOverlay('#ov-start'); renderMenu(false); }
     else { if (was) MP.err = 'Connection lost — reconnect or return to lobby.'; mpRefreshPanel(); renderNav(); }
@@ -13393,13 +13397,14 @@ function mpConnect() {
 }
 function mpRetry(n) {
   if (n >= 8 || MP.sock || MP.userLeft) { if (n >= 8) { MP.status = ''; MP.err = 'Could not reconnect. Check that the host program is still running.'; MP.retryN = 0; mpRefreshPanel(); } return; }
+  blockMobileAimForLan();
   MP.status = 'Connection lost. Reconnecting (' + (n + 1) + '/8)...'; mpRefreshPanel();
-  clearTimeout(MP.retryT); MP.retryT = setTimeout(function () { if (MP.sock || MP.userLeft) return; MP.retryN = n + 1; mpConnect(); }, Math.min(4000, 1000 + n * 700));
+  clearTimeout(MP.retryT); MP.retryT = setTimeout(function () { MP.retryT = 0; if (MP.sock || MP.userLeft) return; MP.retryN = n + 1; mpConnect(); }, Math.min(4000, 1000 + n * 700));
 }
 setInterval(function () { if (MP.sock && MP.sock.readyState === 1 && MP.id && MP.net.lastRx && performance.now() - MP.net.lastRx > 8000) { try { MP.sock.close(); } catch (e) {} } }, 1000);      /* the host pings every 2 s: silence means the link is dead */
 function mpLeave() {
   if(typeof mpCancelLanScan==='function')mpCancelLanScan();
-  MP.userLeft = true; clearTimeout(MP.retryT); MP.retryN = 0;
+  MP.userLeft = true; clearTimeout(MP.retryT);MP.retryT=0; MP.retryN = 0;
   var ws = MP.sock; MP.sock = null; MP.id = 0; MP.lobby = null; MP.status = ''; MP.err = '';
   if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} }
   if (MP.on) mpCleanup();
@@ -13414,7 +13419,7 @@ function mpMsg(m) {
         MP.err='Host protocol mismatch. Update the host and game page, then reconnect.';MP.userLeft=true;MP.retryN=0;try{if(MP.sock)MP.sock.close();}catch(e){}mpRefreshPanel();break;
       }
       MP.session=m.session;MP.actionSeq=0;MP.initialCosmeticsSent=false;MP.retryN=0;MP.id=m.id;MP.host=m.host;MP.status='Ready';MP.err='';mpSendCosmetics();renderNav();mpRefreshPanel();break;
-    case 'err': MP.err = !MP.id ? (/full/i.test(String(m.msg||'')) ? 'Match is full. Choose another room.' : 'Host unavailable — try again.') : (m.msg || ''); console.warn('LAN host rejected request',m.code||'',m.msg||''); if(!MP.id&&/full/i.test(String(m.msg||'')))MP.matchFull=true; if(!MP.id && MP.sock){MP.userLeft=true;try{MP.sock.close();}catch(e){}}  if(m.code==='protocol_upgrade_required'||m.code==='protocol_unsupported'||m.code==='protocol_capabilities_required'){MP.userLeft=true;MP.retryN=0;clearTimeout(MP.retryT);} if (MP.on) showMsg(m.msg || 'Error', '', 2500); mpRefreshPanel(); break;
+    case 'err': MP.err = !MP.id ? (/full/i.test(String(m.msg||'')) ? 'Match is full. Choose another room.' : 'Host unavailable — try again.') : (m.msg || ''); console.warn('LAN host rejected request',m.code||'',m.msg||''); if(!MP.id&&/full/i.test(String(m.msg||'')))MP.matchFull=true; if(!MP.id && MP.sock){MP.userLeft=true;try{MP.sock.close();}catch(e){}}  if(m.code==='protocol_upgrade_required'||m.code==='protocol_unsupported'||m.code==='protocol_capabilities_required'){MP.userLeft=true;MP.retryN=0;clearTimeout(MP.retryT);MP.retryT=0;} if (MP.on) showMsg(m.msg || 'Error', '', 2500); mpRefreshPanel(); break;
     case 'ping':
       mpSend({ t: 'pong', s: m.s });
       if (LAN_DIAG && m.diagnostics) LAN_DIAG.heartbeat(m.diagnostics);
@@ -13567,8 +13572,7 @@ function mpSyncPuppets() {
   Object.keys(MP.puppets).forEach(function (k) { if (!seen[k]) { var u = MP.puppets[k]; if (u.g.parent) scene.remove(u.g); delete MP.puppets[k]; mpRebuildLists(); } });
 }
 function mpBegin(m) {
-  offlineAimMatch = null;
-  clearMobileAim();
+  blockMobileAimForLan();
   if (MP.on) mpCleanup();
   frameCount = 0; frameCursor = 0;
   var me = mpMe() || { team: 0, op: 0 };
@@ -14255,7 +14259,7 @@ var MP_LAN_DISCOVERY = { busy:false, hosts:[], error:'', scannedAt:0, timer:0 };
 function mpCancelLanScan(){clearTimeout(MP_LAN_DISCOVERY.timer);if(MP_LAN_DISCOVERY.abort){MP_LAN_DISCOVERY.abort.abort();MP_LAN_DISCOVERY.abort=null;}MP_LAN_DISCOVERY.generation=(MP_LAN_DISCOVERY.generation||0)+1;MP_LAN_DISCOVERY.busy=false;}
 window.slLanNetworkChanged=function(){
   if(typeof mpCancelLanScan==='function')mpCancelLanScan();
-  MP.userLeft=true;clearTimeout(MP.retryT);MP.retryN=0;var old=MP.sock;MP.sock=null;MP.id=0;MP.session='';MP.actionSeq=0;MP.lobby=null;MP.status='';
+  MP.userLeft=true;clearTimeout(MP.retryT);MP.retryT=0;MP.retryN=0;var old=MP.sock;MP.sock=null;MP.id=0;MP.session='';MP.actionSeq=0;MP.lobby=null;MP.status='';
   if(old){try{old.onclose=null;old.close();}catch(e){}}
   if(MP.on)mpCleanup();
   menuTab='net';showOverlay('#ov-start');MP.err='Network changed. Select a network to continue.';renderMenu(false);

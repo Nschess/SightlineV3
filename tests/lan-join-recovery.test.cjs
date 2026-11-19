@@ -17,8 +17,10 @@ test('bundled Android manual Connect uses the native validated join route, not a
         const html=read('AndroidProject/app/src/main/assets/'+tree+'/index.html');
         const start=html.indexOf('function mpConnect() {'),end=html.indexOf('  if (MP.sock) return;',start);
         const location={href:''};
-        vm.runInNewContext(html.slice(start,end)+'}\nmpConnect();',{mpNativeLan:()=>true,MP:{addr:'192.168.1.20:8080'},location,clearTimeout(){}});
+        let aimBlocked=false;
+        vm.runInNewContext(html.slice(start,end)+'}\nmpConnect();',{mpNativeLan:()=>true,MP:{addr:'192.168.1.20:8080'},location,clearTimeout(){},blockMobileAimForLan(){assert.equal(location.href,'');aimBlocked=true;}});
         assert.equal(location.href,'sightlinelan://join?host=192.168.1.20%3A8080');
+        assert.equal(aimBlocked,true);
     }
     const native=read('AndroidProject/app/src/main/java/com/sightline/v3/MainActivity.java');
     assert(native.includes('HostPolicy.normalize(action.getQueryParameter("host"))'));
