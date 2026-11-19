@@ -35,6 +35,9 @@ jobs:
           node tests/phase2-android-asset-parity.mjs
           exit $LASTEXITCODE
 
+      - name: Verify critical mobile regressions
+        run: node --test tests/mobile-render-clarity.test.cjs tests/lobby10-match-rules-back.test.mjs tests/mobile-hud-interruptions.test.cjs
+
       - name: Set up JDK 17
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
@@ -160,7 +163,7 @@ jobs:
               throw 'Packaged Android page differs from the generated diagnostics page.'
             }
             $pageText = Get-Content -LiteralPath $generated -Raw
-            foreach ($marker in @('sightline-lan-diag-v1', 'hostFingerprints', 'clientSnapshotReceiveGapMs', 'totalInterval>0', 'Start / stop frame diagnostics', 'drawingBufferDeviceScalePercent', 'MOBILE_CLARITY_SCALE')) {
+            foreach ($marker in @('sightline-lan-diag-v1', 'hostFingerprints', 'clientSnapshotReceiveGapMs', 'totalInterval>0', 'Start / stop frame diagnostics', 'drawingBufferDeviceScalePercent', 'MOBILE_CLARITY_SCALE', 'mobileSettingsHtml', 'mpConfirmRules', '--left-action-base')) {
               if (-not $pageText.Contains($marker)) { throw "Missing packaged capture marker: $marker" }
             }
           } finally { $archive.Dispose() }
@@ -169,15 +172,10 @@ jobs:
           $hostBundle = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'index.html') -Algorithm SHA256).Hash.ToLowerInvariant()
           $hostInventory = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') -Algorithm SHA256).Hash.ToLowerInvariant()
           $windowsArtifact = 'sightline-windows-host.zip'
-          if ($hostInventory -eq '7aec9a393bbca68b36da9219b1d41f543f408382d2bc7766a4eb4b224a3c7a63') {
-            $windowsArtifact = 'https://github.com/Nschess/SightlineV3/actions/runs/44440754858/artifacts/14490438177'
-            $windowsSha = 'd1288367e6d87f4c65d6af8e1d59d864bf65ceca36f6bf536cccf342438e6855'
-          } else {
-            $hostArchive = Join-Path $deliverables.FullName $windowsArtifact
-            git archive --format=zip --output=$hostArchive $sourceCommit -- AGENTS.md START-HOST.bat SIGHTLINE.bat docs/DEV20-LAN-ACCEPTANCE.md docs/DEV24-DEVICE-ACCEPTANCE.md AndroidProject/app/src/main/assets/phone-host
-            if ($LASTEXITCODE -ne 0) { throw 'Matching Windows host archive failed.' }
-            $windowsSha = (Get-FileHash -LiteralPath $hostArchive -Algorithm SHA256).Hash.ToLowerInvariant()
-          }
+          $hostArchive = Join-Path $deliverables.FullName $windowsArtifact
+          git archive --format=zip --output=$hostArchive $sourceCommit -- AGENTS.md START-HOST.bat SIGHTLINE.bat docs/DEV20-LAN-ACCEPTANCE.md docs/DEV24-DEVICE-ACCEPTANCE.md AndroidProject/app/src/main/assets/phone-host
+          if ($LASTEXITCODE -ne 0) { throw 'Matching Windows host archive failed.' }
+          $windowsSha = (Get-FileHash -LiteralPath $hostArchive -Algorithm SHA256).Hash.ToLowerInvariant()
           $sha256 = (Get-FileHash -LiteralPath $apks[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           $report = @(
             'variant=diagnostic'
@@ -198,18 +196,19 @@ jobs:
           $reportPath = Join-Path $deliverables.FullName 'diagnostic-build.txt'
           [IO.File]::WriteAllText($reportPath, $report, [Text.UTF8Encoding]::new($false))
           Copy-Item -LiteralPath 'docs/DEV24-DIAGNOSTIC-MIGRATION.md' -Destination (Join-Path $deliverables.FullName 'MIGRATION.md')
+          Copy-Item -LiteralPath 'docs/DEV24-DEVICE-ACCEPTANCE.md' -Destination (Join-Path $deliverables.FullName 'DEVICE-ACCEPTANCE.md')
           Copy-Item -LiteralPath 'tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
           $instructions = @(
-            '# Sightline V3 DEV24.1 diagnostic'
+            '# Sightline V3 DEV24.4 consolidated diagnostic'
             ''
             'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-lan-acceptance.apk SHA256'
             ''
             'Keep DEV24.0 installed. This APK installs alongside it as Sightline Acceptance with a separate package ID. Once authorized, adb install -r sightline-lan-acceptance.apk installs or updates the new acceptance package.'
             'See MIGRATION.md for optional transfer of offline settings and records.'
             ''
-            'Acceptance: use the same Infection map, viewpoint, weapon and FPS cap as DEV24.0. Compare Balanced and High. In Settings > Video > Show performance report, save stage and drawing-buffer sizes, FPS and P95 frame interval. Use frame diagnostics during play and check touch response, sustained performance, memory and thermal behavior.'
+            'Follow DEVICE-ACCEPTANCE.md for the physical-device checks and Windows CMD commands.'
             ''
-            "Windows LAN: use sightline-windows-host.zip from $windowsArtifact, or the exact source commit in the report. Run START-HOST.bat in CMD and open http://WINDOWS_LAN_IP:8080/?lanDiag=1 using the bound private IPv4 address."
+            'Windows LAN: extract sightline-windows-host.zip, run START-HOST.bat in CMD and open http://WINDOWS_LAN_IP:8080/?lanDiag=1 using the bound private IPv4 address.'
             'Physical-device acceptance: UNVERIFIED.'
           ) -join "`n"
           [IO.File]::WriteAllText((Join-Path $deliverables.FullName 'INSTALL.txt'), $instructions, [Text.UTF8Encoding]::new($false))
