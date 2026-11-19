@@ -2,8 +2,10 @@ package com.sightline.v3;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ActivityNotFoundException;
 import android.content.pm.PackageManager;
 import android.provider.Settings;
@@ -13,9 +15,12 @@ import java.io.File;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.PowerManager;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
@@ -40,6 +45,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.webkit.JavaScriptReplyProxy;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 import androidx.webkit.WebViewCompat;
@@ -56,7 +62,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "4efb1a8c5f2af764310c7411bd44056693441f5b4a16bfbc9ae377182ea3a91b";
+    private static final String HOST_BUNDLE_SHA256 = "27723ba6f480c9e71c5980c8c81710d3da2432d412bf91e2f7ebe51b120b5bd8";
     private static final String DEV20_HOST_BUNDLE_SHA256 = "88e15be18fde11843d72b6905be41d30bf277e11fae81d479a25c677ae2b5b3d";
     private static final String DEV18_2_HOST_BUNDLE_SHA256 = "9bcc0b6245a6934508c9fed3315a231625eff1b8a5d2a62b96bb96cc9b7544cc";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
@@ -788,6 +794,40 @@ public final class MainActivity extends Activity {
     private static final int MAX_LAN_DIAGNOSTIC_BYTES = 256 * 1024;
     private byte[] pendingLanDiagnostics;
 
+    private JavaScriptReplyProxy displayReply;
+    private int requestedGameFps;
+    private String lastDisplayState;
+    private final DisplayManager.DisplayListener gameDisplayListener = new DisplayManager.DisplayListener() {
+        @Override public void onDisplayAdded(int id) {}
+        @Override public void onDisplayRemoved(int id) {}
+        @Override public void onDisplayChanged(int id) {
+            Display display = web == null ? null : web.getDisplay();
+            if (display != null && display.getDisplayId() == id) refreshGameDisplay();
+        }
+    };
+    private final BroadcastReceiver powerSaveListener = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) { refreshGameDisplay(); }
+    };
+
+    private void startDisplayMonitoring() {
+        DisplayManager displays = getSystemService(DisplayManager.class);
+        if (Build.VERSION.SDK_INT >= 36) {
+            displays.registerDisplayListener(getMainExecutor(), DisplayManager.EVENT_TYPE_DISPLAY_CHANGED
+                    | DisplayManager.EVENT_TYPE_DISPLAY_REFRESH_RATE, gameDisplayListener);
+        } else {
+            displays.registerDisplayListener(gameDisplayListener, new Handler(getMainLooper()));
+        }
+        IntentFilter filter = new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(powerSaveListener, filter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(powerSaveListener, filter);
+    }
+
+    private void stopDisplayMonitoring() {
+        getSystemService(DisplayManager.class).unregisterDisplayListener(gameDisplayListener);
+        unregisterReceiver(powerSaveListener);
+        clearGameDisplay();
+    }
+
     private void installDisplayHint(WebView gameView, String host) {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
         Uri page = Uri.parse(host == null ? OFFLINE_URL : LanPagePolicy.pageUrl(host, BuildConfig.SECURE_LAN_RELEASE, false));
@@ -799,23 +839,63 @@ public final class MainActivity extends Activity {
                     || !page.getEncodedAuthority().equals(sourceOrigin.getEncodedAuthority())
                     || message.getType() != WebMessageCompat.TYPE_STRING) return;
             String command = message.getData();
-            if ("120".equals(command)) {
-                Display display = view.getDisplay();
-                if (Build.VERSION.SDK_INT >= 34) setWindowRefreshHint(120f);
-                else if (display != null) setWindowRefreshHint(chooseGameRefreshRate(display.getSupportedRefreshRates()));
-            } else if ("auto".equals(command)) setWindowRefreshHint(0f);
+            int cap = 0;
+            if (!"auto".equals(command)) {
+                if (command == null || !command.matches("[0-9]{2,3}")) return;
+                cap = Integer.parseInt(command);
+                if (cap < 30 || cap > 120) return;
+            }
+            if (reply != displayReply) lastDisplayState = null;
+            displayReply = reply;
+            requestedGameFps = cap;
+            refreshGameDisplay();
         });
     }
 
-    static float chooseGameRefreshRate(float[] supported) {
-        float best = 0f, aboveTarget = Float.POSITIVE_INFINITY;
-        for (float rate : supported) {
-            if (rate > 120.5f) aboveTarget = Math.min(aboveTarget, rate);
-            else if (rate > 60.5f && rate > best) best = rate;
+    private void refreshGameDisplay() {
+        Display display = web == null ? null : web.getDisplay();
+        if (display == null || displayReply == null || !foreground.isResumed()) return;
+        Display.Mode activeMode = display.getMode();
+        Set<Float> rates = new java.util.TreeSet<>();
+        for (Display.Mode mode : display.getSupportedModes()) {
+            if (mode.getPhysicalWidth() == activeMode.getPhysicalWidth()
+                    && mode.getPhysicalHeight() == activeMode.getPhysicalHeight()) rates.add(mode.getRefreshRate());
         }
-        // Some panels expose only 60 Hz and a mode above 120 Hz.
-        // The game scheduler still caps its own submissions at 120.
-        return best == 0f && Float.isFinite(aboveTarget) ? aboveTarget : best;
+        rates.add(activeMode.getRefreshRate());
+        boolean saver = getSystemService(PowerManager.class).isPowerSaveMode();
+        float hint = 0f;
+        if (!saver && requestedGameFps > 0) {
+            float[] supported = display.getSupportedRefreshRates();
+            if (Build.VERSION.SDK_INT >= 34) {
+                supported = new float[rates.size()];
+                int index = 0;
+                for (float rate : rates) supported[index++] = rate;
+            }
+            hint = chooseGameRefreshRate(supported, requestedGameFps);
+        }
+        setWindowRefreshHint(hint);
+        String state = "{\"activeHz\":" + display.getRefreshRate()
+                + ",\"modeHz\":" + activeMode.getRefreshRate() + ",\"supportedHz\":" + rates
+                + ",\"batterySaver\":" + saver + ",\"hintHz\":" + hint + "}";
+        if (!state.equals(lastDisplayState)) {
+            displayReply.postMessage(state);
+            lastDisplayState = state;
+        }
+    }
+
+    static float chooseGameRefreshRate(float[] supported, int cap) {
+        float best = 0f;
+        for (float rate : supported) {
+            if (rate <= cap + .5f && rate > best) best = rate;
+        }
+        return best;
+    }
+
+    private void clearGameDisplay() {
+        displayReply = null;
+        lastDisplayState = null;
+        requestedGameFps = 0;
+        setWindowRefreshHint(0f);
     }
 
     private void setWindowRefreshHint(float rate) {
@@ -939,7 +1019,7 @@ public final class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClientCompat() {
             @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap icon) {
                 super.onPageStarted(v, url, icon);
-                if (v == web) setWindowRefreshHint(0f);
+                if (v == web) clearGameDisplay();
             }
             @Override public void onPageFinished(WebView v, String url) {
                 super.onPageFinished(v, url);
@@ -1009,7 +1089,7 @@ public final class MainActivity extends Activity {
             @Override public boolean onRenderProcessGone(WebView v, android.webkit.RenderProcessGoneDetail detail) {
                 if (BuildConfig.DEBUG) Log.e("SightlineV6", "WebView renderer process gone; crashed=" + detail.didCrash());
                 if (v == web) {
-                    setWindowRefreshHint(0f);
+                    clearGameDisplay();
                     web = null;
                     detachAndDestroy(v);
                     cancelLanJoin();
@@ -1036,7 +1116,7 @@ public final class MainActivity extends Activity {
     private void toast(String message) { Toast.makeText(this, message, Toast.LENGTH_LONG).show(); }
     private void disposeWeb() {
         if (web != null) {
-            setWindowRefreshHint(0f);
+            clearGameDisplay();
             WebView old = web;
             web = null;
             detachAndDestroy(old);
@@ -1058,7 +1138,7 @@ public final class MainActivity extends Activity {
     @Override public void onBackPressed() { handleBack(); }
     @Override protected void onPause() {
         foreground.pause();
-        setWindowRefreshHint(0f);
+        stopDisplayMonitoring();
         cancelLanDiscovery();
         lanWatchGeneration++;lanWatchHandler.removeCallbacksAndMessages(null);
         if (web!=null) {
@@ -1071,6 +1151,7 @@ public final class MainActivity extends Activity {
         super.onResume(); immersive(); startLanWatch();
         if (web!=null) web.onResume();
         foreground.resume();
+        startDisplayMonitoring();
         if (web != null) web.evaluateJavascript("window.dispatchEvent(new Event('sightline-display-resume'));", null);
         if (returnedFromInstallSettings && !showingGame && root != null) {
             returnedFromInstallSettings=false;
@@ -1079,6 +1160,7 @@ public final class MainActivity extends Activity {
     }
     @Override public void onConfigurationChanged(Configuration configuration) {
         super.onConfigurationChanged(configuration); immersive();
+        refreshGameDisplay();
     }
     @Override protected void onDestroy() {
         foreground.close();

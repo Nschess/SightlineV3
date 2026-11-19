@@ -3856,7 +3856,7 @@ var DEF_G = {
   xhStyle: 'cross', xhColor: '#f4f0dc', xhSize: 9, xhThick: 2, xhGap: 0, xhAlpha: 100, xhOutline: true, xhDot: false, xhDynamic: true,
   hudScale: 100, radar: true, radarSize: 100, feed: true, hitMarker: true, dmgDir: true, banners: true, marker: 'team',
   autoReload: true, rawInput: false, pauseOnHide: true, adaptive: true,
-  fastMode: false, fpsCap: 60, fx: touchMode ? 'low' : 'high', autoSwitch: true, showNet: false, interp: 0, autoRe: true,
+  fastMode: false, fpsCap: window.SightlineDisplay ? 0 : 60, fx: touchMode ? 'low' : 'high', autoSwitch: true, showNet: false, interp: 0, autoRe: true,
   touchLayout: 'simple', touchSens: 100, touchAdsSens: 70, touchSize: 100
 };
 var G_KEY = 'sightline.settings.v1', G = loadObj(G_KEY, DEF_G);
@@ -3885,6 +3885,7 @@ function framePixelBudget() {
   if (G.fastMode && Number(G.fpsCap) !== 30) return touchMode ? 600000 : 1300000;
   var hz = Math.min(Number(G.fpsCap) || 60, Math.max(60, (typeof rafHzBest === 'number' && rafHzBest) || 60));
   if (touchMode) {
+    if (typeof androidRefreshBridge !== 'undefined' && androidRefreshBridge) hz = androidHighBudgetTier ? 90 : 60;
     if (G.mobileQuality === 'low') return 650000;
     if (G.mobileQuality === 'competitive') return 850000;
     if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1450000 : 1850000;
@@ -11730,7 +11731,7 @@ var SPEC = {
     { t: 'range', k: 'viewBob', l: 'Weapon and view sway', min: 0, max: 150, step: 10, f: pc },
     { t: 'range', k: 'shake', l: 'Recoil camera kick', min: 0, max: 150, step: 10, f: pc },
     { t: 'range', k: 'flashAmt', l: 'Flashbang intensity', h: 'Accessibility: lowers the white-out brightness.', min: 0, max: 100, step: 10, f: pc },
-    { t: 'seg', k: 'fpsCap', l: 'Frame rate limit', opts: [[0, 'None'], [120, '120'], [60, '60'], [30, '30']], h: 'Recommended: 60 for steadier frame pacing; 120 suits high-refresh displays. None is uncapped. Menus use 30 only when the 30 cap is selected; otherwise 60.' },
+    { t: 'seg', k: 'fpsCap', l: 'Frame rate limit', opts: window.SightlineDisplay ? [[0, 'Auto'], [120, 'Up to 120'], [60, '60'], [30, '30']] : [[0, 'None'], [120, '120'], [60, '60'], [30, '30']], h: window.SightlineDisplay ? 'Auto follows the display up to 90 FPS in Balanced and 60 in High Quality or Low. Competitive and Up to 120 can target 120 on supported displays.' : 'Recommended: 60 for steadier frame pacing; 120 suits high-refresh displays. None is uncapped. Menus use 30 only when the 30 cap is selected; otherwise 60.' },
     { t: 'seg', k: 'fx', l: 'Effects', opts: [['low', 'Low'], ['med', 'Medium'], ['high', 'High']], h: 'Bullet holes, ejected shells and tracer count. Low is the lightest.' },
     { t: 'check', k: 'fastMode', l: 'Fast GPU framebuffer', h: 'Aggressive low-resolution fallback. May make the game visibly blurry; turn OFF for clear 60 FPS testing.' },
     { t: 'check', k: 'adaptive', l: 'Adaptive quality', h: 'Responds to sustained frame-time pressure by lowering the selected scale in small steps (down to 90%) and reducing shadow/detail costs. The fixed pixel budget may cap output resolution further; turn off to disable automatic quality changes.' },
@@ -11819,7 +11820,7 @@ function setVal(o, k, v, commit) {
   if (o === 'S' && k === 'fov') baseFov = S.fov;
   if (o === 'S') renderStrip();
   if (o === 'R') { applyRules(); refreshSpec(); renderOps(); }
-  else if (o === 'G') { if (k === 'fpsCap') { renderNextDue = 0; renderCap = -1; resetFpsWindow(); scheduleVideoApply(); } else if (k === 'renderScale' || k === 'adaptive' || k === 'fastMode') scheduleVideoApply(); else if (k === 'shadows' || k === 'brightness') applyG(); else if (k.indexOf('xh') === 0) applyXh(); else if (['master', 'musicVol', 'sfxVol', 'uiVol', 'muted', 'menuAmbience', 'uiSound'].includes(k)) applyAudio(); else applyHud(); }
+  else if (o === 'G') { if (k === 'fpsCap') { androidAdaptiveLimit = 0; renderNextDue = 0; renderCap = -1; resetFpsWindow(); scheduleVideoApply(); } else if (k === 'renderScale' || k === 'adaptive' || k === 'fastMode') { if (k === 'adaptive') androidAdaptiveLimit = 0; scheduleVideoApply(); } else if (k === 'shadows' || k === 'brightness') applyG(); else if (k.indexOf('xh') === 0) applyXh(); else if (['master', 'musicVol', 'sfxVol', 'uiVol', 'muted', 'menuAmbience', 'uiSound'].includes(k)) applyAudio(); else applyHud(); }
 }
 function squadText() {
   if (R.mode === 'infection') { var count=Math.max(2,Math.min(64,R.bots||6)); return 'Zombie Infection · The selected number is AI bots, in addition to you ('+count+' bots = '+(count+1)+' participants). Bots start as allied Red/Blue survivors; two become Patient Zero after 10 seconds. If infected, you respawn as Hollowed and can hunt survivors; sunrise awards the survivor side.'; }
@@ -12422,6 +12423,7 @@ $('.mn-main').addEventListener('click', function (e) {
   if ((b = t.closest('[data-sub]'))) { setTab = b.getAttribute('data-sub'); SL82_SETTINGS_SUBROUTE='settings'; renderBody(false); renderNav(); var chosen = $('.subtabs [data-sub="' + setTab + '"]'); if (chosen) chosen.focus({preventScroll:true}); uiTick(true); return; }
   if ((b = t.closest('[data-q]'))) {
     var q = QUALITY[b.getAttribute('data-q')], previousCap = G.fpsCap;
+    androidAdaptiveLimit = 0;
     Object.assign(G, q);
     if (G.fpsCap !== previousCap) { renderNextDue = 0; renderCap = -1; resetFpsWindow(); }
     saveObj(G_KEY, G); applyG(); renderBody(true); uiTick(true); return;
@@ -14080,18 +14082,65 @@ function sampleRafCadence(now) {
     rafHzBest = Math.max(rafHzBest, rafHz);
     // A 120 Hz screen can be discovered after the first framebuffer allocation.
     // Rebudget once, not every frame, when the high-refresh tier becomes known.
-    if (!wasHighRefresh && rafHzBest > 75 && G.adaptive && Number(G.fpsCap) > 75 && !(touchMode && G.mobileQuality === 'competitive')) resize();
+    if (!androidRefreshBridge && !wasHighRefresh && rafHzBest > 75 && G.adaptive && Number(G.fpsCap) > 75 && !(touchMode && G.mobileQuality === 'competitive')) resize();
   }
 }
 var androidRefreshBridge = window.SightlineDisplay, androidRefreshHint = null;
+var androidDisplay = null, androidAdaptiveLimit = 0, androidGameTarget = 60;
+var androidPendingTarget = 0, androidTargetSince = 0, androidHighBudgetTier = false;
+function androidSelectedCap() {
+  return Number(G.fpsCap) || (G.mobileQuality === 'competitive' ? 120 : G.mobileQuality === 'balanced' ? 90 : 60);
+}
+function androidEffectiveHz() {
+  return androidDisplay ? Math.min(androidDisplay.activeHz, androidDisplay.modeHz || 120) : 60;
+}
 function updateAndroidRefreshHint(inPlay) {
   if (!androidRefreshBridge || typeof androidRefreshBridge.postMessage !== 'function') return;
-  var wanted = inPlay && !document.hidden && !gameContextLost && Number(G.fpsCap) === 120;
+  var wanted = 'auto';
+  if (androidDisplay && inPlay && !document.hidden && !gameContextLost && !androidDisplay.batterySaver) {
+    wanted = String(Math.min(androidSelectedCap(), androidDisplay.maxHz, G.adaptive && androidAdaptiveLimit || 120));
+  }
   if (wanted === androidRefreshHint) return;
-  androidRefreshBridge.postMessage(wanted ? '120' : 'auto');
+  androidRefreshBridge.postMessage(wanted);
   androidRefreshHint = wanted;
 }
-window.addEventListener('sightline-display-resume', function () { androidRefreshHint = null; });
+if (androidRefreshBridge) androidRefreshBridge.onmessage = function (event) {
+  var data;
+  try { data = JSON.parse(event.data); } catch (_) { return; }
+  if (!data || !Number.isFinite(data.activeHz) || data.activeHz <= 0 || !Array.isArray(data.supportedHz)) return;
+  var maxHz = Math.max.apply(null, data.supportedHz);
+  if (!Number.isFinite(maxHz) || maxHz <= 0) return;
+  data.maxHz = Math.round(maxHz);
+  androidDisplay = data;
+};
+function syncAndroidGameTarget(now) {
+  var active = androidEffectiveHz();
+  var next = Math.min(Math.round(active), androidSelectedCap(), androidDisplay && androidDisplay.batterySaver ? 60 : 120);
+  if (G.adaptive && androidAdaptiveLimit && next > androidAdaptiveLimit) {
+    // If Android changes the refresh rate after settling on a lower cap,
+    // keep the pace aligned to an even divisor of the new display cadence.
+    next = Math.round(active / Math.ceil(active / (androidAdaptiveLimit + .5)));
+  }
+  next = Math.max(1, next);
+  if (next !== androidPendingTarget) { androidPendingTarget = next; androidTargetSince = now; }
+  // Respect reductions immediately. Wait for a sustained higher display mode.
+  if (next !== androidGameTarget && (next < androidGameTarget || now - androidTargetSince >= 1800)) {
+    androidGameTarget = next;
+    renderNextDue = 0;
+    resetFpsWindow();
+    perfEma = 1000 / next;
+    if (next > 75 && !androidHighBudgetTier) {
+      androidHighBudgetTier = true;
+      if (G.adaptive && G.mobileQuality !== 'competitive') resize();
+    }
+  }
+  return androidGameTarget;
+}
+window.addEventListener('sightline-display-resume', function () {
+  androidDisplay = null;
+  androidRefreshHint = null;
+  androidPendingTarget = 0;
+});
 function frameBudgetMs(cap, callbackBestHz) {
   // A rendered workload can hold requestAnimationFrame at 30 callbacks/s on
   // a 60 Hz monitor. NEVER infer a 30 Hz panel from an overloaded callback
@@ -14143,11 +14192,18 @@ function performanceInfo() {
   var selectedPixelRatio = dprCap * (G.renderScale / 100) * adaptiveScale;
   var contextAttributes = gl.getContextAttributes();
   return { build: 'P11.5.7', measuredGameFps: fpsMeasured, requestedLimitFps: Number(G.fpsCap) || 0,
-    activeRenderLimitFps: (state === 'live' || state === 'roundend') ? effectiveRenderCap(Number(G.fpsCap) || 0,rafHzBest,rafCount) : effectiveRenderCap(menuFrameCap(G.fpsCap),rafHzBest,rafCount),
-    adaptiveBudgetMs: Math.round(frameBudgetMs(G.fpsCap,rafHzBest)*100)/100,
+    activeRenderLimitFps: (state === 'live' || state === 'roundend') ? effectiveRenderCap(androidRefreshBridge ? androidGameTarget : (Number(G.fpsCap) || 0),rafHzBest,rafCount) : effectiveRenderCap(menuFrameCap(G.fpsCap),rafHzBest,rafCount),
+    adaptiveBudgetMs: Math.round((androidRefreshBridge ? 1000 / androidGameTarget : frameBudgetMs(G.fpsCap,rafHzBest))*100)/100,
     sceneState: state, browserEngine: navigator.userAgent,
     estimatedRafCallbacksPerSecond: rafHz, bestObservedRafCallbacksPerSecond: rafHzBest,
-    androidHighRefreshHintSent: androidRefreshHint === true,
+    androidHighRefreshHintSent: !!(androidDisplay && androidDisplay.hintHz > 60.5),
+    androidActiveRefreshHz: androidDisplay ? androidDisplay.activeHz : null,
+    androidPanelModeHz: androidDisplay ? androidDisplay.modeHz : null,
+    androidSupportedRefreshHz: androidDisplay ? androidDisplay.supportedHz : null,
+    androidRequestedRefreshHz: androidDisplay ? androidDisplay.hintHz : null,
+    androidBatterySaver: androidDisplay ? androidDisplay.batterySaver : null,
+    androidGameTargetFps: androidRefreshBridge ? androidGameTarget : null,
+    androidSustainedLoadLimitFps: androidAdaptiveLimit || null,
     frameP95Ms: frameStats.p95, frameP99Ms: frameStats.p99,
     simulationCpuMs: Math.round(simCpuEma * 100) / 100,
     botSimulationCpuMs: Math.round(botCpuEma * 100) / 100,
@@ -14216,16 +14272,26 @@ function perfTick(raw) {
   if (perfHold > 0) return;
   // 120 on a 60 Hz browser targets 60, while callbacks stuck at 30 on a
   // 60 Hz display must still trigger recovery. A deliberate 30 cap does not.
-  var budget = frameBudgetMs(G.fpsCap, rafHzBest);
+  var deviceAware = typeof androidRefreshBridge !== 'undefined' && !!androidRefreshBridge;
+  var budget = deviceAware ? 1000 / androidGameTarget : frameBudgetMs(G.fpsCap, rafHzBest);
   // The legacy 13.5 ms floor misses sustained loss of 120 Hz frames.
   // Apply a tighter trigger only to the opt-in Competitive profile.
   var competitive = G.mobileQuality === 'competitive' && touchMode && Number(G.fpsCap) === 120;
-  var degradeAt = competitive ? budget * 1.24 : Math.max(13.5, budget * 1.28);
-  var restoreAt = competitive ? budget * 1.08 : Math.max(11, budget * 1.06);
+  var degradeAt = (deviceAware || competitive) ? budget * 1.24 : Math.max(13.5, budget * 1.28);
+  var restoreAt = (deviceAware || competitive) ? budget * 1.08 : Math.max(11, budget * 1.06);
   if (perfEma > degradeAt) { perfBad++; perfGood = 0; }
   else if (perfEma < restoreAt) { perfGood++; perfBad = 0; }
   else { perfBad = 0; perfGood = 0; }
   if (perfBad >= 3 && perfLvl < 3) { if (perfLvl > 0 && T - perfLastUp < 40) perfUpNeed = Math.min(240, perfUpNeed * 2); perfLvl++; perfBad = 0; perfHold = 2; applyPerf(); }
+  else if (deviceAware && perfLvl === 3 && perfBad >= 12 && androidGameTarget > 30) {
+    // Hold the lower target until the player changes the setting or reloads.
+    // A capped FPS sample cannot prove enough headroom to raise the cap.
+    var activeHz = androidEffectiveHz();
+    var next = Math.round(activeHz / Math.ceil(activeHz / (androidGameTarget * .82)));
+    androidAdaptiveLimit = Math.max(30, next);
+    perfBad = 0;
+    perfHold = 4;
+  }
   else if (perfGood >= perfUpNeed && perfLvl > 0) { perfLvl--; perfGood = 0; perfHold = 2; perfLastUp = T; applyPerf(); }
 }
 /* Offline AI is decoupled from display refresh. Large rosters use a lower
@@ -14292,6 +14358,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   sampleRafCadence(now);
   var inPlay = state === 'live' || state === 'roundend', cap = inPlay ? (Number(G.fpsCap) || 0) : menuFrameCap(G.fpsCap);
+  if (inPlay && androidRefreshBridge) cap = syncAndroidGameTarget(now);
   updateAndroidRefreshHint(inPlay);
   if (inPlay !== fpsWasPlaying) {
     fpsWasPlaying = inPlay; resetFpsWindow(); last = now; renderNextDue = 0;

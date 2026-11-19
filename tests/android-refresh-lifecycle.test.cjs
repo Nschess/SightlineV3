@@ -83,25 +83,84 @@ test('Competitive uses one mobile pixel budget and reacts to sustained missed 12
   }
 });
 
-test('Android refresh hint is deduplicated across play, background, and resume', () => {
+function androidFixture(cap = 120, mobileQuality = 'competitive') {
   const begin='var androidRefreshBridge', end='function frameBudgetMs(';
   const hint=section(html,begin,end);
   assert.equal(hint,section(host,begin,end));
   const messages=[], events={};
-  const ctx={G:{fpsCap:120},gameContextLost:false,document:{hidden:false},window:{
-    SightlineDisplay:{postMessage(command){messages.push(command);}},
-    addEventListener(name,listener){events[name]=listener;}
-  }};
-  vm.runInNewContext(hint,ctx);
+  const bridge={postMessage(command){messages.push(command);}};
+  const ctx={G:{fpsCap:cap, mobileQuality, adaptive:true},gameContextLost:false,document:{hidden:false},
+    window:{SightlineDisplay:bridge, addEventListener(name,listener){events[name]=listener;}},
+    resetFpsWindow(){}, resize(){}};
+  vm.createContext(ctx);
+  vm.runInContext(hint,ctx);
+  function report(activeHz, supportedHz, options={}) {
+    bridge.onmessage({data:JSON.stringify({activeHz,modeHz:activeHz,supportedHz,batterySaver:false,hintHz:0,...options})});
+  }
+  return {ctx,messages,events,report};
+}
+test('Competitive follows native 60, 90 and 120 Hz and leaves higher panel modes capped', () => {
+  for (const [hz,target] of [[60,60],[90,90],[120,120],[144,120]]) {
+    const {ctx,report,messages}=androidFixture();
+    ctx.updateAndroidRefreshHint(true);
+    assert.deepEqual(messages,['auto']);
+    report(hz,[60,hz]);
+    assert.equal(ctx.syncAndroidGameTarget(100),60);
+    ctx.updateAndroidRefreshHint(true);
+    ctx.updateAndroidRefreshHint(true);
+    assert.deepEqual(messages,['auto',String(target)]);
+    assert.equal(ctx.syncAndroidGameTarget(2000),target);
+  }
+});
+
+test('refresh decrease and battery saver are immediate, increases need stability, and resume re-probes', () => {
+  const {ctx,report,messages,events}=androidFixture();
+  report(90,[60,90,120]);
+  ctx.syncAndroidGameTarget(0);
+  assert.equal(ctx.syncAndroidGameTarget(1800),90);
+  report(120,[60,90,120],{activeHz:90});
+  assert.equal(ctx.syncAndroidGameTarget(2000),90,'effective rate can be lower than the panel mode');
+  report(60,[60,90,120],{batterySaver:true});
+  assert.equal(ctx.syncAndroidGameTarget(2100),60);
+  ctx.updateAndroidRefreshHint(true);
+  assert.deepEqual(messages,['auto']);
+  report(120,[60,90,120]);
+  assert.equal(ctx.syncAndroidGameTarget(2200),60);
+  report(90,[60,90,120]);
+  assert.equal(ctx.syncAndroidGameTarget(2700),60);
+  assert.equal(ctx.syncAndroidGameTarget(4500),90);
+  ctx.updateAndroidRefreshHint(true);
   ctx.updateAndroidRefreshHint(false);
-  ctx.updateAndroidRefreshHint(true);
-  ctx.updateAndroidRefreshHint(true);
-  ctx.document.hidden=true;
-  ctx.updateAndroidRefreshHint(true);
-  ctx.document.hidden=false;
   events['sightline-display-resume']();
+  assert.equal(ctx.syncAndroidGameTarget(4550),60);
   ctx.updateAndroidRefreshHint(true);
-  ctx.gameContextLost=true;
-  ctx.updateAndroidRefreshHint(true);
-  assert.deepEqual(messages,['auto','120','auto','120','auto']);
+  assert.deepEqual(messages,['auto','120','auto','auto']);
+});
+
+test('Auto profiles differ and sustained overload lowers the cap only at the graphics floor', () => {
+  const balanced=androidFixture(0,'balanced'), high=androidFixture(0,'high');
+  for (const instance of [balanced,high]) {
+    instance.report(120,[60,90,120]);
+    instance.ctx.syncAndroidGameTarget(0);
+  }
+  assert.equal(balanced.ctx.syncAndroidGameTarget(1800),90);
+  assert.equal(high.ctx.syncAndroidGameTarget(1800),60);
+  const {ctx,report}=androidFixture();
+  report(90,[60,90]);
+  ctx.syncAndroidGameTarget(0);
+  assert.equal(ctx.syncAndroidGameTarget(1800),90);
+  ctx.touchMode=true; ctx.T=10; ctx.perfLvl=0; ctx.applyShadowBudget=()=>{};
+  vm.runInContext(section(html,'var perfEma = 16.7','/* Offline AI is decoupled'),ctx);
+  for (let i=0;i<3*60;i++) ctx.perfTick(1000/60);
+  assert.ok(ctx.perfLvl>=1);
+  assert.equal(ctx.androidAdaptiveLimit,0);
+  for (let i=0;i<14*60;i++) ctx.perfTick(1000/60);
+  assert.equal(ctx.perfLvl,3);
+  assert.equal(ctx.androidAdaptiveLimit,45);
+  assert.equal(ctx.syncAndroidGameTarget(20000),45);
+  report(60,[60,90]);
+  assert.equal(ctx.syncAndroidGameTarget(20100),30,'fall back to an even divisor when Android changes display cadence');
+  report(90,[60,90]);
+  assert.equal(ctx.syncAndroidGameTarget(20200),30);
+  assert.equal(ctx.syncAndroidGameTarget(23000),45);
 });
