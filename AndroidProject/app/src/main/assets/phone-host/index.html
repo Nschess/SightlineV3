@@ -11608,6 +11608,7 @@ function resetTouchMotion() {
   if (touchMode) { jumpQ = false; touchCrouch = false; touchRun = false; touchActionLook = null; }
   fireHeld = false; touchFireOwners.clear();
 }
+var TOUCH_STICK_DEAD_ZONE = 5, TOUCH_STICK_RADIUS = 44;
 // Keep analog velocity continuous when crossing the quiet-walk threshold.
 function touchQuietWalk() {
   if (!touchMode || touchRun) return false;
@@ -11621,6 +11622,13 @@ function touchMoveGain() {
   if (!touchMode) return 1;
   var magnitude = Math.hypot(stick.x, stick.y);
   if (touchRun && magnitude > 0) return 1 + (1 / magnitude - 1) * Math.min(1, magnitude * 4);
+  if (magnitude > 0 && magnitude < .5) {
+    // Match the accepted walk response, then blend into full analog input before the walk flag changes.
+    var precision = Math.min(magnitude, (TOUCH_STICK_DEAD_ZONE + (TOUCH_STICK_RADIUS - TOUCH_STICK_DEAD_ZONE) * magnitude) / (2 * TOUCH_STICK_RADIUS));
+    var blendWalk = Math.max(0, (magnitude - .34) / .16);
+    blendWalk *= blendWalk * (3 - 2 * blendWalk);
+    return (precision + (magnitude - precision) * blendWalk) / magnitude;
+  }
   if (touchForwardSprint()) {
     var blend = Math.min(1, (-stick.y - .8) / .2) * Math.min(1, (-stick.y - Math.abs(stick.x) * 1.25) / .20);
     return 1 + (1 / magnitude - 1) * blend;
@@ -11629,8 +11637,8 @@ function touchMoveGain() {
 }
 function setStick(t) {
   var dx = t.clientX - stick.ox, dy = t.clientY - stick.oy;
-  var dist = Math.hypot(dx, dy), radius = 44;
-  var scale = dist > 5 ? Math.min(1, (dist - 5) / (radius - 5)) / dist : 0;
+  var dist = Math.hypot(dx, dy), radius = TOUCH_STICK_RADIUS;
+  var scale = dist > TOUCH_STICK_DEAD_ZONE ? Math.min(1, (dist - TOUCH_STICK_DEAD_ZONE) / (radius - TOUCH_STICK_DEAD_ZONE)) / dist : 0;
   stick.x = dx * scale; stick.y = dy * scale;
   if (Math.hypot(stick.x, stick.y) > 0.25) mobileGuide.action('move');
   var knobX = Math.round(stick.x * radius), knobY = Math.round(stick.y * radius);

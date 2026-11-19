@@ -44,6 +44,7 @@ These project requirements supplement the global Codex Engineering Standards. If
 - Every newly created DEV ZIP must contain the applicable `AGENTS.md` at the project root, byte-identical to the staged project's file. Verify the archive before delivery.
 
 ## GitHub-first checkpoints
+- Follow [ACCEPTED-BASELINE.md](ACCEPTED-BASELINE.md) on each development cycle. Preserve the pre-change commit, record affected journeys, and require the source regression job to pass. For performance or touch changes, compare like-for-like traces and keep physical acceptance open until the owner verifies the exact candidate. Use the stable implementation when a verified regression cannot safely be repaired.
 - Canonical remote: `https://github.com/Nschess/SightlineV3`. Keep `main` stable; work on dedicated development branches and use reviewed pull requests for substantial integrations.
 - After meaningful verified source milestones, commit intended source/assets/configuration/documentation, push the development branch, and compare the exact local and remote commit IDs before calling the work remotely backed up.
 - Keep toolchains, caches, logs, generated binaries, redundant checkpoint archives, signing keys and credentials out of Git. Private distributable APKs belong in separately protected artifact storage or an explicitly authorized GitHub Release, not normal source history.

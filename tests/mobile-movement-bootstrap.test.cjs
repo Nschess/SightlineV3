@@ -18,13 +18,15 @@ test('joystick speed stays continuous at dead zone, quiet walk and forward sprin
       stick: {ox: 0, oy: 0, x: 0, y: 0}, touchMode: true, touchRun: false, G: {touchAutoSprint: true},
       joyKnob: {style: {}}, mobileGuide: {action() {}}
     });
-    vm.runInContext(section(page, 'function touchQuietWalk()', "tzm.addEventListener('touchstart'"), ctx);
+    vm.runInContext(section(page, 'var TOUCH_STICK_DEAD_ZONE', "tzm.addEventListener('touchstart'"), ctx);
     const command = (x, y) => {
       ctx.setStick({clientX:x,clientY:y});
       return Math.hypot(ctx.stick.x, ctx.stick.y) * ctx.touchMoveGain();
     };
     assert.equal(command(0, -5), 0);
     assert.ok(command(0, -5.1) < .004);
+    assert.ok(Math.abs(command(0, -16) - 16 / 88) < 1e-12);
+    for (let d = 6; d < 44; d++) assert.ok(command(0, -d) >= command(0, 1 - d), String(d));
     const quiet = command(0, -24.49);
     assert.equal(ctx.touchQuietWalk(), true);
     const normal = command(0, -24.51);
