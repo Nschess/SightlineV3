@@ -18,6 +18,9 @@ def releaseStorePassword = providers.environmentVariable('SIGHTLINE_KEYSTORE_PAS
 def releaseKeyPassword = providers.environmentVariable('SIGHTLINE_KEY_PASSWORD').orNull
 def releaseAlias = providers.environmentVariable('SIGHTLINE_KEY_ALIAS').orElse('sightline-release').get()
 def releaseSigningProvided = releaseKeyPath && releaseStorePassword && releaseKeyPassword && releaseAlias
+def diagnosticKeyPath = providers.environmentVariable('SIGHTLINE_DIAGNOSTIC_KEYSTORE_PATH').orNull
+def diagnosticKeyPassword = providers.environmentVariable('SIGHTLINE_DIAGNOSTIC_KEYSTORE_PASSWORD').orNull
+def diagnosticSigningProvided = diagnosticKeyPath && diagnosticKeyPassword
 def releaseTlsHost = providers.gradleProperty('sightlineLanTlsHost').getOrElse('').trim().toLowerCase(Locale.ROOT)
 def validReleaseTlsHost = {
     if (!releaseTlsHost || releaseTlsHost.length() > 253 || releaseTlsHost.contains(':') ||
@@ -120,6 +123,15 @@ android {
         externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } }
     }
     signingConfigs {
+        if (diagnosticSigningProvided) {
+            create('sightlineDiagnostic') {
+                storeFile file(diagnosticKeyPath)
+                storeType 'PKCS12'
+                storePassword diagnosticKeyPassword
+                keyAlias 'sightline-diagnostic'
+                keyPassword diagnosticKeyPassword
+            }
+        }
         if (releaseSigningProvided) {
             create('sightlineRelease') {
                 storeFile file(releaseKeyPath)
@@ -133,7 +145,8 @@ android {
         debug { debuggable true } // Debug certificate is NOT the release certificate.
         diagnostic {
             initWith debug
-            applicationIdSuffix '.diagnostic.visibility'
+            applicationIdSuffix '.diagnostic.acceptance'
+            signingConfig = diagnosticSigningProvided ? signingConfigs.sightlineDiagnostic : null
             matchingFallbacks = ['debug']
         }
         release {
@@ -212,6 +225,10 @@ gradle.taskGraph.whenReady { graph ->
         (taskVariantName.contains('debug') || taskVariantName.contains('diagnostic')) && (taskVariantName.startsWith('assemble') || taskVariantName.startsWith('bundle') || taskVariantName.startsWith('package'))
     }
     if (!debugPackageTasks.isEmpty()) {
+        if (debugPackageTasks.any { it.name.toLowerCase(Locale.ROOT).contains('diagnostic') } &&
+            (!diagnosticSigningProvided || !file(diagnosticKeyPath).isFile())) {
+            throw new GradleException('Diagnostic packaging requires the persistent diagnostic signing key. See docs/DEV24-DIAGNOSTIC-MIGRATION.md.')
+        }
         def gate = new File(rootProject.projectDir.parentFile, 'tools/package-candidate.ps1')
         if (!gate.isFile()) throw new GradleException('Candidate source-integrity gate is missing; private Android debug build is blocked.')
         def gateShell = providers.gradleProperty('sightlinePowerShell').orElse('powershell.exe').get()
