@@ -1,0 +1,32 @@
+{
+  "offline": {
+    "setup": {
+      "store": 15,
+      "index": 15,
+      "id": "rook117-3",
+      "name": "Contour Relay · ROOK117",
+      "kind": "contour-relay",
+      "poseSame": true,
+      "geometrySame": true,
+      "statsSame": true,
+      "restore": true,
+      "cached": true,
+      "legacyLoaded": false,
+      "oldAudioReachable": false,
+      "modelFaults": []
+    },
+    "result": {
+      "reloaded": true,
+      "fired": true,
+      "world": true,
+      "meshFaults": [],
+      "noRigFailure": true
+    },
+    "sight": {
+      "height": 0.105,
+      "form": "ashline-square-aperture"
+    }
+  },
+  "phoneHostParity": true,
+  "isolatedWebGL": true
+}
