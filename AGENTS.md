@@ -6,14 +6,14 @@ These project requirements supplement the global Codex Engineering Standards. If
 - Treat the Phase 8 master, the original historical ZIP archives, and the verified Claude v12.8 DEV package as protected recovery sources. Do not overwrite or delete them.
 - Make changes in a clearly isolated candidate or working copy. Do not silently turn the independent package extraction into a replacement release.
 - Preserve the active Claude v12.8 character baseline and its rollback snapshot. The rejected procedural character merge and rejected Legendary skins are not approved replacements.
-- Preserve the clean Phase 19.5 mobile HUD, 28 active firearms, 18 maps, Infection and Outbreak, multiplayer authority, and Android offline/phone-host parity unless the user explicitly scopes a change to them.
+- Preserve the owner-accepted HUD, weapon and map rosters, Infection and Outbreak, multiplayer authority, and Android offline/phone-host parity. Follow the change boundary in [ACCEPTED-BASELINE.md](ACCEPTED-BASELINE.md).
 
 ## Sightline architecture
 - The Android WebView source is under `AndroidProject/app/src/main/assets/`; keep `www` and `phone-host` copies in parity when changing shared gameplay assets.
 - The game uses Three.js r128. Keep runtime assets local for offline and phone-host use; do not rely on an external asset server.
 - Inspect the real first-person viewmodel, third-person renderer, weapon anchors, animation paths, and relevant asset loading before modifying visual systems. Similar-looking paths may be independent implementations.
 - Keep combat statistics, hitboxes, authoritative multiplayer behavior, and weapon timing unchanged unless the task explicitly authorizes gameplay changes.
-- Use original or license-verified art assets. Record provenance and license terms for imported third-party models, textures, and audio.
+- Require documented commercial-use and redistribution rights before adding outside assets. Register new or changed assets and dependencies in [RIGHTS-INVENTORY.md](RIGHTS-INVENTORY.md), then apply the [Play Store IP release gate](PLAY-STORE-IP-RELEASE-GATE.md). Obtain owner approval before renaming or replacing an accepted asset.
 
 ## Acceptance evidence
 - Distinguish source-level checks, isolated runtime checks, actual in-game visual checks, Android builds, and physical-device tests. Never present one as proof of another.
@@ -44,7 +44,7 @@ These project requirements supplement the global Codex Engineering Standards. If
 - Every newly created DEV ZIP must contain the applicable `AGENTS.md` at the project root, byte-identical to the staged project's file. Verify the archive before delivery.
 
 ## GitHub-first checkpoints
-- Follow [ACCEPTED-BASELINE.md](ACCEPTED-BASELINE.md) on each development cycle. Preserve the pre-change commit, record affected journeys, and require the source regression job to pass. For performance or touch changes, compare like-for-like traces and keep physical acceptance open until the owner verifies the exact candidate. Use the stable implementation when a verified regression cannot safely be repaired.
+- Follow the development and promotion gate in [ACCEPTED-BASELINE.md](ACCEPTED-BASELINE.md) for each checkpoint.
 - Canonical remote: `https://github.com/Nschess/SightlineV3`. Keep `main` stable; work on dedicated development branches and use reviewed pull requests for substantial integrations.
 - After meaningful verified source milestones, commit intended source/assets/configuration/documentation, push the development branch, and compare the exact local and remote commit IDs before calling the work remotely backed up.
 - Keep toolchains, caches, logs, generated binaries, redundant checkpoint archives, signing keys and credentials out of Git. Private distributable APKs belong in separately protected artifact storage or an explicitly authorized GitHub Release, not normal source history.

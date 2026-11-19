@@ -5,14 +5,16 @@
 | DEV24.9 `24c9034ae5f1a92e90491d5c9a7aa4b37b9acb6a` | Owner-confirmed smooth Android movement. Device, map, frame-time traces and thermal conditions were not supplied. Keep this build as the movement comparison reference. |
 | DEV25.4 `285ab5f4e7dd39427f30b2af83710c62100e4c06` | Owner reported irregular movement while stationary camera swipes remained smooth. |
 | DEV25.5 `6a7f2e15d3340f1080f0410b82a206124e32ead2` | Feature and rollback baseline. Preserve the startup gate, compact and advanced HUDs, custom layouts and saved settings, five-category Smart Setup and selective Undo, map materials, all five modes, offline-only aim, and Android/Windows LAN. Physical performance acceptance remains open. |
+| Movement recovery `cd6474d5752628f3d8f3c29236b0f75eedda391f` | Source-only precision-walk checkpoint. Full-stick and aimed-turn trajectories match DEV24.9 in simulation. Retain this checkpoint separately from the last APK. Phone frame pacing remains open. |
 
 ## Development gate
 
-1. Record the starting SHA, affected player journeys and shared dependencies. Work on the development branch and retain the stable checkpoint.
-2. Change the smallest responsible path. Keep the Android offline and phone-host assets in parity. Preserve established gameplay, visuals, and device refresh, battery and thermal limits.
+1. Limit each update to the requested feature or defect. Record the starting SHA, player journeys and affected dependencies before editing shared systems. Work on the development branch and retain the stable checkpoint.
+2. Make minimal, isolated, reversible changes. Keep Android offline and phone-host assets in parity. Protect approved controls, smoothness, visuals, menus, maps, gameplay, settings, and device refresh, battery and thermal limits.
 3. Run focused checks for changed behavior. Require the **Sightline approved baseline** Actions job to pass before promoting a candidate. It checks authored-map movement, touch ownership, startup, preferences, rendering policy, match rules, outbreak and loopback LAN. It does not build an APK.
 4. For movement and performance changes, compare the same scenarios against DEV24.9 on matched conditions. A failing approved journey blocks promotion. Repair the affected path or restore its stable implementation and verify again.
 5. Advance the protected baseline only after the owner accepts the exact candidate. Keep previous commits, artifacts and app data. Production still requires the existing fail-closed release gate.
+6. Record original-asset creation evidence. Require documented commercial use, redistribution and applicable modification rights before introducing outside assets. Review only added or modified assets, dependent files, and changed distribution or licensing terms against the [rights register](RIGHTS-INVENTORY.md). Refer possible conflicts in approved assets to the owner before changing them.
 
 ## Movement evidence and next device comparison
 
