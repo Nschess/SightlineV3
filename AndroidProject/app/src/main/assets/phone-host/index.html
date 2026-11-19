@@ -2295,7 +2295,6 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
 <script src="character-realism.js"></script>
 <script src="character-realism-v12.js"></script>
 <script src="thirdperson-hands.js"></script>
-<script src="rook117/rook117-model.js"></script>
 
 <script>
 (function () {
@@ -5928,9 +5927,8 @@ function p1164Signature(group,key,polymer,metal,trim,world,receiverWidth){
     add(cyl(.008,.235,0,.075,-.445,metal),'metal','exposed-gas-piston');
     if(key==='rook117'){
      add(rrbox(.060,.042,.043,0,.055,-.548,metal,.006),'metal','front-gas-block');
-     add(rrbox(.009,.054,.015,0,.085,-.563,metal,.002),'metal','front-sight-post');
+     add(rrbox(.009,.040,.015,0,.085,-.563,metal,.002),'metal','front-sight-post');
      for(var fw=-1;fw<=1;fw+=2)add(rrbox(.010,.045,.014,fw*.018,.080,-.563,trim,.002),'trim','front-sight-wing');
-     add(rrbox(.044,.007,.020,0,.112,-.563,metal,.002),'metal','front-sight-tip');
      add(rrbox(.055,.006,.028,0,.017,-.566,metal,.003),'metal','front-block-collar');
    }else{
      add(bx(.055,.032,.034,0,.047,-.548,polymer),'polymer','front-gas-block');
@@ -6440,31 +6438,6 @@ function p1178Forend(key,fore,width,zones){
  return g;
 }
 function p1164BuildViewmodel(ext,key,q,n,m1,m2,mMetal,newFeed,receiverWidth,tip,barrel){
- if(key==='rook117'&&window.SightlineRook117Asset){
-  // The authored Blender model replaces this rifle's procedural block stack.
-  // Keep the magazine and bolt as independent groups for the existing reload.
-  var authored=window.SightlineRook117Asset.create(THREE);
-  authored.body.name='P1181-ROOK117-authored-viewmodel';
-  authored.bolt.name='P1181-ROOK117-moving-bolt';
-  authored.irons.name='P1181-ROOK117-integrated-irons';
-  authored.irons.visible=false;
-  // P5: bridge the authored rear-aperture feet to the receiver rail.
-  // The exported rear-sight feet were about 42 mm above the receiver top.
-  var sightMount=new THREE.Group();sightMount.name='P5-ROOK117-integrated-rear-sight-mount';sightMount.visible=false;
-  var sightClamp=rrbox(.036,.008,.080,0,.050,.055,P1168_ROOK_RAIL,.002);
-  sightClamp.name='P5-ROOK117-rear-sight-rail-clamp';sightClamp.userData.finishZone='metal';sightMount.add(sightClamp);
-  [-1,1].forEach(function(side){
-   p1168RookStrut(sightMount,[side*.014,.053,.018],[side*.014,.087,.0385],.0025,P1168_ROOK_METAL,'P5-ROOK117-rear-sight-front-riser-'+side);
-   p1168RookStrut(sightMount,[side*.014,.053,.092],[side*.014,.087,.0715],.0025,P1168_ROOK_METAL,'P5-ROOK117-rear-sight-rear-riser-'+side);
-  });
-  p1168RookStrut(sightMount,[-.014,.087,.0385],[.014,.087,.0385],.0022,P1168_ROOK_METAL,'P5-ROOK117-rear-sight-front-crossbar');
-  p1168RookStrut(sightMount,[-.014,.087,.0715],[.014,.087,.0715],.0022,P1168_ROOK_METAL,'P5-ROOK117-rear-sight-rear-crossbar');
-  authored.mount=sightMount;
-  ext.add(authored.body,authored.bolt,authored.irons,sightMount);
-  newFeed.add(authored.magazine);
-  ext.userData.p1181Rook=authored;
-  return;
- }
  receiverWidth*=.90;
  var a=P1164_ART[key],staticParts=new THREE.Group();staticParts.name='P1164-static-'+key;
   var rook117=key==='rook117';
@@ -6831,14 +6804,7 @@ function distinguishWeapon(g,key){
   var tip=-.31-fore*.53-barrel*.54,newFeed=new THREE.Group();newFeed.name='profile-feed-'+key;
   if(P1164_ART[key]){
    p1164BuildViewmodel(ext,key,q,n,m1,m2,key==='rook117'?P1168_ROOK_STEEL:(identity?identity.metal:mMetal),newFeed,receiverWidth,tip,barrel);
-   if(key==='rook117'&&ext.userData.p1181Rook){
-    g.userData.rook117Irons=ext.userData.p1181Rook.irons;
-    g.userData.rook117SightMount=ext.userData.p1181Rook.mount;
-    g.userData.profileBolt=ext.userData.p1181Rook.bolt;
-    g.userData.rookBolt=true;
-    g.userData.sightY=ext.userData.p1181Rook.sightY;
-    g.userData.bodySignature='P1181-original-stamped-rifle';
-   }
+   if(key==='rook117')g.userData.bodySignature=P1180_SIGNATURES[key];
   }else{
  if(P85_SHAPES[key])ext.add(p85Receiver(key,receiverWidth,m1));
  else if(P83_ART[key])ext.add(p83BodyPlate(ext,key,receiverWidth,m1));
@@ -6910,7 +6876,7 @@ function distinguishWeapon(g,key){
  var identitySight=!!(identity&&P1171_PROFILE_SIGHTS[key]);
  var opticAssembly=new THREE.Group();opticAssembly.name='profile-optic-'+key;opticAssembly.userData.sightType=identitySight&&optic===0?1:optic;
  if(optic>0&&key!=='rook117'&&!identitySight){var opticMount=bx(.023,.035,.052,0,.075,-.13,m2);opticMount.name='P10-original-optic-mount-'+key;ext.add(opticMount);g.userData.profileMount=opticMount;}
- if(key==='rook117'&&!g.userData.rook117Irons){
+ if(key==='rook117'){
   // Ashline square aperture uses the established .105 ADS sight line.
   opticAssembly.add(rrbox(.038,.007,.046,0,.086,-.12,P1168_ROOK_RAIL,.002));
   opticAssembly.add(rrbox(.005,.032,.010,-.012,.105,-.12,P1168_ROOK_STEEL,.002));
@@ -6931,7 +6897,7 @@ function distinguishWeapon(g,key){
   }else opticAssembly.add(bx(.058,.035,.11,0,.086,-.14,m2),bx(.008,.047,.07,-.027,.116,-.14,m1),bx(.008,.047,.07,.027,.116,-.14,m1));
  }
  else if(optic===3){opticAssembly.add(cyl(.028,.24,0,.127,-.13,m2),cyl(.035,.04,0,.127,-.26,m1),bx(.04,.07,.02,0,.087,-.12,m2));}
-  if(!g.userData.rook117Irons){ext.add(opticAssembly);g.userData.profileOptic=opticAssembly;}
+  ext.add(opticAssembly);g.userData.profileOptic=opticAssembly;
   if(!P1164_ART[key]&&['rampart','vantage','pinion','bastion','forge','cyclone'].indexOf(key)!==-1){
   // Stowed bipod: hinges sit beneath the forend; both legs fold along its body.
   ext.add(bx(.049,.013,.032,0,-.039,-.37,m2));
@@ -6952,9 +6918,8 @@ function distinguishWeapon(g,key){
  // previously concealed its bolt and pump during otherwise valid reloads.
  if(legacyBolt){
    legacyBolt.traverse(function(o){if(o.isMesh&&o.material!==mGlove&&o.material!==mSleeve)o.visible=false;});
-   var newBolt=g.userData.rook117Irons?g.userData.profileBolt:new THREE.Group();newBolt.name='animated-bolt-'+key;
-   if(g.userData.rook117Irons){g.userData.profileBolt=newBolt;g.userData.rookBolt=true;}
-   else if(key==='rook117'){
+   var newBolt=new THREE.Group();newBolt.name='animated-bolt-'+key;
+   if(key==='rook117'){
      var boltBits=new THREE.Group();
      boltBits.add(rrbox(receiverWidth*.62,.012,.073,0,.041,-.085,P1168_ROOK_STEEL,.002));
      boltBits.add(rrbox(receiverWidth*.42,.006,.046,0,.050,-.085,P1168_ROOK_RAIL,.001));
@@ -7063,16 +7028,6 @@ function installWeaponOptic(g,k,previewId){
   });geo.forEach(function(o){o.dispose();});mats.forEach(function(o){o.dispose();});
  }
  var id=previewId||SightlineOptics.current(k),root=g.getObjectByName('unique-chassis-'+k)||g;
- if(k==='rook117'&&g.userData.rook117Irons){
-  g.userData.rook117Irons.visible=id==='iron';
-  if(g.userData.rook117SightMount)g.userData.rook117SightMount.visible=id==='iron';
-  if(id==='iron'){
-   g.userData.p10Optic=null;g.userData.p10Id=id;g.userData.sightY=.105;
-   if(g.userData.profileOptic)g.userData.profileOptic.visible=false;
-   legendRookOpticSync(g,!!selectedLegendaryFinish(k));
-   return;
-  }
- }
  var assembly=SightlineOptics.model(THREE,k,id);
  root.add(assembly);g.userData.p10Optic=assembly;g.userData.p10Id=id;
  if(g.userData.p1171CoreSight)g.userData.p1171CoreSight.visible=id==='iron';
@@ -8068,7 +8023,6 @@ function worldMeleeShape(id){
  return WORLD_GEO[id]=bakeMerge(collectMeshes(frame));
 }
 function legacyWorldWeaponShape(id){
- if(id==='rook117'&&window.SightlineRook117Asset)return WORLD_GEO[id]=window.SightlineRook117Asset.worldGeometry(THREE);
  if(WORLD_GEO[id])return WORLD_GEO[id];
  if(WEAPONS[id]&&WEAPONS[id].melee)return worldMeleeShape(id);
  var w=WEAPONS[id]||WEAPONS.carbine,key=w.key,p=WEAPON_PROFILES[key],sig=signatureDesign(key),
@@ -8275,7 +8229,7 @@ var WORLD_WEAPON_PRESENTATION={
  needle:{length:.43,anchor:'right-palm'},thunder:{length:.67,anchor:'right-palm'},falcon:{length:.64,anchor:'right-palm'},
  vantage:{length:.68,anchor:'right-palm'},pinion:{length:.72,anchor:'right-palm'},mistral:{length:.74,anchor:'right-palm'},
  forge:{length:.70,anchor:'right-palm'},bastion:{length:.75,anchor:'right-palm'},cyclone:{length:.76,anchor:'right-palm'},
-  rook117:{length:.65,anchor:'authored-grip',root:[.12,1.33,-.44],rightGrip:[0,-.11,.08],leftGrip:[0,-.10,-.30]}
+  rook117:{length:.65,anchor:'right-palm'}
 };
 // Shared weapon geometry is grip-anchored; this is the right-palm position
 // authored by buildRig(), used by both local bots and interpolated LAN actors.
@@ -8285,9 +8239,7 @@ var WORLD_RIGHT_DEFAULT_END=new THREE.Vector3(.12,1.22,-.31),WORLD_LEFT_DEFAULT_
 var WORLD_RIGHT_DEFAULT_DIR=WORLD_RIGHT_DEFAULT_END.clone().sub(WORLD_RIGHT_SHOULDER),WORLD_LEFT_DEFAULT_DIR=WORLD_LEFT_DEFAULT_END.clone().sub(WORLD_LEFT_SHOULDER);
 var WORLD_ARM_RIGHT_TARGET=new THREE.Vector3(),WORLD_ARM_LEFT_TARGET=new THREE.Vector3(),WORLD_ARM_OFFSET=new THREE.Vector3(),WORLD_ARM_DIRECTION=new THREE.Vector3(),WORLD_ARM_DEFAULT_DIRECTION=new THREE.Vector3(),WORLD_HAND_GUN_Q=new THREE.Quaternion(),WORLD_HAND_ARM_Q=new THREE.Quaternion(),WORLD_HAND_LOCAL_Q=new THREE.Quaternion(),WORLD_HAND_SUPPORT_ROLL_Q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),Math.PI);
 var WORLD_WEAPON_META={};
-// ROOK117's Blender-authored world mesh bypasses the shared builder; its grip
-// offsets therefore stay in the weapon-specific authored profile.
-function worldWeaponUsesModelGrip(key){return !!WORLD_WEAPON_META[key]&&!(key==='rook117'&&window.SightlineRook117Asset);}
+function worldWeaponUsesModelGrip(key){return !!WORLD_WEAPON_META[key];}
 function worldVisibleThroughParents(node,root){for(var p=node;p&&p!==root.parent;p=p.parent){if(!p.visible)return false;if(p===root)break;}return true;}
 function buildWorldSourceWeapon(key){
  var model;
@@ -8296,6 +8248,7 @@ function buildWorldSourceWeapon(key){
  if(!GUN_V[key]&&!WEAPONS[key].melee)craftCoreGun(model,key);
  model.userData.weaponKey=key;
  installWeaponOptic(model,key);
+  if(key==='rook117')p1164Stock(model.getObjectByName('unique-chassis-'+key),key,P1168_ROOK_POLYMER,P1168_ROOK_METAL);
  // buildGun() attaches its returned group to the first-person camera. World
  // geometry must be baked in weapon-local coordinates, never camera-world
  // coordinates (which change with player aim and turn a rifle into a skewed,
@@ -8391,7 +8344,6 @@ function poseWorldArms(u){
 }
 function worldWeaponShape(id){
  if(!WEAPONS[id]||WEAPONS[id].melee)return legacyWorldWeaponShape(id);
- if(id==='rook117'&&window.SightlineRook117Asset)return legacyWorldWeaponShape(id);
  if(WORLD_GEO[id])return WORLD_GEO[id];
  try{return worldViewmodelGeometry(id);}
  catch(error){visualModelFault('shared third-person firearm',id,error);return legacyWorldWeaponShape(id);}
@@ -8406,7 +8358,6 @@ function ensureWorldWeapon(u,key){
  var melee=!!WEAPONS[key].melee;
  var sharedGun=worldWeaponUsesModelGrip(key);
  if(sharedGun)u.worldGun.position.copy(WORLD_RIGHT_GRIP);
- else if(key==='rook117')u.worldGun.position.fromArray(WORLD_WEAPON_PRESENTATION.rook117.root);
  else u.worldGun.position.set(melee?.18:.20,melee?1.20:1.31,melee?-.36:-.44);
  // Slightly offset carried angle exposes the receiver and feed to other players,
  // instead of pointing every first-person-length world gun directly at the camera.
@@ -9972,15 +9923,6 @@ function legendRookOpticSync(g,active){
  if(!g||!g.userData||g.userData.weaponKey!=='rook117')return;
  var rig=g.userData.legendRig;
  if(rig&&rig.setOpticVisible)rig.setOpticVisible(!!active);
- if(active){
-  // Emerald Revenant dresses the authored rifle and adds rail/muzzle details;
-  // it does not replace or add an optic. Preserve the selected stock optic and
-  // its calibrated sightY so ADS remains on the existing ROOK117 sight line.
-  return;
- }else{
-  if(g.userData.p10Optic)g.userData.p10Optic.visible=g.userData.p10Id!=='iron';
-  if(SightlineOptics.has('rook117'))g.userData.sightY=SightlineOptics.current('rook117')==='iron'?0.105:0.103;
- }
 }
 function legendSync(g,f){
   if(!g||!g.userData)return;

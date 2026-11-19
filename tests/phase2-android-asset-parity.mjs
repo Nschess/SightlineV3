@@ -14,7 +14,7 @@ const hash=b=>createHash('sha256').update(b).digest('hex');
 const manifest=readFileSync(join(host,'SHA256SUMS'),'utf8').trim().split(/\r?\n/).map(line=>{
   const m=line.match(/^([a-f0-9]{64})  (.+)$/);assert.ok(m,`bad manifest entry: ${line}`);return [m[2],m[1]];
 });
-assert.equal(manifest.length,50,'host staging count must match native host service');
+assert.equal(manifest.length,31,'host staging count must match native host service');
 for(const [name,expected] of manifest){
   assert.ok(!name.startsWith('/')&&!name.includes('\\')&&!name.split('/').some(p=>!p||p==='.'||p==='..'),`unsafe path: ${name}`);
   const data=readFileSync(join(host,name));assert.equal(hash(data),expected,`host hash mismatch: ${name}`);
@@ -64,7 +64,7 @@ for(const [label,html] of [['offline',offlinePage],['phone-host',page]]){
 }
 const offlineAllowlist=main.match(/private static final Set<String> FILES = new HashSet<>\(Arrays\.asList\(([\s\S]*?)\)\);/);
 assert.ok(offlineAllowlist&&offlineAllowlist[1].includes('"sightline-theme.mp3"'),'Android WebView offline allowlist blocks the theme asset');
-assert.ok(service.includes('hashes.size()!=50'),'Android host service count differs');
+assert.ok(service.includes('hashes.size()!=31'),'Android host service count differs');
 assert.ok(service.includes('hashes.containsKey("sightline-theme.mp3")'),'Android host staging does not require the active theme');
 assert.ok(service.includes('b.size()>16_000_000'),'Android host staging file-size guard is missing');
 assert.ok(service.includes('hashes.containsKey("legendary-packs.js")'),'Android host staging does not require Legendary module');
@@ -85,14 +85,13 @@ for(const [label,html] of [['host',page],['offline',readFileSync(join(offline,'i
   assert.ok(inlineCount>0,`${label} page has no inline game scripts`);
   console.log(`PASS ${label} page Infection hooks and ${inlineCount} inline script syntax blocks`);
 }
-const modelPaths=['rook117/rook117-model.js',...['coated_gunmetal','parkerized_steel','graphite_polymer','recoil_rubber','sight_steel','recess'].flatMap(f=>['albedo','normal','roughness'].map(c=>`rook117/rook117_${f}_${c}.png`))];
-for(const name of modelPaths){
-  assert.ok(main.includes(name),`native allowlist missing ${name}`);
-  assert.ok(manifest.some(([p])=>p===name),`host manifest missing ${name}`);
-  assert.deepEqual(readFileSync(join(host,name)),readFileSync(join(offline,name)),`offline asset differs: ${name}`);
+for(const [root,html] of [[host,page],[offline,offlinePage]]){
+  assert.ok(!existsSync(join(root,'rook117')),'obsolete Blender payload remains packaged');
+  assert.ok(!html.includes('SightlineRook117Asset')&&!html.includes('rook117/'),'obsolete ROOK117 loader remains active');
+  assert.ok(html.includes("rook117:{length:.65,anchor:'right-palm'}"),'ROOK117 must use the shared world presentation');
 }
-assert.ok(server.includes("const url='/rook117/rook117_'+family+'_'+channel+'.png';"),'Node texture route missing');
-assert.ok(server.includes("'/rook117/rook117-model.js'"),'Node model route missing');
+assert.ok(!manifest.some(([name])=>name.startsWith('rook117/')),'obsolete ROOK117 host asset still staged');
+assert.ok(!server.includes('/rook117/')&&!main.includes('rook117/'),'obsolete ROOK117 routes remain exposed');
 for(const name of ['index-fp-grip-qa.html','gltf-loader-r128.js','fp-hands-rig.js','models/fp-arms/data/lmg.js','models/fp-arms/data/marksman.js','models/fp-arms/data/melee.js','models/fp-arms/data/pistol.js','models/fp-arms/data/rifle.js','models/fp-arms/data/shotgun.js','models/fp-arms/data/smg.js']){
   assert.ok(!manifest.some(([p])=>p===name),`rejected first-person rig remains in host manifest: ${name}`);
   assert.ok(!main.includes(`"${name}"`),`Android allowlist still exposes rejected rig: ${name}`);

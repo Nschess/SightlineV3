@@ -14,7 +14,7 @@ issues=[]
 required={'three.min.js','vr18-v31.js','navigation.js','zombie-hunt.js','squad-tactics.js',
           'bot-tactics.js','character-poses.js','zombie-counterplay.js','infection-evasion.js',
           'squad-loadout.js','deathmatch-rules.js','weapon-skins.js','optics-v1.js','character-realism.js',
-          'character-skins.js','rook117/rook117-model.js'}
+          'character-skins.js'}
 missing=required-set(refs)
 if missing: issues.append('Missing required game module imports: '+', '.join(sorted(missing)))
 if refs.count('vr18-v31.js')!=1 or refs.count('optics-v1.js')!=1: issues.append('Core VR18/optics import missing or duplicated')

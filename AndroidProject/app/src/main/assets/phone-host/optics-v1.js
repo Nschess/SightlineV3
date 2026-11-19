@@ -59,7 +59,7 @@
       // do not create a second front post in the optic attachment.
       metal.color.setHex(0x252d32);
       edge.color.setHex(0x879197);
-      box(.047,.013,.032,0,.075,.012,metal,'ashline-rear-sight-base');
+      box(.047,.032,.032,0,.073,.012,metal,'ashline-rear-sight-base');
       box(.005,.032,.010,-.012,.105,.012,metal,'ashline-aperture-left');
       box(.005,.032,.010,.012,.105,.012,metal,'ashline-aperture-right');
       box(.028,.005,.010,0,.121,.012,edge,'ashline-aperture-crown');
