@@ -2084,6 +2084,8 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
         <div id="tz-move" aria-label="Drag to move"><div id="touch-joystick" aria-hidden="true"><i></i><span></span></div></div>
         <div id="tz-look" aria-label="Drag to look around"></div>
         <div id="touch-guide" role="status" aria-live="polite" hidden><span id="touch-guide-text"></span><button type="button" id="touch-guide-skip" aria-label="Dismiss control guide">SKIP</button></div>
+        <div id="touch-editor" hidden aria-label="HUD editor"><span>HUD size</span><button type="button" data-hud-size="-5" aria-label="Decrease HUD button size">−</button><output id="touch-editor-size">100%</output><button type="button" data-hud-size="5" aria-label="Increase HUD button size">+</button><button type="button" id="touch-editor-reset">Reset positions</button></div>
+        <button class="tb tb-menu" id="tb-score" type="button">SCORE</button>
         <button class="tb tb-menu" id="tb-menu" type="button" aria-label="Pause or open menu">Ⅱ <small>MENU</small></button>
         <button class="tb tb-main" id="tb-fire" type="button" aria-label="Fire weapon">FIRE</button>
         <button class="tb tb-main" id="tb-fire-alt" type="button" aria-label="Fire weapon using left-side trigger">FIRE 2</button>
@@ -2092,7 +2094,8 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
         <button class="tb tb-main" id="tb-swap" type="button">SWAP</button>
         <button class="tb tb-main" id="tb-aim" type="button" aria-pressed="false">AIM</button>
         <button class="tb tb-main" id="tb-slide" type="button">SLIDE</button>
-        <button class="tb tb-main" id="tb-more" type="button" aria-expanded="false" aria-label="More actions">MORE</button>
+        <button class="tb tb-main" id="tb-run" type="button" aria-pressed="false">RUN</button>
+        <button class="tb tb-main" id="tb-crouch" type="button" aria-pressed="false">CROUCH</button>
         <button class="tb tb-utility" id="tb-prone" type="button" aria-pressed="false">PRONE</button>
         <button class="tb tb-utility" id="tb-buy" type="button">BUY</button>
         <button class="tb tb-utility" id="tb-nade" type="button">FRAG</button>
@@ -3819,19 +3822,73 @@ var canvas = $('#gl'), stage = $('#stage');
 var touchMode = !!(window.matchMedia && (matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && matchMedia('(hover: none)').matches)));
 if (touchMode) document.documentElement.classList.add('touch-device');
 /* P19.5 restores the original text-label controls. Rejected icon/hybrid preferences migrate to Text. */
-var MOBILE_HUD_KEY='sightline.mobileHud.v1',MOBILE_HUD_DEFAULT={style:'text',opacity:88,fire2:false,hand:'right',editing:false,positions:{}};
-var MOBILE_HUD_BUTTON_IDS=['tb-fire','tb-fire-alt','tb-jump','tb-rel','tb-swap','tb-aim','tb-slide','tb-more','tb-prone','tb-buy','tb-nade','tb-nsel','tb-inspect','tb-objective','tb-dropbomb'];
-function loadMobileHud(){try{var raw=localStorage.getItem(MOBILE_HUD_KEY),p=JSON.parse(raw||'{}')||{},positions={},src=p.positions&&typeof p.positions==='object'?p.positions:{};MOBILE_HUD_BUTTON_IDS.forEach(function(id){var v=src[id];if(v&&Number.isFinite(+v.x)&&Number.isFinite(+v.y))positions[id]={x:Math.max(.06,Math.min(.94,+v.x)),y:Math.max(.08,Math.min(.92,+v.y))};});var result={style:'text',opacity:Number.isFinite(+p.opacity)?Math.max(50,Math.min(100,+p.opacity)):MOBILE_HUD_DEFAULT.opacity,fire2:p.fire2===true,hand:p.hand==='left'?'left':'right',editing:false,positions:positions};if(raw!==null&&(p.style!=='text'||p.hand!==result.hand||p.fire2!==result.fire2))localStorage.setItem(MOBILE_HUD_KEY,JSON.stringify(result));return result;}catch(e){return{style:'text',opacity:MOBILE_HUD_DEFAULT.opacity,fire2:false,hand:'right',editing:false,positions:{}};}}
+var MOBILE_HUD_KEY='sightline.mobileHud.v1',MOBILE_HUD_DEFAULT={style:'tactical',opacity:88,fire2:false,hand:'right',editing:false,positions:{}};
+var MOBILE_HUD_BUTTON_IDS=['tb-fire','tb-fire-alt','tb-jump','tb-rel','tb-swap','tb-aim','tb-slide','tb-crouch','tb-run','tb-prone','tb-buy','tb-nade','tb-nsel','tb-inspect','tb-objective','tb-dropbomb'];
+function loadMobileHud(){try{var raw=localStorage.getItem(MOBILE_HUD_KEY),p=JSON.parse(raw||'{}')||{},positions={},src=p.positions&&typeof p.positions==='object'?p.positions:{};MOBILE_HUD_BUTTON_IDS.forEach(function(id){var v=src[id];if(v&&Number.isFinite(+v.x)&&Number.isFinite(+v.y))positions[id]={x:Math.max(.06,Math.min(.94,+v.x)),y:Math.max(.08,Math.min(.92,+v.y))};});var result={style:'tactical',opacity:Number.isFinite(+p.opacity)?Math.max(50,Math.min(100,+p.opacity)):MOBILE_HUD_DEFAULT.opacity,fire2:p.fire2===true,hand:p.hand==='left'?'left':'right',editing:false,positions:positions};if(raw!==null&&(p.style!=='tactical'||Object.keys(src).length!==Object.keys(positions).length||p.hand!==result.hand||p.fire2!==result.fire2))localStorage.setItem(MOBILE_HUD_KEY,JSON.stringify(result));return result;}catch(e){return{style:'tactical',opacity:MOBILE_HUD_DEFAULT.opacity,fire2:false,hand:'right',editing:false,positions:{}};}}
 var mobileHud=loadMobileHud();
-var TOUCH_HUD_ICONS={fire:'<path d="M12 3c1.3 3.1 4.2 4.3 4.2 8.2A4.2 4.2 0 0 1 8 12c0-1.5.6-2.7 1.8-4.2.1 1.7.8 2.4 1.6 2.8C12.9 8.2 13 5.8 12 3Z"/><path d="M9.2 14.1a2.9 2.9 0 0 0 5.7 0"/>',aim:'<circle cx="12" cy="12" r="6.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M10 12h4"/>',reload:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2"/>',jump:'<path d="m5 14 7-7 7 7M12 7v13"/>',slide:'<path d="M4 17h16M6 13l4-4 3 3 5-5M16 7h2v2"/>',swap:'<path d="M4 8h15l-3-3M20 16H5l3 3"/>',more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',prone:'<path d="M4 16h16M6 13l4-3 3 2 5-2M8 10l-2-3"/>',buy:'<path d="M4 6h16l-1.5 14h-13L4 6Z"/><path d="M8 6a4 4 0 0 1 8 0M8 11h8"/>'};
-function renderTouchActionButton(id,label,aria,iconKey){var el=document.getElementById(id);if(!el)return;el.dataset.hudStyle='text';el.setAttribute('aria-label',aria||label);el.textContent=label;}
+var TOUCH_HUD_ICONS={
+  fire:'<path d="M12 3 8 10h4l-1 11 6-11h-4l1-7Z"/>',
+  aim:'<circle cx="12" cy="12" r="6"/><path d="M12 3v5m0 8v5M3 12h5m8 0h5"/>',
+  reload:'<path d="M18 9a7 7 0 1 0 0 6M19 4v6h-6"/>',
+  jump:'<path d="m6 11 6-7 6 7M12 4v12M6 20h12"/>',
+  slide:'<path d="M3 19h18M5 15l4-5 5 4 5-1M13 5l2 1"/>',
+  swap:'<path d="M4 8h16l-4-4M20 16H4l4 4"/>',
+  crouch:'<circle cx="14" cy="5" r="2"/><path d="m13 9-4 5 6 1 2 5m-8-6-4 5m8-10 5 2 3-1"/>',
+  prone:'<circle cx="19" cy="11" r="2"/><path d="m16 14-7 1-5 3m5-3-5-1m12 0 4 3H9"/>',
+  run:'<path d="m4 8 4 4-4 4m6-8 4 4-4 4m6-8 4 4-4 4"/>',
+  buy:'<path d="M4 8h16l-2 12H6L4 8Zm4 0V6a4 4 0 1 1 8 0v2"/>',
+  nade:'<path d="M10 7h5l3 5-2 8H8l-2-8 4-5Zm2-3h6l2 3m-8-3v3"/>',
+  next:'<path d="m5 6 6 6-6 6m8-12 6 6-6 6"/>',
+  inspect:'<circle cx="10" cy="10" r="5"/><path d="m14 14 5 5m-9-11v4m-2-2h4"/>',
+  objective:'<path d="m12 3 8 9-8 9-8-9 8-9Zm0 5v8m-4-4h8"/>',
+  drop:'<path d="M12 3v13m-4-4 4 4 4-4M5 20h14"/>',
+  menu:'<path d="M9 5v14m6-14v14"/>',
+  score:'<path d="M5 5h14v14H5zM8 9h8m-8 4h6m-6 3h4"/>'
+};
+function renderTouchActionButton(id,label,aria,iconKey){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.setAttribute('aria-label',aria||label);
+  if(!el.querySelector('.tb-label')) el.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+TOUCH_HUD_ICONS[iconKey]+'</svg><span class="tb-label"></span>';
+  setT(el.querySelector('.tb-label'),label);
+}
 function clampMobileHudPoint(el,pad,x,y){var r=pad.getBoundingClientRect(),b=el.getBoundingClientRect(),cs=window.getComputedStyle?window.getComputedStyle(pad):null;function inset(k){var n=cs?parseFloat(cs.getPropertyValue('--hud-safe-'+k)):0;return Number.isFinite(n)?n:0;}var w=Math.max(48,b.width||88),h=Math.max(48,b.height||88),rw=Math.max(1,r.width),rh=Math.max(1,r.height),m=4,minX=(inset('left')+w/2+m)/rw,maxX=1-(inset('right')+w/2+m)/rw,minY=(inset('top')+h/2+m)/rh,maxY=1-(inset('bottom')+h/2+m)/rh;if(minX>maxX)minX=maxX=.5;if(minY>maxY)minY=maxY=.5;return{x:Math.max(minX,Math.min(maxX,x)),y:Math.max(minY,Math.min(maxY,y))};}
 function applyHudPosition(el,id){var p=mobileHud.positions&&mobileHud.positions[id];if(p){el.dataset.hudCustom='true';var pad=document.getElementById('touch'),q=pad?clampMobileHudPoint(el,pad,p.x,p.y):p;el.style.setProperty('--hud-x',(q.x*100)+'%');el.style.setProperty('--hud-y',(q.y*100)+'%');}else{delete el.dataset.hudCustom;el.style.removeProperty('--hud-x');el.style.removeProperty('--hud-y');}}
-function applyMobileHud(){var pad=document.getElementById('touch');if(!pad)return;document.getElementById('hud').classList.toggle('hand-left',mobileHud.hand==='left');pad.style.setProperty('--touch-opacity',String(mobileHud.opacity/100));pad.classList.toggle('hand-left',mobileHud.hand==='left');pad.classList.toggle('hud-editing',!!mobileHud.editing);pad.classList.remove('hud-icon-mode','hud-hybrid-mode');var b=document.getElementById('tb-fire-alt');if(b)b.hidden=!mobileHud.fire2;[['tb-fire','FIRE','Fire weapon','fire'],['tb-fire-alt','FIRE 2',mobileHud.hand==='left'?'Fire with the right-side trigger':'Fire with the left-side trigger','fire'],['tb-aim','AIM','Aim down sights','aim'],['tb-rel','RELOAD','Reload weapon','reload'],['tb-jump','JUMP','Jump','jump'],['tb-slide','SLIDE','Slide','slide'],['tb-swap','SWAP','Switch weapon','swap'],['tb-more',touchTrayOpen?'CLOSE':'MORE',touchTrayOpen?'Close extra actions':'More actions','more']].forEach(function(a){renderTouchActionButton(a[0],a[1],a[2],a[3]);});MOBILE_HUD_BUTTON_IDS.forEach(function(id){var el=document.getElementById(id);if(el)applyHudPosition(el,id);});}
+function applyMobileHud(){
+  var pad=document.getElementById('touch');
+  if(!pad)return;
+  document.getElementById('hud').classList.toggle('hand-left',mobileHud.hand==='left');
+  pad.style.setProperty('--touch-opacity',String(mobileHud.opacity/100));
+  pad.classList.toggle('hand-left',mobileHud.hand==='left');
+  pad.classList.toggle('hud-editing',!!mobileHud.editing);
+  document.getElementById('touch-editor').hidden=!mobileHud.editing;
+  document.getElementById('touch-editor-size').textContent=G.touchSize+'%';
+  document.getElementById('tb-fire-alt').hidden=!mobileHud.fire2;
+  renderTouchActionButton('tb-menu',mobileHud.editing?'SAVE':'PAUSE',mobileHud.editing?'Save layout and pause':'Pause or open menu','menu');
+  [
+    ['tb-score','SCORE','Hold for scoreboard','score'],['tb-fire','FIRE','Fire weapon','fire'],
+    ['tb-fire-alt','FIRE','Fire using alternate trigger','fire'],['tb-aim','ADS','Aim down sights or alternate melee attack','aim'],
+    ['tb-rel','RELOAD','Reload weapon','reload'],['tb-jump','JUMP','Jump or stand from prone','jump'],
+    ['tb-slide','SLIDE','Slide','slide'],['tb-swap','SWAP','Switch weapon','swap'],
+    ['tb-crouch','CROUCH','Toggle crouch','crouch'],['tb-prone','PRONE','Toggle prone','prone'],
+    ['tb-run','RUN','Toggle full joystick speed','run'],['tb-buy','BUY','Open the buy menu','buy'],
+    ['tb-nade','GRENADE','Throw selected grenade','nade'],['tb-nsel','NEXT','Select next grenade','next'],
+    ['tb-inspect','INSPECT','Inspect Legendary weapon','inspect'],['tb-objective','USE','Bomb objective','objective'],
+    ['tb-dropbomb','DROP','Drop the bomb','drop']
+  ].forEach(function(a){renderTouchActionButton(a[0],a[1],a[2],a[3]);});
+  MOBILE_HUD_BUTTON_IDS.forEach(function(id){var el=document.getElementById(id);if(el)applyHudPosition(el,id);});
+  if(touchMode && M && typeof cur==='string')updateTouchActions();
+}
 var mobileHudResizeFrame=0;window.addEventListener('resize',function(){if(mobileHudResizeFrame)return;mobileHudResizeFrame=requestAnimationFrame(function(){mobileHudResizeFrame=0;if(document.documentElement.classList.contains('touch-device'))applyMobileHud();});},{passive:true});
 function saveMobileHud(){try{localStorage.setItem(MOBILE_HUD_KEY,JSON.stringify(mobileHud));}catch(e){}applyMobileHud();}
 function initMobileHudPositionEditor(){var pad=document.getElementById('touch');if(!pad||pad.dataset.hudEditor==='1')return;pad.dataset.hudEditor='1';var drag=null;function finish(e){if(!drag||!e||e.pointerId!==drag.pointerId)return;drag=null;saveMobileHud();}pad.addEventListener('pointerdown',function(e){if(!mobileHud.editing)return;var el=e.target&&e.target.closest?e.target.closest('.tb:not(#tb-menu)'):null;if(!el||el.hidden||el.disabled)return;e.preventDefault();e.stopImmediatePropagation();if(drag)return;drag={pointerId:e.pointerId,el:el};try{el.setPointerCapture(e.pointerId);}catch(_capture){}},true);pad.addEventListener('pointermove',function(e){if(!drag||e.pointerId!==drag.pointerId)return;e.preventDefault();e.stopImmediatePropagation();var r=pad.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width),y=(e.clientY-r.top)/Math.max(1,r.height),q=clampMobileHudPoint(drag.el,pad,x,y);mobileHud.positions[drag.el.id]=q;applyHudPosition(drag.el,drag.el.id);},true);['pointerup','pointercancel','lostpointercapture'].forEach(function(type){pad.addEventListener(type,function(e){if(!drag||e.pointerId!==drag.pointerId)return;e.preventDefault();e.stopImmediatePropagation();finish(e);},true);});}
 initMobileHudPositionEditor();
+document.getElementById('touch-editor').addEventListener('click',function(e){
+  if(!mobileHud.editing)return;
+  var size=e.target.getAttribute('data-hud-size');
+  if(size){G.touchSize=Math.min(115,Math.max(85,G.touchSize+Number(size)));saveObj(G_KEY,G);applyHud();}
+  if(e.target.id==='touch-editor-reset'){mobileHud.positions={};saveMobileHud();}
+});
 /* ---------- display, audio, crosshair and HUD settings ---------- */
 function slLegacyMenuAmbience() { try { return localStorage.getItem('sl-ambient') !== '0'; } catch (e) { return true; } }
 var DEF_G = {
@@ -3842,7 +3899,7 @@ var DEF_G = {
   hudScale: 100, radar: true, radarSize: 100, feed: true, hitMarker: true, dmgDir: true, banners: true, marker: 'team',
   autoReload: true, rawInput: false, pauseOnHide: true, adaptive: true,
   fastMode: false, fpsCap: window.SightlineDisplay ? 0 : 60, fx: touchMode ? 'low' : 'high', autoSwitch: true, showNet: false, interp: 0, autoRe: true,
-  touchLayout: 'simple', touchSens: 100, touchAdsSens: 70, touchSize: 100
+  touchSens: 100, touchAdsSens: 70, touchSize: 100
 };
 var G_KEY = 'sightline.settings.v1', G = loadObj(G_KEY, DEF_G);
 /* P11.5.9: make the stable 60 FPS target the default for new and returning
@@ -4610,7 +4667,7 @@ var zoomLvl = 0, adsT = 0, stepT = 0, shotIdx = 0, lastShot = 0, decals = [];
 var sliding = false, slideT = 0, slideCd = 0, slideDX = 0, slideDZ = 0, proneOn = false, lastSTap = -9;
 var spaceActive = false, spaceConsumed = false, spaceT = 0, jumpQ = false, reloadStage = 0;
 var stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 }, lookTouch = { id: null, x: 0, y: 0 };
-var touchTrayOpen = false;
+var touchCrouch = false, touchRun = false, touchActionLook = null;
 var P = { x: 0, z: 36, y: 0, vy: 0, vx: 0, vz: 0, yaw: 0, pitch: 0, hp: 100, armor: 0, onGround: true, alive: true, punch: 0, bob: 0, crouch: 0, prone: 0 };
 var M = null; /* match */
 var SOLO_FFA = { match: null, respawns: new Map(), playerShieldUntil: 0, playerLife: 0 };
@@ -11375,7 +11432,7 @@ function finishRoundEnd() {
 function endMatch() {
   state = 'matchend'; exitLock();
   el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true;
-  resetTouchMotion(); setTouchTray(false);
+  resetTouchMotion();
   var won = M.you > M.bots, s = M.stats, acc = s.shots ? Math.round(100 * s.hits / s.shots) : 0;
   if(R.mode==='ffa'&&!MP.on&&SOLO_FFA.match){
     var ffaWinner=SOLO_FFA.match.winnerId,ffaRows=soloFFAStandings(),ffaPlacement=soloFFAPlacement();
@@ -11757,7 +11814,7 @@ function resetTouchMotion() {
   stick.id = null; stick.x = stick.y = 0; lookTouch.id = null;
   joy.classList.remove('active'); joyKnob.style.transform = 'translate(0px,0px)'; joyKnob._stickX = joyKnob._stickY = null;
   for (var i = 0; i < touchButtonResets.length; i++) touchButtonResets[i]();
-  if (touchMode) jumpQ = false;
+  if (touchMode) { jumpQ = false; touchCrouch = false; touchRun = false; touchActionLook = null; }
   fireHeld = false; touchFireOwners.clear();
 }
 function setStick(t) {
@@ -11792,14 +11849,18 @@ tzl.addEventListener('touchstart', function (e) {
   if (lookTouch.id !== null || state !== 'live' || (MP.on && MP.menu)) return;
   var t = e.changedTouches[0]; lookTouch.id = t.identifier; lookTouch.x = t.clientX; lookTouch.y = t.clientY; e.preventDefault();
 }, { passive: false });
+function applyTouchLook(dx, dy) {
+  if (!touchActionActive()) return;
+  mobileGuide.action('look', Math.hypot(dx, dy));
+  var ratio = G.touchSens / 100 * MobileProjection.scale(camera.fov, 72), fine = scoped ? G.touchAdsSens / 100 : 1;
+  P.yaw -= dx * 0.006 * ratio * fine;
+  P.pitch -= dy * 0.006 * ratio * fine * (S.invertY ? -1 : 1);
+  P.pitch = Math.max(-1.45, Math.min(1.45, P.pitch));
+}
 tzl.addEventListener('touchmove', function (e) {
   var t = touchById(e.changedTouches, lookTouch.id);
-  if (t && state === 'live' && P.alive && !(MP.on && MP.menu)) {
-    mobileGuide.action('look', Math.hypot(t.clientX - lookTouch.x, t.clientY - lookTouch.y));
-    var ratio = G.touchSens / 100 * MobileProjection.scale(camera.fov, 72), fine = scoped ? G.touchAdsSens / 100 : 1;
-    P.yaw -= (t.clientX - lookTouch.x) * 0.006 * ratio * fine;
-    P.pitch -= (t.clientY - lookTouch.y) * 0.006 * ratio * fine * (S.invertY ? -1 : 1);
-    P.pitch = Math.max(-1.45, Math.min(1.45, P.pitch));
+  if (t) {
+    applyTouchLook(t.clientX - lookTouch.x, t.clientY - lookTouch.y);
     lookTouch.x = t.clientX; lookTouch.y = t.clientY;
   }
   if (t) e.preventDefault();
@@ -11817,20 +11878,29 @@ function tbtn(id, down, up, options) {
     b.classList.remove('pressed');
   });
   function begin(id, event, nativeEvent) {
-    if (activePointers.has(id)) return;
+    if (b.hidden || b.disabled || (mobileHud.editing && b.id !== 'tb-menu') || activePointers.has(id)) return;
     var firstOwner = activePointers.size === 0;
     activePointers.add(id);
+    if (options && options.lookDrag && !touchActionLook && event.pointerType === 'touch')
+      touchActionLook = { id:id, x:event.clientX, y:event.clientY };
     if (nativeEvent) { nativeEvent.preventDefault(); nativeEvent.stopPropagation(); }
     b.classList.add('pressed'); if (down && (perPointer || firstOwner)) down(event);
   }
   function finish(e) {
     if (!e || e.pointerId === undefined || !activePointers.has(e.pointerId)) return;
     activePointers.delete(e.pointerId);
+    if (touchActionLook && touchActionLook.id === e.pointerId) touchActionLook = null;
     if (!activePointers.size) b.classList.remove('pressed');
     if (up && (perPointer || !activePointers.size)) up(e);
     e.preventDefault(); e.stopPropagation();
   }
+  function dragLook(id, x, y) {
+    if (!touchActionLook || touchActionLook.id !== id || !activePointers.has(id)) return;
+    if (lookTouch.id === null) applyTouchLook(x-touchActionLook.x,y-touchActionLook.y);
+    touchActionLook.x = x; touchActionLook.y = y;
+  }
   if (window.PointerEvent) {
+    if (options && options.lookDrag) b.addEventListener('pointermove', function(e){dragLook(e.pointerId,e.clientX,e.clientY);});
     b.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       begin(e.pointerId, e, e);
@@ -11842,10 +11912,16 @@ function tbtn(id, down, up, options) {
   } else {
     b.addEventListener('touchstart', function (e) {
       for (var i = 0; i < e.changedTouches.length; i++) {
-        var id = 'touch:' + e.changedTouches[i].identifier;
-        begin(id, { pointerId: id, pointerType: 'touch', originalEvent: e }, e);
+        var t = e.changedTouches[i], id = 'touch:' + t.identifier;
+        begin(id, { pointerId: id, pointerType: 'touch', clientX:t.clientX, clientY:t.clientY, originalEvent: e }, e);
       }
     }, { passive: false });
+    if (options && options.lookDrag) b.addEventListener('touchmove', function(e){
+      for(var i=0;i<e.changedTouches.length;i++){
+        var t=e.changedTouches[i];
+        dragLook('touch:'+t.identifier,t.clientX,t.clientY);
+      }
+    });
     function finishTouch(e) {
       for (var i = 0; i < e.changedTouches.length; i++) {
         var t = e.changedTouches[i], id = 'touch:' + t.identifier;
@@ -11855,50 +11931,57 @@ function tbtn(id, down, up, options) {
     b.addEventListener('touchend', finishTouch, { passive: false }); b.addEventListener('touchcancel', finishTouch, { passive: false });
   }
   // Keyboard activation remains available to accessibility tools.
-  b.addEventListener('click', function (e) { if (e.detail === 0 && down) { var ev = { pointerId: 'keyboard:' + id, pointerType: 'keyboard' }; down(ev); if (up) up(ev); } });
+  b.addEventListener('click', function (e) { if (e.detail === 0 && down && !b.hidden && !b.disabled && (!mobileHud.editing || b.id === 'tb-menu')) { var ev = { pointerId: 'keyboard:' + id, pointerType: 'keyboard' }; down(ev); if (up) up(ev); } });
 }
 function updateTouchToggle(button, active) {
   var pressed = String(active);
   if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
   setCls(button, 'selected', active);
 }
+function touchActionAvailable(id, available) {
+  var button = $(id);
+  var hidden = !available && !mobileHud.editing;
+  if (button.hidden !== hidden) button.hidden = hidden;
+  if (button.disabled !== hidden) button.disabled = hidden;
+}
 function updateTouchActions() {
   if (!touchMode) return;
   updateTouchToggle($('#tb-aim'), scoped);
   updateTouchToggle($('#tb-prone'), proneOn);
+  updateTouchToggle($('#tb-crouch'), touchCrouch && !proneOn);
+  updateTouchToggle($('#tb-run'), touchRun);
   var reloadButton = $('#tb-rel'), touchWeapon = WEAPONS[cur], touchAmmo = ammo[cur];
   var isReloading = !!(P.alive && reloading > 0), needsReload = !!(P.alive && touchWeapon && !touchWeapon.melee && touchAmmo && touchAmmo.res > 0 && touchAmmo.mag <= Math.max(3, Math.ceil((touchWeapon.mag || 1) * 0.15)));
   setCls(reloadButton, 'reload-active', isReloading); setCls(reloadButton, 'reload-needed', !isReloading && needsReload);
   var reloadLabel = isReloading ? 'Reloading weapon' : needsReload ? 'Reload weapon, ammunition low' : 'Reload weapon';
   if (reloadButton.getAttribute('aria-label') !== reloadLabel) reloadButton.setAttribute('aria-label', reloadLabel);
   var reloadText = isReloading ? 'LOAD…' : 'RELOAD';
-  if (reloadButton.textContent !== reloadText) reloadButton.textContent = reloadText;
+  setT(reloadButton.querySelector('.tb-label'), reloadText);
   var grenadeTypes = Object.keys(NADES), availableGrenades = 0;
   for (var i = 0; i < grenadeTypes.length && availableGrenades < 2; i++) if (inv[grenadeTypes[i]] > 0) availableGrenades++;
-  $('#tb-nade').disabled = availableGrenades === 0;
-  $('#tb-nsel').disabled = availableGrenades < 2;
-  $('#tb-inspect').disabled = !selectedLegendaryFinish(cur) || !SightlineWeaponSkins.legend.prototype(cur);
+  touchActionAvailable('#tb-buy', canBuyNow());
+  touchActionAvailable('#tb-nade', P.alive && availableGrenades > 0);
+  touchActionAvailable('#tb-nsel', P.alive && availableGrenades >= 2);
+  touchActionAvailable('#tb-inspect', P.alive && !!selectedLegendaryFinish(cur) && !!SightlineWeaponSkins.legend.prototype(cur));
+  if (availableGrenades) {
+    if (!inv[nadeSel]) nadeSel = grenadeTypes.find(function (kind) { return inv[kind] > 0; });
+    setT($('#tb-nade .tb-label'), NADES[nadeSel].name);
+  }
   var bombLive=(R.mode==='bomb'&&!MP.on||MP.on&&MP.mode==='bomb')&&state==='live',obj=MP.on?MP.objective:SOLO_BOMB.state,team=MP.on?MP.myTeam:SOLO_BOMB.playerTeam,id=MP.on?MP.id:-1;
   var mpAction=bombLive&&MP.on?mpBombAction():null;
   var usePrompt=bombLive?(MP.on?(obj&&obj.use&&obj.use.actorId===id?(obj.use.action==='plant'?'PLANTING · HOLD':'DEFUSING · HOLD'):mpAction==='plant'?'HOLD TO PLANT':mpAction==='defuse'?'HOLD TO DEFUSE':mpAction==='pickup'?'PICK UP BOMB':''):soloBombPrompt(P)):'';
   var useButton=$('#tb-objective'),dropButton=$('#tb-dropbomb');
-  if(useButton){var showUse=!!(bombLive&&P.alive&&usePrompt&&usePrompt!=='CARRY TO A / B');useButton.hidden=!showUse;useButton.disabled=!showUse;var useLabel=usePrompt||'Bomb objective';if(useButton.textContent!==useLabel)useButton.textContent=useLabel;if(useButton.getAttribute('aria-label')!==useLabel)useButton.setAttribute('aria-label',useLabel);}
-  if(dropButton){var hasBomb=!!(bombLive&&obj&&obj.phase==='carried'&&obj.carrierId===id);dropButton.hidden=!hasBomb;dropButton.disabled=!hasBomb;}
-}
-function setTouchTray(open) {
-  touchTrayOpen = !!open;
-  $('#touch').classList.toggle('tray-open', touchTrayOpen);
-  $('#tb-more').setAttribute('aria-expanded', String(touchTrayOpen));
-  renderTouchActionButton('tb-more',touchTrayOpen?'CLOSE':'MORE',touchTrayOpen?'Close extra actions':'More actions','more');
+  if(useButton){var showUse=!!(bombLive&&P.alive&&usePrompt&&usePrompt!=='CARRY TO A / B');touchActionAvailable('#tb-objective',showUse);var useLabel=usePrompt||'Bomb objective';setT(useButton.querySelector('.tb-label'),useLabel);if(useButton.getAttribute('aria-label')!==useLabel)useButton.setAttribute('aria-label',useLabel);}
+  if(dropButton){var hasBomb=!!(bombLive&&obj&&obj.phase==='carried'&&obj.carrierId===id);touchActionAvailable('#tb-dropbomb',hasBomb);}
 }
 function enterTouchSession() {
   if (!touchMode) return;
   document.documentElement.classList.add('touch-session');
-  setTouchTray(false); resetTouchMotion(); applyHud(); updateTouchActions(); mobileGuide.start();
+  resetTouchMotion(); applyHud(); updateTouchActions(); mobileGuide.start();
   try { window.scrollTo({top:0,behavior:'instant'}); } catch (e) { window.scrollTo(0,0); }
 }
 function leaveTouchSession() {
-  resetTouchMotion(); setTouchTray(false); mobileGuide.hide();
+  resetTouchMotion(); mobileGuide.hide();
   document.documentElement.classList.remove('touch-session');
 }
 window.addEventListener('blur', resetTouchMotion);
@@ -11906,30 +11989,55 @@ document.addEventListener('visibilitychange', function () {
   if (document.hidden) { resetTouchMotion(); if (touchMode) mobileGuide.hide(); }
   else if (touchMode && state === 'live' && !(MP.on && MP.menu) && ['#ov-start','#ov-buy','#ov-end','#ov-set'].every(function(id){return $(id).hidden;})) mobileGuide.start();
 });
-function touchFireDown(e) { if (state !== 'live' || (MP.on && MP.menu) || !e || e.pointerId === undefined) return; mobileGuide.action('fire'); var alreadyHeld=touchFireOwners.size>0; touchFireOwners.add(e.pointerId); fireHeld = true; if(!alreadyHeld)tryFire(true); }
+function touchActionActive() { return state === 'live' && P.alive && !(MP.on && MP.menu); }
+function touchFireDown(e) { if (!touchActionActive() || !e || e.pointerId === undefined) return; mobileGuide.action('fire'); var alreadyHeld=touchFireOwners.size>0; touchFireOwners.add(e.pointerId); fireHeld = true; if(!alreadyHeld)tryFire(true); }
 function touchFireUp(e) { touchFireOwners.delete(e&&e.pointerId); fireHeld=touchFireOwners.size>0; }
-tbtn('#tb-fire', touchFireDown, touchFireUp, { perPointer: true });
-tbtn('#tb-fire-alt', touchFireDown, touchFireUp, { perPointer: true });
-tbtn('#tb-jump', function () { if (state === 'live') jumpQ = true; });
-tbtn('#tb-rel', function () { if (state === 'live') startReload(); });
+tbtn('#tb-fire', touchFireDown, touchFireUp, { perPointer: true, lookDrag:true });
+tbtn('#tb-fire-alt', touchFireDown, touchFireUp, { perPointer: true, lookDrag:true });
+tbtn('#tb-jump', function () {
+  if (!touchActionActive()) return;
+  if (proneOn || P.prone >= .3) { proneOn = false; updateTouchActions(); return; }
+  if (sliding) { sliding = false; slideCd = .5; }
+  jumpQ = true;
+});
+tbtn('#tb-rel', function () { if (touchActionActive()) startReload(); });
 tbtn('#tb-aim', function () {
-  if (state !== 'live') return;
+  if (!touchActionActive()) return;
   legendCancelInspect();
   if (WEAPONS[cur].melee) meleeAttack(true); else if (reloading <= 0) scoped = !scoped;
   updateTouchActions();
+}, null, { lookDrag:true });
+// Open the pause layer on click so the release cannot hit its navigation.
+$('#tb-menu').addEventListener('click', function () {
+  if (mobileHud.editing) {
+    mobileHud.editing = false;
+    saveMobileHud();
+    showOverlay('#ov-start');
+  } else if (state === 'live' && !(MP.on && MP.menu)) pause();
 });
-tbtn('#tb-menu', function () { if (mobileHud.editing) { mobileHud.editing=false; saveMobileHud(); } if (state === 'live') pause(); });
-tbtn('#tb-more', function () { setTouchTray(!touchTrayOpen); });
-tbtn('#tb-buy', function () { toggleStore(); setTouchTray(false); });
+tbtn('#tb-buy', function () { toggleStore(); });
 tbtn('#tb-nade', function () { var ks = Object.keys(NADES).filter(function (k) { return inv[k] > 0; }); if (ks.length) throwNade(inv[nadeSel] > 0 ? nadeSel : ks[0]); updateTouchActions(); });
-tbtn('#tb-nsel', function () { var ks = Object.keys(NADES).filter(function (k) { return inv[k] > 0; }); if (ks.length) { nadeSel = ks[(ks.indexOf(nadeSel) + 1) % ks.length]; $('#tb-nade').textContent = NADES[nadeSel].name; updateHud(); } });
+tbtn('#tb-nsel', function () { var ks = Object.keys(NADES).filter(function (k) { return inv[k] > 0; }); if (ks.length) { nadeSel = ks[(ks.indexOf(nadeSel) + 1) % ks.length]; updateHud(); } });
 tbtn('#tb-inspect', function () { startLegendaryInspection(); });
 tbtn('#tb-objective', function () { if(state==='live'&&P.alive){if(MP.on)mpBombUse();else soloBombUse(P);updateHud();} }, function(){if(MP.on)mpBombCancel();else soloBombCancel(P);updateHud();});
 tbtn('#tb-dropbomb', function () { if(state==='live'){if(MP.on)mpBombDrop();else soloBombDrop(P);updateHud();} });
-tbtn('#tb-slide', function () { if (state === 'live') trySlide(false); });
-tbtn('#tb-prone', function () { if (state === 'live' && P.alive && !sliding) { proneOn = !proneOn; if (proneOn) scoped = false; updateTouchActions(); } });
+tbtn('#tb-slide', function () { if (touchActionActive()) trySlide(false); });
+tbtn('#tb-crouch', function () {
+  if (!touchActionActive() || sliding) return;
+  touchCrouch = proneOn || !touchCrouch;
+  proneOn = false;
+  updateTouchActions();
+});
+tbtn('#tb-prone', function () {
+  if (!touchActionActive() || sliding) return;
+  proneOn = !proneOn;
+  if (proneOn) { scoped = false; touchCrouch = false; }
+  updateTouchActions();
+});
+tbtn('#tb-run', function () { if (touchActionActive()) { touchRun = !touchRun; updateTouchActions(); } });
+tbtn('#tb-score', function () { if (state === 'live' || state === 'roundend') showScore(true); }, function () { showScore(false); });
 tbtn('#tb-swap', function () {
-  if (state !== 'live') return;
+  if (!touchActionActive()) return;
   var order = WEP_ORDER.filter(function (k) { return owned[k]; });
   setWeapon(order[(order.indexOf(cur) + 1) % order.length]);
 });
@@ -11995,8 +12103,8 @@ function applyHud() {
   $('#fps').hidden = !G.fps; $('#net').hidden = !(G.showNet && MP.on);
   if (touchMode) {
     var pad = $('#touch');
-    pad.classList.toggle('advanced', G.touchLayout === 'advanced');
-    pad.style.setProperty('--touch-scale', (G.touchSize / 100));
+
+    $('#stage').style.setProperty('--touch-scale', (G.touchSize / 100));
     applyMobileHud();
   }
 }
@@ -12100,7 +12208,6 @@ var SPEC = {
     { t: 'check', k: 'autoRe', l: 'Reconnect automatically if the connection drops', h: 'Tries again for about 30 seconds. You rejoin as a spectator until the next round or wave.' }
   ],
   touch: [
-    { t: 'seg', k: 'touchLayout', l: 'Action set', opts: [['simple', 'Two-thumb'], ['advanced', 'Claw / all']], h: 'Two-thumb keeps essential actions visible; More opens utility actions. Claw / all exposes the complete action set.' },
     { t: 'range', k: 'touchSens', l: 'Look sensitivity', min: 40, max: 180, step: 5, f: pc, h: 'How far your view turns when dragging the right thumb.' },
     { t: 'range', k: 'touchAdsSens', l: 'Aimed sensitivity', min: 35, max: 120, step: 5, f: pc },
     { t: 'range', k: 'touchSize', l: 'Button size', min: 85, max: 115, step: 5, f: pc },
@@ -12250,7 +12357,7 @@ function opDetail(o) {
 }
 function kbd(a) { var b = BIND[a] || ['', '']; var c = b[0] || b[1]; return '<kbd>' + labelOf(c) + '</kbd>'; }
 function recObj() { var b = loadBest() || {}; return { matches: b.matches || 0, kills: b.kills || 0, acc: b.acc || 0, wins: b.wins || 0, tk: b.tk || 0, td: b.td || 0, ths: b.ths || 0, tsh: b.tsh || 0, thi: b.thi || 0, rounds: b.rounds || 0, hist: Array.isArray(b.hist) ? b.hist : [] }; }
-function mobileHudSettingsHtml(){var paused=state==='paused';return (touchMode ? '' : '<div class="srow wide"><span class="lb">Touch layout<small>Visible action icons keep labels and accessible names.</small></span><span class="small">Sightline tactical</span></div>')+ '<div class="srow wide"><span class="lb">Dominant hand<small>Move-side joystick and combat actions switch together.</small></span><div class="hud-hand-options"><button type="button" data-mobile-hud-hand="right" aria-pressed="'+(mobileHud.hand==='right')+'">RIGHT-HAND FIRE</button><button type="button" data-mobile-hud-hand="left" aria-pressed="'+(mobileHud.hand==='left')+'">LEFT-HAND FIRE</button></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-opacity">Control opacity<small>Keep the battlefield visible beneath the controls.</small></label><div><input id="mobile-hud-opacity" type="range" min="50" max="100" step="5" value="'+mobileHud.opacity+'" data-mobile-hud-opacity aria-label="Mobile HUD button opacity"><output id="mobile-hud-opacity-value">'+mobileHud.opacity+'%</output></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-fire2">Optional second fire button<small>Off by default; enable for claw or alternate-hand play.</small></label><input id="mobile-hud-fire2" type="checkbox" data-mobile-hud-fire2 '+(mobileHud.fire2?'checked':'')+'></div>'+ '<div class="srow wide"><div class="hud-edit-toggle"><button class="btn ghost" type="button" data-act="mobile-hud-edit" '+(paused?'':'disabled')+'>Edit button positions</button><span>Available from a paused match. Resume to drag controls; tap MENU to finish.</span></div></div>'+ '<div class="setfoot"><button class="btn ghost" type="button" data-act="mobile-hud-reset">Reset mobile HUD layout</button><span class="small">' + (touchMode ? 'Button size: Controls.' : 'Button size remains under Controls → Touch.') + '</span></div>';}
+function mobileHudSettingsHtml(){var paused=state==='paused';return (touchMode ? '' : '<div class="srow wide"><span class="lb">Touch layout<small>Visible action icons keep labels and accessible names.</small></span><span class="small">Sightline tactical</span></div>')+ '<div class="srow wide"><span class="lb">Dominant hand<small>Move-side joystick and combat actions switch together.</small></span><div class="hud-hand-options"><button type="button" data-mobile-hud-hand="right" aria-pressed="'+(mobileHud.hand==='right')+'">RIGHT-HAND FIRE</button><button type="button" data-mobile-hud-hand="left" aria-pressed="'+(mobileHud.hand==='left')+'">LEFT-HAND FIRE</button></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-opacity">Control opacity<small>Keep the battlefield visible beneath the controls.</small></label><div><input id="mobile-hud-opacity" type="range" min="50" max="100" step="5" value="'+mobileHud.opacity+'" data-mobile-hud-opacity aria-label="Mobile HUD button opacity"><output id="mobile-hud-opacity-value">'+mobileHud.opacity+'%</output></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-fire2">Optional second fire button<small>Off by default; enable for claw or alternate-hand play.</small></label><input id="mobile-hud-fire2" type="checkbox" data-mobile-hud-fire2 '+(mobileHud.fire2?'checked':'')+'></div>'+ '<div class="srow wide"><div class="hud-edit-toggle"><button class="btn ghost" type="button" data-act="mobile-hud-edit" '+(paused?'':'disabled')+'>Edit layout</button><span>Available from a paused offline match. Drag buttons, adjust size, then tap Save.</span></div></div>'+ '<div class="setfoot"><button class="btn ghost" type="button" data-act="mobile-hud-reset">Reset mobile HUD layout</button><span class="small">' + (touchMode ? 'Button size: Controls.' : 'Button size remains under Controls → Touch.') + '</span></div>';}
 
 function loadoutWeaponCategory(key){var w=WEAPONS[key]||{};return w.melee?'melee':(w.category||'other');}
 function sl83WeaponGlyph(k){var d={all:'<path d="M3 10h18M5 10V7h8v3m-7 5h12m-10 0v3m7-3v3"/>',assault:'<path d="M2.5 10h12.2l2 2h4.8v3h-6.5l-2-2h-10.5zM5 10V8h8v2m-6 5v3m7-3v3"/>',smg:'<path d="M3 10h10l2 2h6v3h-7l-2-2H3zM5 10V8h6v2m-4 5v3"/>',shotgun:'<path d="M2.5 9h18v2h-18zM4 11v2h11v2H4m3-2v4"/>',marksman:'<path d="M2 11h15l2 2h3v2h-5l-2-2H2zM5 11V9h10v2"/><circle cx="10" cy="6" r="2"/>',lmg:'<path d="M2 9h14l2 2h4v3h-6l-2-2H2zM5 9V7h9v2m-4 5v5h5v-5"/>',pistol:'<path d="M3 8h17v4h-8l-2 3H7v-3H3zM7 15v4h4l2-4"/>',melee:'<path d="m4 19 9-9 2-5 4-2-2 5-5 2-9 9z"/>',other:'<path d="M3 10h13l2 2h3v3h-5l-2-2H3zM6 10V8h8v2"/>'};return '<svg class="loadout-glyph" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">'+(d[k]||d.other)+'</svg>';}function loadoutCategoryLabel(key){return ({assault:'ASSAULT RIFLES',smg:'SMG / PDW',shotgun:'SHOTGUNS',marksman:'MARKSMAN',lmg:'SUPPORT',pistol:'SIDEARMS',melee:'MELEE'})[key]||String(key).toUpperCase();}
@@ -12793,7 +12900,7 @@ $('.mn-main').addEventListener('click', function (e) {
     if (['mobile-rules-apply','mobile-rules-cancel','mobile-rules-reset'].includes(a)) { mobileOfflineRuleAction(a.slice(13)); return; }
     if(a==='rules-back'){sl82ReturnFromRules();return;} 
     if(a==='confirm-operator'){setOp(pendingOpId);return;}
-    if(a==='mobile-hud-reset'){mobileHud={style:MOBILE_HUD_DEFAULT.style,opacity:MOBILE_HUD_DEFAULT.opacity,fire2:MOBILE_HUD_DEFAULT.fire2,hand:'right',editing:false,positions:{}};G.touchSize=100;G.touchLayout='simple';saveObj(G_KEY,G);saveMobileHud();applyHud();renderBody(true);uiTick(true);return;} if(a==='mobile-hud-edit'){if(!touchMode||state!=='paused')return;mobileHud.editing=true;saveMobileHud();resume();return;} if(a==='mobile-hud-position-reset'){mobileHud.positions={};saveMobileHud();uiTick(true);return;}
+    if(a==='mobile-hud-reset'){mobileHud={style:MOBILE_HUD_DEFAULT.style,opacity:MOBILE_HUD_DEFAULT.opacity,fire2:MOBILE_HUD_DEFAULT.fire2,hand:'right',editing:false,positions:{}};G.touchSize=100;saveObj(G_KEY,G);saveMobileHud();applyHud();renderBody(true);uiTick(true);return;} if(a==='mobile-hud-edit'){if(!touchMode||state!=='paused')return;mobileHud.editing=true;saveMobileHud();hideOverlays();return;} if(a==='mobile-hud-position-reset'){mobileHud.positions={};saveMobileHud();uiTick(true);return;}
     if(a==='open-cosmetics'){finishTab='weapons';showFinishPicker(true);return;}
     if(a==='open-optics'){finishTab='optics';showFinishPicker(true);return;}
     if (SL_PLAY_BUILD && (a === 'p0diag-toggle' || a === 'p0diag-report' || a === 'p1157-report')) return;
@@ -13363,7 +13470,7 @@ function mpSpawn(m) {
   if(MP.on&&(MP.mode==='deathmatch'||MP.mode==='ffa')&&state==='live'){hideOverlays();el.hud.hidden=false;$('#touch').hidden=!touchMode;gunFor(cur).visible=true;updateHud();if(touchMode)enterTouchSession();else mpLock();}
 }
 function mpMatchEnd(m) {
-  state = 'matchend'; resetTouchMotion(); setTouchTray(false); exitLock(); el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true; el.ret.hidden = true; $('#score').hidden = true;
+  state = 'matchend'; resetTouchMotion(); exitLock(); el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true; el.ret.hidden = true; $('#score').hidden = true;
   var me = null, nxt = (MP.lobby && MP.lobby.auto) ? 'The next match starts automatically.' : 'Returning to the lobby.';
   if (MP.sc) MP.sc.players.forEach(function (p) { if (p.id === MP.id) me = p; });
   if (MP.mode === 'outbreak') {
@@ -13611,7 +13718,7 @@ function mpUpdate(dt) {
   if (state === 'buy') mpBuyButton();
   if ((state === 'live' || state === 'roundend') && P.alive && now - MP.lastSend >= SEND_MS) {
     MP.lastSend = now;
-    var walkIntent = held('walk') || (touchMode && Math.hypot(stick.x, stick.y) < 0.5 && Math.hypot(stick.x, stick.y) > 0.05);
+    var walkIntent = held('walk') || (touchMode && !touchRun && Math.hypot(stick.x, stick.y) < 0.5 && Math.hypot(stick.x, stick.y) > 0.05);
     mpSend({ t: 'in', ep: MP.ep, x: r4(P.x), y: r4(P.y), z: r4(P.z), yaw: r4(P.yaw), pitch: r4(P.pitch), cr: Math.round(P.crouch * 100) / 100, pr: Math.round(P.prone * 100) / 100, wk: walkIntent ? 1 : 0, w: cur });
   }
 }
@@ -14100,7 +14207,7 @@ if (document.querySelector('meta[name="sightline-route"]')?.content === 'lan-hos
 function updatePlayer(dt) {
   var alive = P.alive && state === 'live' && !(MP.on && MP.menu);
   if (!alive) crouchTog = false;
-  var crHeld = S.toggleCrouch ? crouchTog : held('crouch');
+  var crHeld = (touchMode && touchCrouch) || (S.toggleCrouch ? crouchTog : held('crouch'));
   P.crouch += ((alive && (crHeld || sliding || proneOn) ? 1 : 0) - P.crouch) * Math.min(1, dt * 10);
   P.prone += ((alive && proneOn ? 1 : 0) - P.prone) * Math.min(1, dt * 6);
   if (slideCd > 0) slideCd -= dt;
@@ -14110,11 +14217,13 @@ function updatePlayer(dt) {
   }
   var f = 0, s = 0;
   if (alive) {
-    f = (held('fwd') ? 1 : 0) - (held('back') ? 1 : 0) - stick.y;
-    s = (held('right') ? 1 : 0) - (held('left') ? 1 : 0) + stick.x;
+    var stickLength = touchMode && touchRun ? Math.hypot(stick.x, stick.y) : 0;
+    var runScale = stickLength > .05 ? 1 / stickLength : 1;
+    f = (held('fwd') ? 1 : 0) - (held('back') ? 1 : 0) - stick.y * runScale;
+    s = (held('right') ? 1 : 0) - (held('left') ? 1 : 0) + stick.x * runScale;
     var l = Math.hypot(f, s); if (l > 1) { f /= l; s /= l; }
   }
-  var w = WEAPONS[cur], walk = held('walk') || (touchMode && Math.hypot(stick.x, stick.y) < 0.5 && Math.hypot(stick.x, stick.y) > 0.05);
+  var w = WEAPONS[cur], walk = held('walk') || (touchMode && !touchRun && Math.hypot(stick.x, stick.y) < 0.5 && Math.hypot(stick.x, stick.y) > 0.05);
       var infectedPlayer = soloInfectionPlayer() || MP.on && MP.mode==='infection' && MP.myInfected;
       var top = (infectedPlayer && P.tagUntil>performance.now() ? .8 : 1) * (infectedPlayer && (SOLO_INF.on&&SOLO_INF.dawnRush || MP.infStatus&&MP.infStatus.surge) ? 1.08 : 1) * 5.2 * w.speed * (walk ? 0.5 : 1) * (scoped ? 0.7 : 1) * (1 - P.crouch * 0.55) * (1 - P.prone * 0.45);
   var sy = Math.sin(P.yaw), cy = Math.cos(P.yaw);
@@ -15241,8 +15350,6 @@ html.touch-device #stage{touch-action:none;overscroll-behavior:none;}
 html.touch-device #tb-objective{right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-right,0px));bottom:calc(42dvh + 68px + env(safe-area-inset-bottom,0px));border-color:rgba(226,173,98,.72);background:rgba(86,55,27,.94);}
 html.touch-device #tb-dropbomb{right:calc(4vw + 246px + env(safe-area-inset-right,0px));bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px));}
 html.touch-device #touch #tb-objective:not([hidden]):not(:disabled){display:flex;}
-html.touch-device #touch.advanced:not(.hand-left) #tb-fire{right:calc(4vw + env(safe-area-inset-right,0px));bottom:calc(31dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #touch.advanced:not(.hand-left) #tb-aim{right:calc(4vw + 72px + env(safe-area-inset-right,0px));bottom:calc(18dvh + env(safe-area-inset-bottom,0px));}
 html.touch-device #touch.hand-left #tz-move{left:auto;right:0;width:44%;}
 html.touch-device #touch.hand-left #tz-look{left:0;right:auto;width:56%;}
 html.touch-device #touch.hand-left #touch-joystick{left:82%;}
@@ -15253,14 +15360,11 @@ html.touch-device #touch.hand-left #tb-rel{left:calc(4vw + max(62px,calc(clamp(7
 html.touch-device #touch.hand-left #tb-swap{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-jump{left:calc(4vw + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-slide{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px));right:auto;}
-html.touch-device #touch.hand-left #tb-more{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-prone,html.touch-device #touch.hand-left #tb-nade{left:calc(4vw + 30px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-buy,html.touch-device #touch.hand-left #tb-nsel{left:calc(4vw + 102px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-inspect{left:calc(4vw + 174px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-objective{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px));right:auto;}
 html.touch-device #touch.hand-left #tb-dropbomb{left:calc(4vw + 246px + env(safe-area-inset-left,0px));right:auto;}
-html.touch-device #touch.hand-left.advanced #tb-fire{bottom:calc(31dvh + env(safe-area-inset-bottom,0px));}
-html.touch-device #touch.hand-left.advanced #tb-aim{bottom:calc(18dvh + env(safe-area-inset-bottom,0px));}
 html.touch-device .v{min-width:58px;grid-template-columns:auto auto;align-items:center;gap:0 6px;padding:5px 8px;border:1px solid rgba(232,234,214,.19);border-radius:8px;background:linear-gradient(145deg,rgba(16,25,28,.9),rgba(7,13,16,.88));box-shadow:0 5px 14px rgba(0,0,0,.22);}
 html.touch-device .v .l{grid-column:1/-1;font-size:8px;letter-spacing:.08em;color:#c4cec4;}
 html.touch-device #timer{min-width:3.5ch;font-size:clamp(13px,3.4dvh,17px);line-height:1.5;}
@@ -15273,7 +15377,7 @@ html.touch-device #msg.objective-toast span{font-size:clamp(9px,2dvh,11px);}
 html.touch-device .tb[data-hud-custom="true"]{left:var(--hud-x)!important;top:var(--hud-y)!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%);}
 html.touch-device #touch.hud-editing .tb:not(#tb-menu){outline:1px dashed rgba(226,173,98,.62);outline-offset:2px;}
 html.touch-device #touch.hud-editing #tz-move,html.touch-device #touch.hud-editing #tz-look{pointer-events:none;}
-html.touch-device #touch.hud-editing:not(.hand-left)::after,html.touch-device #touch.hand-left.hud-editing::after{content:"HUD LAYOUT  ·  DRAG BUTTONS  ·  MENU TO FINISH";position:absolute;z-index:8;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:6px 9px;border:1px solid rgba(226,173,98,.48);border-radius:7px;background:rgba(7,14,18,.9);color:#f3d7a5;font:700 8px var(--f-label);letter-spacing:.08em;white-space:nowrap;pointer-events:none;}
+html.touch-device #touch.hud-editing:not(.hand-left)::after,html.touch-device #touch.hand-left.hud-editing::after{content:"HUD LAYOUT  ·  DRAG BUTTONS  ·  SAVE TO FINISH";position:absolute;z-index:8;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:6px 9px;border:1px solid rgba(226,173,98,.48);border-radius:7px;background:rgba(7,14,18,.9);color:#f3d7a5;font:700 8px var(--f-label);letter-spacing:.08em;white-space:nowrap;pointer-events:none;}
 html.touch-device #touch.hud-editing .tb:not(#tb-menu){outline:1px dashed rgba(226,173,98,.62);outline-offset:2px;}
 html.touch-device.touch-session #stage .finish-quickpick{top:calc(140px + env(safe-area-inset-top,0px))!important;right:calc(8px + env(safe-area-inset-right,0px))!important;max-width:clamp(118px,24vw,160px)!important;min-height:38px!important;padding:6px 8px!important;border-radius:8px!important;font-size:10px!important;}
 html.touch-device.touch-session #stage .finish-panel{max-height:calc(100dvh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;}
@@ -15382,7 +15486,6 @@ html.touch-device .hud-edit-toggle span{font-size:12px;line-height:1.3;}
  html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-rel{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-right,0px))!important;bottom:calc(8dvh + env(safe-area-inset-bottom,0px))!important;}
  html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-swap{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-right,0px))!important;bottom:calc(8dvh + env(safe-area-inset-bottom,0px))!important;}
  html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-slide{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-right,0px))!important;bottom:calc(18dvh + 20px + env(safe-area-inset-bottom,0px))!important;}
- html.p11-game.touch-device #stage #touch:not(.hand-left) #tb-more{left:auto!important;right:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-right,0px))!important;bottom:calc(42dvh + env(safe-area-inset-bottom,0px))!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-fire{left:calc(4vw + env(safe-area-inset-left,0px))!important;right:auto!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-fire-alt{left:auto!important;right:calc(4vw + env(safe-area-inset-right,0px))!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-jump{left:calc(4vw + env(safe-area-inset-left,0px))!important;right:auto!important;}
@@ -15390,7 +15493,6 @@ html.touch-device .hud-edit-toggle span{font-size:12px;line-height:1.3;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-rel{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-left,0px))!important;right:auto!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-swap{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px))!important;right:auto!important;}
  html.p11-game.touch-device #stage #touch.hand-left #tb-slide{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 102px + env(safe-area-inset-left,0px))!important;right:auto!important;}
- html.p11-game.touch-device #stage #touch.hand-left #tb-more{left:calc(4vw + max(62px,calc(clamp(74px,20dvh,88px) * var(--touch-scale,1))) + 30px + env(safe-area-inset-left,0px))!important;right:auto!important;}
  html.p11-game.touch-device #stage #touch .tb[data-hud-custom="true"]{left:var(--hud-x)!important;top:var(--hud-y)!important;right:auto!important;bottom:auto!important;}
  html.p11-game.touch-device #stage #touch .tb[data-hud-custom="true"]{transform:translate(-50%,-50%)!important;}
  html.p11-game.touch-device #stage #touch #tb-fire[data-hud-custom="true"].pressed{transform:translate(-50%,-50%) scale(.96)!important;}
@@ -16331,7 +16433,7 @@ setTimeout(function(){
 })();
 </script><style id="android51-restored-hud">
 /* Visual source: Android 5.1 v4 APK; current input and gameplay retained. */
-html.touch-device #touch { --touch-scale:1; touch-action:none; user-select:none; -webkit-user-select:none; }
+html.touch-device #touch { touch-action:none; user-select:none; -webkit-user-select:none; }
 html.touch-device #tz-move { left:0; width:42%;top:28%;bottom:0; touch-action:none; }
 html.touch-device #tz-look { right:0;width:58%;top:0;bottom:0;touch-action:none; }
 html.touch-device #touch-joystick { position:absolute;left:34%;top:70%;width:104px;height:104px;transform:translate(-50%,-50%);pointer-events:none;border:2px solid rgba(184,237,224,.66);border-radius:50%;background:radial-gradient(circle,rgba(71,133,124,.14),rgba(15,32,40,.48));box-shadow:0 0 0 7px #0c263124;opacity:.65; }
@@ -16351,7 +16453,6 @@ html.touch-device #tb-jump { right:2%;bottom:7%; }
 html.touch-device #tb-rel { right:14%;bottom:5%; }
 html.touch-device #tb-swap { right:28%;bottom:7%;width:max(48px,calc(var(--ts) * var(--touch-scale)));height:max(48px,calc(var(--ts) * var(--touch-scale))); }
 html.touch-device #tb-slide { right:30%;bottom:32%; }
-html.touch-device #tb-more { right:2%;bottom:59%;width:max(48px,calc(clamp(48px,11dvh,54px)*var(--touch-scale)));height:max(48px,calc(clamp(48px,11dvh,54px)*var(--touch-scale))); }
 html.touch-device #tb-menu { right:2%;top:3%;width:clamp(48px,13dvh,58px);height:clamp(48px,13dvh,58px);border-radius:11px;background:rgba(11,25,32,.85);font-size:22px;z-index:4; }
 html.touch-device #tb-menu small {font:700 9px var(--f-label);letter-spacing:.06em;}
 html.touch-device #tb-prone { right:29%;bottom:62%; }
@@ -16385,7 +16486,6 @@ html.touch-device #msg span {font-size:clamp(10px,2.5dvh,14px);}
  html.touch-device #tb-menu {right:calc(2% + env(safe-area-inset-right));top:calc(3% + env(safe-area-inset-top));}
  html.touch-device #tb-fire {right:calc(3% + env(safe-area-inset-right));}
  html.touch-device #tb-jump {right:calc(2% + env(safe-area-inset-right));}
- html.touch-device #tb-more {right:calc(2% + env(safe-area-inset-right));}
  html.touch-device #tb-rel {right:calc(14% + env(safe-area-inset-right));}
  html.touch-device #tb-aim {right:calc(17% + env(safe-area-inset-right));}
  html.touch-device #tb-swap {right:calc(28% + env(safe-area-inset-right));}
@@ -16473,7 +16573,6 @@ html.touch-device #msg span {font-size:clamp(10px,2.5dvh,14px);}
   }
   html.p11-game.touch-device.touch-session #stage #touch.hand-left :is(#tb-aim,#tb-slide):not([data-hud-custom]) { bottom:calc(var(--left-action-base) + 20px)!important; }
   html.p11-game.touch-device.touch-session #stage #touch.hand-left :is(#tb-rel,#tb-swap):not([data-hud-custom]) { bottom:var(--left-action-bottom)!important; }
-  html.p11-game.touch-device.touch-session #stage #touch.hand-left #tb-more:not([data-hud-custom]) { bottom:calc(42dvh + env(safe-area-inset-bottom,0px))!important; }
   html.p11-game.touch-device.touch-session #stage #touch.hand-left #tb-fire-alt:not([data-hud-custom]) {
     top:auto!important; bottom:calc(var(--left-action-base) + 72px)!important;
   }
@@ -16493,6 +16592,137 @@ html.touch-device #msg span {font-size:clamp(10px,2.5dvh,14px);}
   }
   html.p11-game.touch-device.touch-session #stage #touch #touch-guide-skip {
     min-width:44px; min-height:44px; flex:none;
+  }
+}
+</style>
+<style id="mobile-combat-hud">
+@media (orientation:landscape) {
+  html.p11-game.touch-device #stage {
+    --touch-scale:1;
+    --combat-cell:clamp(44px,calc(clamp(46px,13.4dvh,54px) * var(--touch-scale)),60px);
+    --combat-step:calc(var(--combat-cell) + 7px);
+    --combat-upper:calc(2 * var(--combat-step) + 25px);
+    --hud-safe-left:env(safe-area-inset-left,0px);
+    --hud-safe-right:env(safe-area-inset-right,0px);
+    --hud-safe-top:env(safe-area-inset-top,0px);
+    --hud-safe-bottom:env(safe-area-inset-bottom,0px);
+    --combat-left:calc(var(--hud-safe-left) + 8px);
+    --combat-right:calc(var(--hud-safe-right) + 8px);
+    --combat-bottom:calc(var(--hud-safe-bottom) + 8px);
+    --weapon-offset:calc(2 * var(--combat-step) + 16px);
+  }
+  html.p11-game.touch-device #stage #touch #tz-look {
+    inset:0; width:100%; z-index:1;
+  }
+  html.p11-game.touch-device #stage #touch #tz-move {
+    left:var(--hud-safe-left); right:auto; top:44%; bottom:var(--hud-safe-bottom);
+    width:40%; z-index:2;
+  }
+  html.p11-game.touch-device #stage #touch#touch.hand-left #tz-move { left:auto; right:var(--hud-safe-right); }
+  html.p11-game.touch-device #stage #touch #touch-joystick { width:clamp(76px,23dvh,102px); height:clamp(76px,23dvh,102px); }
+  html.p11-game.touch-device #stage #touch #touch-joystick:not(.active) {
+    left:clamp(52px,12vw,92px)!important; top:auto!important; bottom:28px;
+    transform:translateX(-50%);
+  }
+  html.p11-game.touch-device #stage #touch#touch.hand-left #touch-joystick:not(.active) {
+    left:auto!important; right:clamp(52px,12vw,92px); transform:translateX(50%);
+  }
+  html.p11-game.touch-device #stage #touch .tb {
+    box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1px; width:var(--combat-cell)!important; height:var(--combat-cell)!important;
+    min-width:44px; min-height:44px; padding:2px 3px; border-radius:12px; z-index:3;
+    border:1px solid rgba(228,241,233,.6); box-shadow:inset 0 1px rgba(255,255,255,.08);
+    background:rgba(13,27,32,calc(var(--touch-opacity,.88) * .76));
+    color:#f1f5ed; text-shadow:0 1px 2px #081111;
+  }
+  html.p11-game.touch-device #stage #touch .tb[hidden] { display:none!important; }
+  html.p11-game.touch-device #stage #touch .tb svg {
+    width:clamp(16px,5.3dvh,22px); height:clamp(16px,5.3dvh,22px); flex:none;
+    stroke:currentColor; stroke-width:1.7px; fill:none; stroke-linejoin:round; stroke-linecap:round; pointer-events:none;
+  }
+  html.p11-game.touch-device #stage #touch .tb-label {
+    max-width:100%; font:700 clamp(8px,2.6dvh,11px)/1.05 var(--f-label);
+    text-align:center; letter-spacing:0; text-transform:uppercase; pointer-events:none;
+  }
+  html.p11-game.touch-device #stage #touch .tb:is(.selected,.pressed) {
+    background:rgba(27,91,87,.92); border-color:#a7f1dc; color:#fff;
+  }
+  html.p11-game.touch-device #stage #touch #tb-fire {
+    --slot-y:calc(var(--combat-step) + 8px);
+    width:calc(var(--combat-cell) + 14px)!important; height:calc(var(--combat-cell) + 14px)!important;
+    border-radius:18px; background:rgba(153,83,28,calc(var(--touch-opacity,.88) * .85)); border-color:#f0c47d;
+  }
+  html.p11-game.touch-device #stage #touch #tb-fire.pressed { background:#b56f37; }
+  html.p11-game.touch-device #stage #touch #tb-jump { --slot-y:var(--combat-upper); }
+  html.p11-game.touch-device #stage #touch #tb-aim { --slot-x:calc(var(--combat-cell) + 23px); --slot-y:calc(var(--combat-step) + 8px); }
+  html.p11-game.touch-device #stage #touch #tb-crouch { --slot-x:calc(var(--combat-cell) + 23px); }
+  html.p11-game.touch-device #stage #touch #tb-slide { --slot-x:calc(var(--combat-cell) + 23px); --slot-y:var(--combat-upper); }
+  html.p11-game.touch-device #stage #touch #tb-rel { --slot-x:var(--weapon-offset); --slot-y:calc(var(--combat-step) + 8px); }
+  html.p11-game.touch-device #stage #touch #tb-swap { --slot-x:var(--weapon-offset); }
+  html.p11-game.touch-device #stage #touch #tb-run { --slot-x:0px; }
+  html.p11-game.touch-device #stage #touch #tb-buy { --slot-x:var(--combat-step); }
+  html.p11-game.touch-device #stage #touch #tb-nade { --slot-x:calc(2 * var(--combat-step)); }
+  html.p11-game.touch-device #stage #touch #tb-nsel { --slot-x:calc(2 * var(--combat-step)); --slot-y:calc(var(--combat-step) + 8px); }
+  html.p11-game.touch-device #stage #touch #tb-inspect { --slot-x:calc(3 * var(--combat-step)); }
+  html.p11-game.touch-device #stage #touch #tb-objective {
+    --slot-x:calc(3 * var(--combat-step)); --slot-y:calc(var(--combat-step) + 8px);
+    width:calc(var(--combat-cell) + 25px)!important;
+    background:rgba(85,53,26,.9); border-color:#eac88e;
+  }
+  html.p11-game.touch-device #stage #touch #tb-dropbomb { --slot-x:calc(4 * var(--combat-step) + 25px); }
+  html.p11-game.touch-device #stage #touch #tb-fire-alt { --slot-x:calc(2 * var(--combat-step)); --slot-y:calc(var(--combat-upper) + var(--combat-step)); }
+  html.p11-game.touch-device.touch-session #stage #touch#touch .tb:not(.tb-menu):not([data-hud-custom]) {
+    top:auto!important; bottom:calc(var(--combat-bottom) + var(--slot-y,0px))!important;
+  }
+  html.p11-game.touch-device.touch-session #stage #touch#touch :is(#tb-run,#tb-buy,#tb-nade,#tb-inspect):not([data-hud-custom]) {
+    top:calc(var(--hud-safe-top) + max(150px,47dvh))!important; bottom:auto!important;
+  }
+  html.p11-game.touch-device.touch-session #stage #touch#touch :is(#tb-nsel,#tb-objective,#tb-dropbomb):not([data-hud-custom]) {
+    top:calc(var(--hud-safe-top) + max(150px,47dvh) + var(--combat-step))!important; bottom:auto!important;
+  }
+  html.p11-game.touch-device.touch-session #stage #touch#touch:not(.hand-left) .tb:not(.tb-menu):not([data-hud-custom]) {
+    left:auto!important; right:calc(var(--combat-right) + var(--slot-x,0px))!important;
+  }
+  html.p11-game.touch-device.touch-session #stage #touch#touch.hand-left .tb:not(.tb-menu):not([data-hud-custom]),
+  html.p11-game.touch-device.touch-session #stage #touch#touch:not(.hand-left) :is(#tb-run,#tb-buy,#tb-nade,#tb-nsel,#tb-inspect,#tb-objective,#tb-dropbomb,#tb-fire-alt):not([data-hud-custom]) {
+    right:auto!important; left:calc(var(--combat-left) + var(--slot-x,0px))!important;
+  }
+  /* The movement-side override follows the mirrored group rule. */
+  html.p11-game.touch-device.touch-session #stage #touch#touch.hand-left :is(#tb-run,#tb-buy,#tb-nade,#tb-nsel,#tb-inspect,#tb-objective,#tb-dropbomb,#tb-fire-alt):not([data-hud-custom]) {
+    left:auto!important; right:calc(var(--combat-right) + var(--slot-x,0px))!important;
+  }
+  html.p11-game.touch-device.touch-session #stage #touch#touch .tb-menu {
+    top:calc(var(--hud-safe-top) + 8px)!important; bottom:auto!important; left:auto!important; z-index:4;
+  }
+  html.p11-game.touch-device.touch-session #stage #touch #tb-menu { right:var(--combat-right)!important; }
+  html.p11-game.touch-device.touch-session #stage #touch #tb-score { right:calc(var(--combat-right) + var(--combat-step))!important; }
+  html.p11-game.touch-device.touch-session #stage #hud #ammo {
+    top:auto!important; bottom:var(--combat-bottom)!important; left:auto!important;
+    right:calc(var(--combat-right) + var(--weapon-offset) + var(--combat-step))!important;
+    min-width:64px; max-width:clamp(76px,15vw,114px); padding:3px 6px;
+  }
+  html.p11-game.touch-device.touch-session #stage #hud.hand-left #ammo {
+    right:auto!important; left:calc(var(--combat-left) + var(--weapon-offset) + var(--combat-step))!important;
+  }
+  html.p11-game.touch-device.touch-session #stage #hud #vitals :is(.v,.vv) { padding:2px 5px; }
+  html.p11-game.touch-device.touch-session #stage #hud #vitals :is(.v,.vv) b {font-size:clamp(15px,4.6dvh,20px)!important;}
+  html.p11-game.touch-device.touch-session #stage #hud #nade { display:none!important; }
+  html.p11-game.touch-device.touch-session #stage #touch #touch-guide {
+    left:calc(var(--combat-left) + 103px); right:auto; bottom:var(--combat-bottom);
+    max-width:clamp(110px,19vw,150px); padding:2px 4px 2px 6px;
+  }
+  html.p11-game.touch-device.touch-session #stage #touch#touch.hand-left #touch-guide { left:auto; right:calc(var(--combat-right) + 103px); }
+  html.p11-game.touch-device #touch.hud-editing::after, html.p11-game.touch-device #stage #touch.hud-editing #touch-guide { display:none; }
+  html.p11-game.touch-device #stage #touch-editor {
+    position:absolute; display:flex; align-items:center; gap:4px; z-index:7;
+    left:50%; top:calc(var(--hud-safe-top) + 8px); transform:translateX(-50%);
+    border-radius:9px; background:#102327; border:1px solid #8ab8ab;
+    color:#eff6e9; padding:3px 5px; font:600 11px var(--f-label);
+  }
+  html.p11-game.touch-device #stage #touch-editor[hidden] { display:none; }
+  html.p11-game.touch-device #stage #touch-editor button {
+    min-height:44px; min-width:44px; border-radius:6px; background:#1d3c40; color:#fff;
+    border:1px solid #5d8b83; font:inherit;
   }
 }
 </style>
