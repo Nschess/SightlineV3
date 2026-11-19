@@ -28,6 +28,24 @@ test('bundled Android manual Connect uses the native validated join route, not a
     assert(native.includes('V17_HOST_BUNDLE_SHA256.equals(bundle)'));
 });
 
+test('disabling automatic reconnect cancels a queued dial without blocking a later retry',()=>{
+    const vm=require('node:vm');
+    for(const tree of ['www','phone-host']){
+        const html=read('AndroidProject/app/src/main/assets/'+tree+'/index.html');
+        const start=html.indexOf('function mpRetry(n)'),end=html.indexOf('\nsetInterval(',start);
+        assert(start>=0&&end>start);
+        let pending,dials=0;
+        const ctx={G:{autoRe:true},MP:{userLeft:false,sock:null,retryN:2},blockMobileAimForLan(){},
+            clearTimeout(){},setTimeout(fn){pending=fn;return 1;},
+            mpConnect(){dials++;},mpRefreshPanel(){}};
+        vm.runInNewContext(html.slice(start,end),ctx);
+        ctx.mpRetry(2);ctx.G.autoRe=false;pending();
+        assert.equal(dials,0);assert.equal(ctx.MP.retryN,0);assert.equal(ctx.MP.status,'');
+        ctx.G.autoRe=true;ctx.mpRetry(0);pending();
+        assert.equal(dials,1);assert.equal(ctx.MP.retryN,1);
+    }
+});
+
 test('execute the native Java broadcast and bundled-page routing policies',()=>{
     assert(javaHome,'Set SIGHTLINE_TEST_JAVA_HOME to the isolated JDK 17');
     fs.mkdirSync(classes,{recursive:true});

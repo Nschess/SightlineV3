@@ -41,6 +41,47 @@ test('render cap remains paced when the display callback cadence drops from 120 
   assert.ok(rendered >= 89 && rendered <= 91, `expected 30 FPS over three seconds, got ${rendered}`);
 });
 
+test('a missed render deadline does not trigger a capped catch-up render', () => {
+  const scheduler = section(html, 'function effectiveRenderCap(', 'function resetFpsWindow()');
+  assert.equal(scheduler, section(host, 'function effectiveRenderCap(', 'function resetFpsWindow()'));
+  const ctx = {};
+  vm.runInNewContext(scheduler, ctx);
+  const callbacks = [1000, 1033.333, 1100, 1116.667, 1133.333, 1150, 1166.667];
+  assert.deepEqual(callbacks.filter(now => ctx.renderCapAllows(now, 30)),
+    [1000, 1033.333, 1100, 1133.333, 1166.667]);
+});
+
+test('Infection LAN status mutates only when the displayed state changes', () => {
+  const render = section(html, 'function renderInfectionStatus()', 'function applyInfectedPlayerLoadout(');
+  assert.equal(render, section(host, 'function renderInfectionStatus()', 'function applyInfectedPlayerLoadout('));
+  const updates = { text: 0, hidden: 0, classes: 0 };
+  let label = '', hidden = true, now = 1000;
+  const flags = new Set();
+  const el = {
+    get textContent() { return label; }, set textContent(value) { updates.text++; label = value; },
+    get hidden() { return hidden; }, set hidden(value) { updates.hidden++; hidden = value; },
+    classList: { contains: value => flags.has(value), toggle(value, active) {
+      updates.classes++; if (active) flags.add(value); else flags.delete(value);
+    } }
+  };
+  const ctx = { state: 'live', performance: { now: () => now }, document: { getElementById: () => el },
+    MP: { on: true, mode: 'infection', infRx: 1000, infStatus: { chooseIn: 4000, humans: 4 } } };
+  vm.runInNewContext(render, ctx);
+  ctx.renderInfectionStatus();
+  for (let i = 1; i < 60; i++) { now = 1000 + i * 1000 / 60; ctx.renderInfectionStatus(); }
+  assert.deepEqual(updates, { text: 1, hidden: 1, classes: 1 });
+  now = 2000; ctx.renderInfectionStatus();
+  assert.match(label, /3s TO PATIENT ZERO/);
+  ctx.MP.infRx = now;
+  ctx.MP.infStatus = { started: true, remaining: 61000, humans: 1, infected: 3, surge: true };
+  ctx.renderInfectionStatus();
+  assert.equal(label, 'LAST SURVIVOR  ·  1 HUMAN  /  3 INFECTED  ·  1:01');
+  assert.deepEqual([...flags].sort(), ['last', 'surge']);
+  ctx.state = 'paused'; ctx.renderInfectionStatus();
+  assert.equal(el.hidden, true);
+  assert.deepEqual(updates, { text: 3, hidden: 2, classes: 4 });
+});
+
 test('Competitive uses one mobile pixel budget and reacts to sustained missed 120 Hz frames', () => {
   const policy = section(html,'function framePixelBudget()','function fail(msg)');
   assert.equal(policy,section(host,'function framePixelBudget()','function fail(msg)'));

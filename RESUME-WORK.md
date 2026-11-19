@@ -1,3 +1,13 @@
+# DEV25.6 pacing and LAN client checkpoint (2026-11-20)
+
+Branch `codex/sightline-dev19-mobile-polish`, parent and immediate rollback `59c09746ccee660436c63490a9df934970bb85f4`. Keep `3b8e0d9` as the protected pre-Contour Relay rollback. The current checkpoint is the commit containing this entry.
+
+The two Android web entry points now rebase capped rendering after a full missed interval, skip unchanged Infection LAN banner writes, and check the reconnect setting when a queued automatic retry fires. A deterministic 30 FPS cap trace removed the extra 16.7 ms catch-up render after a 66.7 ms render gap. In a 60-refresh unchanged Infection state, text assignments fell from 60 to 1, including the initial update. The focused LAN checks use actual loopback host startup, protocol-v2 gameplay, shutdown, restart and discovery plus isolated JDK 17 routing checks. Movement replay matched DEV24.9 at simulated 60, 90 and 120 Hz. Contour Relay remains integrated.
+
+**BLOCKED — DEVICE REQUIRED.** Compare physical Android frame intervals and touch response against the DEV24.9 reference and run Android ↔ Windows LAN over Wi-Fi. Use the matched conditions and counters in [ACCEPTED-BASELINE.md](ACCEPTED-BASELINE.md). The isolated evidence supplies no device FPS or live Wi-Fi acceptance.
+
+---
+
 # LAN security hardening source checkpoint (2026-11-17)
 
 Branch `feature/lan-security-hardening`, based on v18 `7b7706c0ad1ce25594ddc8d3759e25d057b1d171`. See `docs/LAN-SECURITY-HARDENING.md` for scope and deliberately skipped verification. Private-interface binding, bounded handshake/message/discovery work, Windows child environment isolation and truthful process shutdown were implemented. No tests/build/device use this cycle. Existing v18 APK is rollback. `main` and Adventure Mode untouched. Current checkpoint commit SHA is supplied in delivery and verified on the remote branch.

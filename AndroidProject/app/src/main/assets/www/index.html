@@ -13443,7 +13443,12 @@ function mpRetry(n) {
   if (n >= 8 || MP.sock || MP.userLeft) { if (n >= 8) { MP.status = ''; MP.err = 'Could not reconnect. Check that the host program is still running.'; MP.retryN = 0; mpRefreshPanel(); } return; }
   blockMobileAimForLan();
   MP.status = 'Connection lost. Reconnecting (' + (n + 1) + '/8)...'; mpRefreshPanel();
-  clearTimeout(MP.retryT); MP.retryT = setTimeout(function () { MP.retryT = 0; if (MP.sock || MP.userLeft) return; MP.retryN = n + 1; mpConnect(); }, Math.min(4000, 1000 + n * 700));
+  clearTimeout(MP.retryT); MP.retryT = setTimeout(function () {
+    MP.retryT = 0;
+    if (MP.sock || MP.userLeft) return;
+    if (!G.autoRe) { MP.retryN = 0; MP.status = ''; mpRefreshPanel(); return; }
+    MP.retryN = n + 1; mpConnect();
+  }, Math.min(4000, 1000 + n * 700));
 }
 setInterval(function () { if (MP.sock && MP.sock.readyState === 1 && MP.id && MP.net.lastRx && performance.now() - MP.net.lastRx > 8000) { try { MP.sock.close(); } catch (e) {} } }, 1000);      /* the host pings every 2 s: silence means the link is dead */
 function mpLeave() {
@@ -13901,8 +13906,13 @@ function renderInfectionStatus(){
   var el=document.getElementById('infection-status');if(!el||!MP.on||MP.mode!=='infection'||!MP.infStatus)return;
   var m=MP.infStatus, elapsed=performance.now()-(MP.infRx||performance.now()), prep=!m.started, remaining=Math.max(0,(m.remaining||0)-elapsed), countdown=Math.max(0,(m.chooseIn||0)-elapsed), humans=Math.max(0,m.humans||0), zombies=Math.max(0,m.infected||0);
   var last=!prep&&humans===1;
-  el.hidden=state!=='live';el.classList.toggle('last',last);el.classList.toggle('prep',prep);el.classList.toggle('surge',!!m.surge);
-  el.textContent=prep?'INCUBATION  ·  '+Math.ceil(countdown/1000)+'s TO PATIENT ZERO  ·  '+humans+' DEFENDERS':(last?'LAST SURVIVOR':m.surge?'DAWN RUSH':'INFECTION')+'  ·  '+humans+' HUMAN'+(humans===1?'':'S')+'  /  '+zombies+' INFECTED  ·  '+Math.floor(remaining/60000)+':'+('0'+Math.floor(remaining/1000)%60).slice(-2);
+  var hidden=state!=='live',surge=!!m.surge;
+  if(el.hidden!==hidden)el.hidden=hidden;
+  if(el.classList.contains('last')!==last)el.classList.toggle('last',last);
+  if(el.classList.contains('prep')!==prep)el.classList.toggle('prep',prep);
+  if(el.classList.contains('surge')!==surge)el.classList.toggle('surge',surge);
+  var text=prep?'INCUBATION  ·  '+Math.ceil(countdown/1000)+'s TO PATIENT ZERO  ·  '+humans+' DEFENDERS':(last?'LAST SURVIVOR':m.surge?'DAWN RUSH':'INFECTION')+'  ·  '+humans+' HUMAN'+(humans===1?'':'S')+'  /  '+zombies+' INFECTED  ·  '+Math.floor(remaining/60000)+':'+('0'+Math.floor(remaining/1000)%60).slice(-2);
+  if(el.textContent!==text)el.textContent=text;
 }
 function applyInfectedPlayerLoadout(hp){
  owned={knife:true};cur='knife';P.hp=hp||1150;P.armor=0;if(M)M.money=0;scoped=false;reloading=0;zoomLvl=0;
@@ -14806,9 +14816,8 @@ function renderCapAllows(now, cap) {
     renderNextDue = now;
   }
   if (now + 0.5 < renderNextDue) return false;
-  renderNextDue += step;
-  // If callbacks themselves are slower than the target, don't accumulate debt.
-  if (renderNextDue < now - step) renderNextDue = now + step;
+  // Rebase after a full missed interval. Otherwise retain phase for fractional caps.
+  renderNextDue = now + 0.5 >= renderNextDue + step ? now + step : renderNextDue + step;
   return true;
 }
 function resetFpsWindow() {
