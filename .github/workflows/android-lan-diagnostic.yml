@@ -55,6 +55,13 @@ jobs:
           if ($javaVersion -notmatch 'version "17\.') { throw 'JDK 17 runtime is required.' }
           if ($javacVersion -notmatch 'javac 17\.') { throw 'JDK 17 compiler is required.' }
 
+      - name: Verify native LAN host and broadcast policy
+        shell: pwsh
+        run: |
+          $env:SIGHTLINE_TEST_JAVA_HOME = $env:JAVA_HOME
+          node --test --test-name-pattern='execute the native Java' tests/lan-join-recovery.test.cjs
+          exit $LASTEXITCODE
+
       - name: Set up Android SDK and pinned native toolchain
         uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
@@ -138,7 +145,7 @@ jobs:
           $sourceCommit = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0 -or $sourceCommit -ne $env:GITHUB_SHA) { throw 'Runner checkout differs from the workflow commit.' }
           $versionCode = [regex]::Match($badging, "versionCode='(\d+)'").Groups[1].Value
-          if ([int]$versionCode -le 19 -or $badging -notmatch "versionName='[^']+-dev24\.9-diagnostic'") { throw 'Expected an update-compatible DEV24.9 diagnostic version.' }
+          if ([int]$versionCode -le 20 -or $badging -notmatch "versionName='[^']+-dev25\.2-diagnostic'") { throw 'Expected an update-compatible DEV25.2 diagnostic version.' }
           $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
           $hostPaths = Get-Content -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') | ForEach-Object { $_.Substring(66) }
           $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
@@ -199,7 +206,7 @@ jobs:
             "sha256=$sha256"
             "signing_certificate_sha256=$signerHash"
             'dev24_0_installation=side-by-side'
-            'dev24_4_and_24_7_installation=in-place-update-with-data-retention'
+            'prior_acceptance_installation=in-place-update-with-data-retention'
             "source_commit=$sourceCommit"
             "workflow_commit=$env:GITHUB_SHA"
             "windows_host=$windowsArtifact"
@@ -214,7 +221,7 @@ jobs:
           Copy-Item -LiteralPath 'docs/DEV24-DEVICE-ACCEPTANCE.md' -Destination (Join-Path $deliverables.FullName 'DEVICE-ACCEPTANCE.md')
           Copy-Item -LiteralPath 'docs/ANDROID-DEVICE-FPS.md','tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
           $instructions = @(
-            '# Sightline V3 DEV24.9 performance acceptance diagnostic'
+            '# Sightline V3 DEV25.2 mobile acceptance diagnostic'
             ''
             'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-lan-acceptance.apk SHA256'
             ''
@@ -224,6 +231,7 @@ jobs:
             'See MIGRATION.md for optional transfer of offline settings and records.'
             ''
             'Follow DEVICE-ACCEPTANCE.md for the physical-device checks and Windows CMD commands.'
+            'For DEV25.2, compare ground, road, and wall clarity while moving. On a small landscape screen, check the new two-thumb layout, direct actions, and saved custom HUD.'
             ''
             'Windows LAN: extract sightline-windows-host.zip, run START-HOST.bat in CMD and open http://WINDOWS_LAN_IP:8080/?lanDiag=1 using the bound private IPv4 address.'
             'Physical-device acceptance: UNVERIFIED.'

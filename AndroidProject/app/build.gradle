@@ -177,8 +177,8 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("release
 // Advance the persistent acceptance package independently of the Play release.
 androidComponents.onVariants(androidComponents.selector().withBuildType("diagnostic")) { variant ->
     variant.outputs.each { output ->
-        output.versionCode.set(Math.max(code, 20))
-        output.versionName.set(playName + '-dev24.9-diagnostic')
+        output.versionCode.set(Math.max(code, 21))
+        output.versionName.set(playName + '-dev25.2-diagnostic')
     }
 }
 

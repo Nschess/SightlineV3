@@ -32,6 +32,8 @@ public final class HostPolicy {
         }
         boolean privateIp = n[0]==10 || (n[0]==172 && n[1]>=16 && n[1]<=31) || (n[0]==192 && n[1]==168);
         if (!privateIp) return null;
+        // Keep manual host input on the established .1–.254 policy; discovery validates broadcasts separately.
+        if (n[3] == 0 || n[3] == 255) return null;
         return n[0]+"."+n[1]+"."+n[2]+"."+n[3];
     }
 }

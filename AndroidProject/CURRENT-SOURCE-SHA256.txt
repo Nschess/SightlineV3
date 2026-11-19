@@ -1,6 +1,6 @@
 4f546d4c6e060f93ca5a7cd15fcb675248db5778772ea82e150c70684f576da7  ANDROID-DEVICE-QA.md
 f5f0c4fd7fbb46156930016017390da715ab2743a9906be21799ebf07f6ba64b  ANDROID-SECURITY-REVIEW.md
-aca239f8e72c9efd424a106310bb4c7203455c6d2d8156b3326510be0d01fed5  app/build.gradle
+6e1de539614e70d723f1fae1dff5cd8090154aa5dbae336b37a397ffff22fa41  app/build.gradle
 fca9a7d1d04b9d68f812873a442379888fc1aefa909fab5971b7b43c11030edf  app/src/main/AndroidManifest.xml
 47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11  app/src/main/assets/phone-host/character-realism.js
 eefc89ad42af26a9dfabffcb94f3c547f9fafe8c68a2a811ed25f1e7d48a650b  app/src/main/assets/phone-host/index.html
@@ -30,7 +30,7 @@ d05277319eec398ba49f1610175f339c8b19603371f90f2068b7a580da296ee1  app/src/main/a
 5196acceff0c4e4fd440371671660bce1c46a43e94305f22bc72532538937227  app/src/main/assets/www/zombie-balance.js
 f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493  app/src/main/assets/www/zombie-counterplay.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/www/zombie-hunt.js
-b8f5a22f0528b581a7c1c39599e31e95df0f19f47ce895aad29a2cdad62e4117  app/src/main/java/com/sightline/v3/HostPolicy.java
+d09efef6cf313ff9df10fdd49307a1006d2139bd2d80b9e456c83fbf47db5937  app/src/main/java/com/sightline/v3/HostPolicy.java
 9acfbfeab4a6c616bbb518226b05761d8894e50493af13a661bcc0258e5520de  app/src/main/java/com/sightline/v3/LanHostService.java
 86a7e86553af9105fd151e09edf6eab6e664c0da4ee41bb6ec40d51e1628fdfe  app/src/main/java/com/sightline/v3/MainActivity.java
 8f010cdfea8ff723672eb33c22ea2a5d86f0892600a4ab390b27c48767d2b914  app/src/main/java/com/sightline/v3/UpdateManager.java

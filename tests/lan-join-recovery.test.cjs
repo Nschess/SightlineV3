@@ -35,7 +35,7 @@ test('execute the native Java broadcast and bundled-page routing policies',()=>{
     const native=read(src+'MainActivity.java');
     assert(native.includes('HostPolicy.isPrivateNetworkIPv4(address.getHostAddress())'));
     assert(native.includes('getAssets().open(asset)'));
-    assert(native.includes('try { readLanStatus(target); }'));
+    assert(native.includes('try { readLanStatus(target,generation); }'));
     assert(native.includes('c.setInstanceFollowRedirects(false)'));
     assert(!native.includes('return null; // Only the selected host'));
     assert(native.includes('if (error==null) openVerifiedGame(target,autoJoin)'));
