@@ -11763,7 +11763,7 @@ function refreshSpec() {
 
 /* ---------- menu: builders ---------- */
 var MENU = [['play', 'Play'], ['net', 'Multiplayer'], ['op', 'Operative'], ['map', 'Map'], ['rules', 'Rules'], ['settings', 'Settings'], ['keys', 'Controls'], ['rec', 'Records'], ['guide', 'Field guide']];
-var menuTab = 'play', setTab = touchMode ? 'touch' : 'video', recArm = false;
+var menuTab = 'play', setTab = touchMode ? 'controls' : 'video', recArm = false;
 var pendingOpId = ME.id, opFactionFilter = 'all', loadoutCategory = 'all';
 var MP = { on: false, sock: null, id: 0, host: false, lobby: null, lobbyRenderKey: '', names: {}, puppets: {}, myTeam: 0, name: '', addr: '', status: '', err: '', menu: false, ep: 0, session: '', actionSeq: 0, sc: null, objective: null, attackTeam: 0, dirty: false, lastSend: 0, weapons: [], snapN: 0, zombies: {}, mode: 'versus', clicks: 0, listDirty: false, groanT: 2 };
 /* Optional, local-only LAN telemetry. Enable with ?lanDiag=1; it never feeds
@@ -11838,7 +11838,7 @@ function opDetail(o) {
 }
 function kbd(a) { var b = BIND[a] || ['', '']; var c = b[0] || b[1]; return '<kbd>' + labelOf(c) + '</kbd>'; }
 function recObj() { var b = loadBest() || {}; return { matches: b.matches || 0, kills: b.kills || 0, acc: b.acc || 0, wins: b.wins || 0, tk: b.tk || 0, td: b.td || 0, ths: b.ths || 0, tsh: b.tsh || 0, thi: b.thi || 0, rounds: b.rounds || 0, hist: Array.isArray(b.hist) ? b.hist : [] }; }
-function mobileHudSettingsHtml(){var paused=state==='paused';return '<div class="srow wide"><span class="lb">Touch layout<small>Visible action icons keep labels and accessible names.</small></span><span class="small">Sightline tactical</span></div>'+ '<div class="srow wide"><span class="lb">Dominant hand<small>Move-side joystick and combat actions switch together.</small></span><div class="hud-hand-options"><button type="button" data-mobile-hud-hand="right" aria-pressed="'+(mobileHud.hand==='right')+'">RIGHT-HAND FIRE</button><button type="button" data-mobile-hud-hand="left" aria-pressed="'+(mobileHud.hand==='left')+'">LEFT-HAND FIRE</button></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-opacity">Control opacity<small>Keep the battlefield visible beneath the controls.</small></label><div><input id="mobile-hud-opacity" type="range" min="50" max="100" step="5" value="'+mobileHud.opacity+'" data-mobile-hud-opacity aria-label="Mobile HUD button opacity"><output id="mobile-hud-opacity-value">'+mobileHud.opacity+'%</output></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-fire2">Optional second fire button<small>Off by default; enable for claw or alternate-hand play.</small></label><input id="mobile-hud-fire2" type="checkbox" data-mobile-hud-fire2 '+(mobileHud.fire2?'checked':'')+'></div>'+ '<div class="srow wide"><div class="hud-edit-toggle"><button class="btn ghost" type="button" data-act="mobile-hud-edit" '+(paused?'':'disabled')+'>Edit button positions</button><span>Available from a paused match. Resume to drag controls; tap MENU to finish.</span></div></div>'+ '<div class="setfoot"><button class="btn ghost" type="button" data-act="mobile-hud-reset">Reset mobile HUD layout</button><span class="small">Button size remains under Controls → Touch.</span></div>';}
+function mobileHudSettingsHtml(){var paused=state==='paused';return (touchMode ? '' : '<div class="srow wide"><span class="lb">Touch layout<small>Visible action icons keep labels and accessible names.</small></span><span class="small">Sightline tactical</span></div>')+ '<div class="srow wide"><span class="lb">Dominant hand<small>Move-side joystick and combat actions switch together.</small></span><div class="hud-hand-options"><button type="button" data-mobile-hud-hand="right" aria-pressed="'+(mobileHud.hand==='right')+'">RIGHT-HAND FIRE</button><button type="button" data-mobile-hud-hand="left" aria-pressed="'+(mobileHud.hand==='left')+'">LEFT-HAND FIRE</button></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-opacity">Control opacity<small>Keep the battlefield visible beneath the controls.</small></label><div><input id="mobile-hud-opacity" type="range" min="50" max="100" step="5" value="'+mobileHud.opacity+'" data-mobile-hud-opacity aria-label="Mobile HUD button opacity"><output id="mobile-hud-opacity-value">'+mobileHud.opacity+'%</output></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-fire2">Optional second fire button<small>Off by default; enable for claw or alternate-hand play.</small></label><input id="mobile-hud-fire2" type="checkbox" data-mobile-hud-fire2 '+(mobileHud.fire2?'checked':'')+'></div>'+ '<div class="srow wide"><div class="hud-edit-toggle"><button class="btn ghost" type="button" data-act="mobile-hud-edit" '+(paused?'':'disabled')+'>Edit button positions</button><span>Available from a paused match. Resume to drag controls; tap MENU to finish.</span></div></div>'+ '<div class="setfoot"><button class="btn ghost" type="button" data-act="mobile-hud-reset">Reset mobile HUD layout</button><span class="small">' + (touchMode ? 'Button size: Controls.' : 'Button size remains under Controls → Touch.') + '</span></div>';}
 
 function loadoutWeaponCategory(key){var w=WEAPONS[key]||{};return w.melee?'melee':(w.category||'other');}
 function sl83WeaponGlyph(k){var d={all:'<path d="M3 10h18M5 10V7h8v3m-7 5h12m-10 0v3m7-3v3"/>',assault:'<path d="M2.5 10h12.2l2 2h4.8v3h-6.5l-2-2h-10.5zM5 10V8h8v2m-6 5v3m7-3v3"/>',smg:'<path d="M3 10h10l2 2h6v3h-7l-2-2H3zM5 10V8h6v2m-4 5v3"/>',shotgun:'<path d="M2.5 9h18v2h-18zM4 11v2h11v2H4m3-2v4"/>',marksman:'<path d="M2 11h15l2 2h3v2h-5l-2-2H2zM5 11V9h10v2"/><circle cx="10" cy="6" r="2"/>',lmg:'<path d="M2 9h14l2 2h4v3h-6l-2-2H2zM5 9V7h9v2m-4 5v5h5v-5"/>',pistol:'<path d="M3 8h17v4h-8l-2 3H7v-3H3zM7 15v4h4l2-4"/>',melee:'<path d="m4 19 9-9 2-5 4-2-2 5-5 2-9 9z"/>',other:'<path d="M3 10h13l2 2h3v3h-5l-2-2H3zM6 10V8h8v2"/>'};return '<svg class="loadout-glyph" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">'+(d[k]||d.other)+'</svg>';}function loadoutCategoryLabel(key){return ({assault:'ASSAULT RIFLES',smg:'SMG / PDW',shotgun:'SHOTGUNS',marksman:'MARKSMAN',lmg:'SUPPORT',pistol:'SIDEARMS',melee:'MELEE'})[key]||String(key).toUpperCase();}
@@ -11852,6 +11852,96 @@ function lobbyLoadoutHtml(){
 }
 function customizationSettingsHtml(){return lobbyLoadoutHtml();}
 function renderLobbyWeaponPreview(){var canvas=$('#loadout-weapon-preview');if(!canvas||!renderer||!WEAPONS[finishWeapon]||WEAPONS[finishWeapon].melee)return;try{var optic=SightlineOptics.current(finishWeapon);renderPhoneOpticPreview(finishWeapon,canvas,optic);canvas.setAttribute('aria-label','Actual first-person '+(WEAPONS[finishWeapon].name||finishWeapon)+' preview');}catch(e){canvas.title='First-person preview unavailable: '+String(e&&e.message||e);}}
+var MOBILE_SET_TABS = [['controls', 'Controls'], ['sensitivity', 'Sensitivity'], ['video', 'Graphics'], ['audio', 'Audio'], ['play', 'Gameplay']];
+var mobileRuleTab = 'match', mobileOfflineRulesDraft = null;
+function mobileSettingsSpec(tab) {
+  var sensitivity = ['touchSens', 'touchAdsSens', 'invertY'];
+  if (tab === 'controls') return SPEC.touch.filter(function (it) { return !sensitivity.includes(it.k); }).concat(SPEC.crosshair, SPEC.hud);
+  if (tab === 'sensitivity') return SPEC.touch.filter(function (it) { return sensitivity.includes(it.k); });
+  if (tab === 'video') return SPEC.video.concat(SPEC.audio.filter(function (it) { return it.k === 'legendaryEffects'; }));
+  if (tab === 'audio') return SPEC.audio.filter(function (it) { return it.k !== 'legendaryEffects'; });
+  if (tab === 'play') return SPEC.play.filter(function (it) { return ['autoReload', 'autoSwitch', 'pauseOnHide'].includes(it.k); }).concat(SPEC.network);
+  return [];
+}
+function mobileConsole(title, actions, tabs, content, footer, label) {
+  return '<section class="sl-mobile-console" aria-label="' + title + '"><header class="sl-mobile-console-head"><h2>' + title + '</h2>' + actions +
+    '</header><div class="sl-mobile-console-body">' + tabs + '<div id="sl-mobile-console-scroll" class="sl-mobile-console-scroll" role="' +
+    (title === 'Settings' ? 'tabpanel' : 'region') + '" aria-label="' + label + '">' + content + '</div></div>' +
+    (footer ? '<footer class="sl-mobile-console-foot">' + footer + '</footer>' : '') + '</section>';
+}
+function mobileSettingsHtml(content) {
+  var tabs = MOBILE_SET_TABS.map(function (tab) {
+    var active = setTab === tab[0];
+    return '<button type="button" role="tab" data-sub="' + tab[0] + '" aria-controls="sl-mobile-console-scroll" aria-selected="' + active + '" tabindex="' + (active ? '0' : '-1') + '">' + tab[1] + '</button>';
+  }).join('');
+  var current = MOBILE_SET_TABS.find(function (tab) { return setTab === tab[0]; });
+  return mobileConsole('Settings', '<button type="button" class="btn ghost" data-act="mobile-settings-back">Back to Lobby</button>',
+    '<div class="subtabs sl-mobile-console-tabs" role="tablist" aria-orientation="vertical" aria-label="Settings categories">' + tabs + '</div>', content, '', current[1]);
+}
+function mobileRulesHtml(actions, sections, status, footer) {
+  var items = [['match', 'Match'], ['roster', 'AI roster'], ['timing', 'Timing']].filter(function (item) { return sections[item[0]]; });
+  var current = items.find(function (item) { return item[0] === mobileRuleTab; }) || items[0];
+  var tabs = items.map(function (item) {
+    return '<button type="button" data-mobile-rule-tab="' + item[0] + '" aria-pressed="' + (item === current) + '">' + item[1] + '</button>';
+  }).join('');
+  return mobileConsole('Match Rules', actions, '<nav class="sl-mobile-console-tabs" aria-label="Rule categories">' + tabs + '</nav>',
+    sections[current[0]], '<span role="status">' + status + '</span>' + footer, current[1]);
+}
+function mobileOfflineRuleAction(action, key, value) {
+  if (!touchMode || menuTab !== 'rules' || !canPick() || mpConnected()) return false;
+  if (action === 'edit') {
+    var patch = mobileOfflineRulesDraft || {};
+    if (R[key] === value) delete patch[key]; else patch[key] = value;
+    mobileOfflineRulesDraft = Object.keys(patch).length ? patch : null;
+  } else if (action === 'reset') {
+    var defaults = {};
+    Object.keys(DEF_R).forEach(function (key) { if (R[key] !== DEF_R[key]) defaults[key] = DEF_R[key]; });
+    mobileOfflineRulesDraft = Object.keys(defaults).length ? defaults : null;
+  } else {
+    if (action === 'apply' && mobileOfflineRulesDraft) {
+      Object.assign(R, mobileOfflineRulesDraft);
+      applyRules(); saveObj(R_KEY, R); refreshSpec();
+    }
+    mobileOfflineRulesDraft = null;
+  }
+  renderBody(true); uiTick(true);
+  return true;
+}
+function mobileOfflineRulesHtml() {
+  var rules = mobileOfflineRulesDraft ? Object.assign({}, R, mobileOfflineRulesDraft) : R, mode = rules.mode, lock = !canPick();
+  var disabled = lock ? ' disabled' : '', footerDisabled = lock || !mobileOfflineRulesDraft ? ' disabled' : '';
+  var sections = { match: '', roster: '', timing: '' };
+  RULE_SPEC.forEach(function (item) {
+    var key = item.k, roster = ['diff', 'bots', 'mates', 'zcap', 'zhorde'].includes(key);
+    if (key === 'bots' && mode === 'outbreak' || key === 'mates' && ['infection', 'ffa'].includes(mode)) return;
+    if (key === 'rounds' && mode !== 'tactical' || key === 'cash' && mode === 'infection') return;
+    if (item.m && !(key === 'bots' && mode === 'infection') && item.m !== ({ tactical: 't', outbreak: 'o' }[mode] || mode)) return;
+    if (item.ifx === 'timed' && rules.zinf) return;
+    var label = key === 'bots' && mode === 'infection' ? 'Infection AI bots' : key === 'mates' && mode === 'outbreak' ? 'Survivor squad bots' : item.l;
+    var choices = item.opts.filter(function (option) {
+      if (key === 'bots' && mode === 'infection') return option[0] !== 1;
+      if ((key === 'bots' || key === 'mates') && mode === 'bomb') return option[0] <= 32;
+      return true;
+    });
+    var attrs = ' data-o="R" data-k="' + key + '"', curr = String(rules[key]), control;
+    if (choices.length > 7) {
+      control = '<select class="rule-select"' + attrs + ' aria-label="' + label + '"' + disabled + '>' + choices.map(function (option) {
+        return '<option value="' + option[0] + '"' + (String(option[0]) === curr ? ' selected' : '') + '>' + option[1] + '</option>';
+      }).join('') + '</select>';
+    } else {
+      control = '<div class="seg' + (key === 'mode' ? ' sl-mobile-long-options' : '') + '" role="group" aria-label="' + label + '">' + choices.map(function (option) {
+        return '<button type="button"' + attrs + ' data-v="' + option[0] + '" aria-pressed="' + (String(option[0]) === curr) + '"' + disabled + '>' + option[1] + '</button>';
+      }).join('') + '</div>';
+    }
+    var group = roster ? 'roster' : key === 'mode' || key === 'cash' ? 'match' : 'timing';
+    sections[group] += '<div class="srow"><span class="lb">' + label + (item.h && key !== 'mode' ? '<small>' + item.h + '</small>' : '') + '</span>' + control + '</div>';
+  });
+  if (!lock) sections.roster += '<div class="setfoot"><button type="button" class="btn ghost" data-act="mobile-rules-reset">Reset rules</button></div>';
+  var actions = '<button type="button" class="btn ghost" data-act="rules-back">Back to Lobby</button><button type="button" class="btn ghost" data-go="map">Maps</button>';
+  var footer = '<button type="button" class="btn ghost" data-act="mobile-rules-cancel"' + footerDisabled + '>Cancel</button>' +
+    '<button type="button" class="btn" data-act="mobile-rules-apply"' + footerDisabled + '>Apply Rules</button>';
+  return mobileRulesHtml(actions, sections, lock ? 'Rules locked during match' : mobileOfflineRulesDraft ? 'Unsaved rule changes' : 'Offline rules saved', footer);
+}
 function panelHtml(t) {
   var h = '', hd = function (title, sub) { return '<header class="pn-h"><span class="no">' + panelNo(t) + '</span><h2>' + title + '</h2>' + (sub ? '<span class="sub">' + sub + '</span>' : '') + '</header>'; };
   if (t === 'settings' && setTab === 'customization') return hd('Loadout', 'Weapons · finishes · optics · operative appearance') + customizationSettingsHtml();
@@ -11862,6 +11952,7 @@ function panelHtml(t) {
     var mapBombSites=R.mode==='bomb'?soloBombPrepareSites():null;
     h = '<section class="operations-table" aria-label="Operations Table"><div class="ops-table-meta"><span>OPERATIONS TABLE · ARENA INTELLIGENCE</span><strong>'+(R.mode==='bomb'?'BOMB DEFUSAL · A / B SITES':'LIVE DEPLOYMENT MAP')+'</strong></div>'+hd('Operations Table', CURMAP.tag) + '<div class="ops-map-layout"><figure class="ops-map-window"><div class="ops-map-art" id="mn-mapsvg">' + mapSvg(CURMAP) + '</div><figcaption><span>SELECTED ARENA</span><strong>'+esc(CURMAP.name)+'</strong></figcaption></figure><aside class="ops-map-brief"><span class="ops-kicker">'+(R.mode==='bomb'?'BOMB DEFUSAL · ROUTE PLAN':'TACTICAL RECONNAISSANCE')+'</span><h3>'+esc(CURMAP.name)+'</h3><p>'+CURMAP.desc+'</p><ul>' + CURMAP.notes.map(function (n) { return '<li><b>' + n[0] + '</b><span>' + n[1] + '</span></li>'; }).join('') + '</ul><p class="small">'+(R.mode==='bomb'?'A/B sites come from this arena’s configured objective data. Reachable plant points are checked before deployment.':'Preview is derived from this arena’s authored geometry, callouts, and spawn zones.')+'</p>'+(R.mode==='bomb'?'<div class="ops-site-pair"><div class="ops-site" data-site="a"><i>A</i><b>PLANT SITE A</b><small>'+(mapBombSites?'ROUTE READY':'ROUTE CHECK AT DEPLOY')+'</small></div><div class="ops-site" data-site="b"><i>B</i><b>PLANT SITE B</b><small>'+(mapBombSites?'ROUTE READY':'ROUTE CHECK AT DEPLOY')+'</small></div></div>':'')+'</aside></div><div class="ops-picker-head"><span>SELECT DEPLOYMENT ARENA</span><span>'+MAPS.length+' AUTHORED MAPS</span></div><div class="mappick" data-pick></div></section>';
   } else if (t === 'rules') {
+    if (touchMode) return mobileOfflineRulesHtml();
     var lock = !canPick(), bombPlanSites=R.mode==='bomb'?soloBombPrepareSites():null;
     var bombPlan=R.mode==='bomb'?'<section class="ops-bomb-plan" aria-label="Bomb Defusal A and B operations plan"><div class="ops-bomb-map">'+mapSvg(CURMAP)+'</div><div class="ops-bomb-info"><span class="ops-kicker">OPERATIONS TABLE · '+esc(CURMAP.tag)+'</span><h3>'+esc(CURMAP.name)+' · BOMB PLAN</h3><p>Configure the live Bomb Defusal rules below. The map shows this arena’s actual A/B objective markers; route validation remains in the game’s deployment checks.</p><div class="ops-site-pair"><div class="ops-site" data-site="a"><i>A</i><b>ATTACK / DEFEND SITE</b><small>'+(bombPlanSites?'SITE DATA READY':'SITE VALIDATION PENDING')+'</small></div><div class="ops-site" data-site="b"><i>B</i><b>ATTACK / DEFEND SITE</b><small>'+(bombPlanSites?'SITE DATA READY':'SITE VALIDATION PENDING')+'</small></div></div></div></section><h3 class="ops-rule-heading">MATCH PARAMETERS</h3>':'';
     h = '<button class="btn ghost sl-match-rules-back" type="button" data-act="rules-back" aria-label="Back to match setup">← Back</button>' + (R.mode==='bomb'?hd('Bomb Defusal', 'OPERATIONS TABLE · ROUND CONFIGURATION'):hd('Match rules', 'Applies to the next match')) + bombPlan + '<p>' + DIFF[R.diff].note + (lock ? ' These are locked during a match.' : '') + '</p>' + RULE_SPEC.filter(function (it) { if (R.mode === 'infection' && ['zcap','zinf','zhorde','mates'].includes(it.k))return false; if (it.ifx && R.mode === 'outbreak' && R.zinf) return false; if (it.k === 'bots' && R.mode === 'infection') return true; return !it.m || (it.m === 't') === (R.mode === 'tactical'); }).map(function (it) {
@@ -11875,13 +11966,17 @@ function panelHtml(t) {
       return '<div class="srow"><span class="lb">' + label + (help ? '<small>' + help + '</small>' : '') + '</span>' + picker + '</div>';
   }).join('') + '<p class="small">' + squadText() + '</p><div class="setfoot"><button class="btn ghost" type="button" data-act="rules-5v5"' + (lock ? ' disabled' : '') + '>'+(R.mode==='infection'?'8 bots + you':'5 v 5')+'</button><button class="btn ghost" type="button" data-act="rules-max"' + (lock ? ' disabled' : '') + '>'+(R.mode==='infection'?'64 bots + you':'32 v 32 · 64 bots')+'</button><button class="btn ghost" type="button" data-act="rules-reset"' + (lock ? ' disabled' : '') + '>Reset rules</button></div>';
   } else if (t === 'settings') {
-    h = hd('Settings', 'Saved in this browser') + '<div class="subtabs" role="tablist" aria-label="Settings category">' + SET_TABS.map(function (s) { return '<button type="button" role="tab" data-sub="' + s[0] + '" aria-selected="' + (s[0] === setTab) + '" tabindex="' + (s[0] === setTab ? '0' : '-1') + '">' + sl83SettingsGlyph(s[0]) + '<span>' + s[1] + '</span></button>'; }).join('') + '</div>' + (setTab==='controls'?[].concat(SPEC.crosshair||[],SPEC.hud||[],SPEC.touch||[]).map(rowHtml).join('')+mobileHudSettingsHtml()+'<div class="setfoot"><button class="btn ghost" type="button" data-act="open-binds">Edit keyboard bindings</button></div>' : (SPEC[setTab]||[]).map(rowHtml).join('')) +
-       (setTab === 'video' ? '<div class="setfoot"><button class="btn" type="button" data-act="p1157-clear">Balanced · 60 FPS cap</button>' + (SL_PLAY_BUILD ? '' : '<button class="btn ghost" type="button" data-act="p1157-report">Show performance report</button>') + '<button class="btn ghost" type="button" data-act="p1156-fast">Low-resolution GPU fallback</button>' + (SL_PLAY_BUILD ? '' : '<a class="btn ghost" href="fps-lab.html" target="_blank" rel="noopener">Open independent FPS Lab</a><pre id="p1157-report" hidden style="width:100%;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;font-size:11px;color:#b6f0d8;max-height:340px;overflow:auto;"></pre>') + '<span class="small">Applies a 60 FPS cap, adaptive quality, full selected scale, shadows off and low effects. A cap does not guarantee the device can sustain 60 FPS; measure during a live match. Fog horizon changes visibility only, not draw calls. Low-resolution fallback is optional; the independent lab excludes game AI and drawing.</span></div>' : '') +
-      (setTab === 'video' ? '<div class="setfoot"><button class="btn" type="button" data-act="p111-fullscreen">' + (document.fullscreenElement ? 'Exit browser fullscreen' : 'Enter browser fullscreen') + '</button><span class="small">Android app gameplay automatically uses immersive fullscreen.</span></div>' : '') +
+    if (touchMode && !MOBILE_SET_TABS.some(function (tab) { return tab[0] === setTab; })) setTab = 'controls';
+    var mobileRows = touchMode ? mobileSettingsSpec(setTab).map(rowHtml).join('') + (setTab === 'controls' ? mobileHudSettingsHtml() : '') : '';
+    h = (touchMode ? mobileRows : hd('Settings', 'Saved in this browser') + '<div class="subtabs" role="tablist" aria-label="Settings category">' + SET_TABS.map(function (s) { return '<button type="button" role="tab" data-sub="' + s[0] + '" aria-selected="' + (s[0] === setTab) + '" tabindex="' + (s[0] === setTab ? '0' : '-1') + '">' + sl83SettingsGlyph(s[0]) + '<span>' + s[1] + '</span></button>'; }).join('') + '</div>' + (setTab==='controls'?[].concat(SPEC.crosshair||[],SPEC.hud||[],SPEC.touch||[]).map(rowHtml).join('')+mobileHudSettingsHtml()+'<div class="setfoot"><button class="btn ghost" type="button" data-act="open-binds">Edit keyboard bindings</button></div>' : (SPEC[setTab]||[]).map(rowHtml).join(''))) +
+       (setTab === 'video' ? '<div class="setfoot"><button class="btn" type="button" data-act="p1157-clear">Balanced · 60 FPS cap</button>' + (SL_PLAY_BUILD ? '' : '<button class="btn ghost" type="button" data-act="p1157-report">Show performance report</button>') + '<button class="btn ghost" type="button" data-act="p1156-fast">Low-resolution GPU fallback</button>' + (SL_PLAY_BUILD ? '' : (mpNativeLan() ? '' : '<a class="btn ghost" href="fps-lab.html" target="_blank" rel="noopener">Open independent FPS Lab</a>') + '<pre id="p1157-report" hidden style="width:100%;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;font-size:11px;color:#b6f0d8;max-height:340px;overflow:auto;"></pre>') + '<span class="small">Applies a 60 FPS cap, adaptive quality, full selected scale, shadows off and low effects. A cap does not guarantee the device can sustain 60 FPS; measure during a live match. Fog horizon changes visibility only, not draw calls. Low-resolution fallback is optional; the independent lab excludes game AI and drawing.</span></div>' : '') +
+      (setTab === 'video' && !touchMode ? '<div class="setfoot"><button class="btn" type="button" data-act="p111-fullscreen">' + (document.fullscreenElement ? 'Exit browser fullscreen' : 'Enter browser fullscreen') + '</button><span class="small">Android app gameplay automatically uses immersive fullscreen.</span></div>' : '') +
       (touchMode && setTab === 'controls' ? '<div class="setfoot"><button class="btn ghost" type="button" data-act="mobile-guide-replay">Replay control guide</button></div>' : '') +
       (setTab === 'audio' ? '<div class="setfoot"><button class="btn ghost" type="button" data-act="p111-mute" aria-pressed="' + (!soundOn) + '">' + (soundOn ? 'Mute game sound' : 'Unmute game sound') + '</button></div>' : '') +
       '<div class="setfoot"><button class="btn ghost" type="button" data-act="page-reset">Reset this page</button><button class="btn ghost" type="button" data-act="all-reset">Reset all settings</button></div>' +
       '<details class="srow wide"><summary class="lnk">Share or restore settings code</summary><div style="display:grid;gap:6px;margin-top:6px"><textarea id="code-box" class="code" spellcheck="false" aria-label="Settings code"></textarea><div class="setfoot" style="padding:0"><button class="btn ghost" type="button" data-act="code-make">Make code</button><button class="btn ghost" type="button" data-act="code-apply">Apply code</button></div><div class="note2" id="code-note" role="status"></div></div></details>';
+    if (touchMode && setTab === 'play') h += '<div class="setfoot"><button type="button" class="btn ghost" data-go="rec">Records</button><button type="button" class="btn ghost" data-go="guide">Field guide</button></div>';
+    if (touchMode) return mobileSettingsHtml(h);
   } else if (t === 'keys') {
     h = hd('Controls', 'Fully rebindable') + '<p>Every action has two slots. Pick a layout to start from, then change anything you like.</p><div class="setfoot" style="padding:0"><button class="btn ghost" type="button" data-act="preset-sightline">Sightline layout</button><button class="btn ghost" type="button" data-act="preset-cs">CS-style layout</button><button class="btn" type="button" data-act="open-binds">Edit key bindings</button></div><div class="note2" id="key-note" role="status"></div>' +
       '<div class="kgrid">' + [['Move', ['fwd', 'left', 'back', 'right']], ['Jump', ['jump']], ['Crouch', ['crouch']], ['Slide', ['slide']], ['Prone', ['prone']], ['Fire', ['fire']], ['Aim', ['ads']], ['Reload', ['reload']], ['Inspect', ['inspect']], ['Buy menu', ['buy']], ['Scoreboard', ['score']], ['Frag', ['nade']], ['Flash', ['flash']], ['Smoke', ['smoke']]].map(function (r) { return '<div><span>' + r[0] + '</span><span>' + r[1].map(kbd).join('') + '</span></div>'; }).join('') + '</div>';
@@ -11962,13 +12057,17 @@ function renderBody(keep) {
   document.body.setAttribute('data-sl-mode',R.mode||'tactical');
   var play = menuTab === 'play', dyn = $('#pn-dyn');
   $('#pn-play').hidden = !play; dyn.hidden = play;
-  if (play) { renderPlay(); return; }
+  if (play) { document.body.classList.remove('sl-mobile-console-open'); renderPlay(); return; }
   var sc = keep ? $('.mn-main').scrollTop : 0; var dsc = keep ? dyn.scrollTop : 0;
   // A selected setting button should keep keyboard focus after the row redraw.
   var oldFocus = keep && dyn.contains(document.activeElement) ? document.activeElement : null;
   var focusKeys = ['data-o','data-k','data-v','data-act','data-q','data-sub','data-op','data-op-filter','data-loadout-category','data-loadout-finish'];
   var focusAttrs = oldFocus && oldFocus.matches('button') ? focusKeys.filter(function(k){return oldFocus.hasAttribute(k);}).map(function(k){return [k,oldFocus.getAttribute(k)];}) : null;
+  var mobileScroll = keep ? dyn.querySelector('.sl-mobile-console-scroll')?.scrollTop || 0 : 0;
   dyn.innerHTML = panelHtml(menuTab);
+  var mobileContent = dyn.querySelector('.sl-mobile-console-scroll');
+  document.body.classList.toggle('sl-mobile-console-open', !!mobileContent);
+  if (mobileContent) mobileContent.scrollTop = mobileScroll;
   renderPickers(); renderOps(); applyXh();
   if(menuTab==='settings'&&setTab==='customization')renderLobbyWeaponPreview();
   $('.mn-main').scrollTop = sc; dyn.scrollTop = dsc;
@@ -12085,7 +12184,7 @@ function sl82GoRoute(route, focus) {
     else { SL82_HOST_SUBROUTE = 'multiplayer'; goTab(route === 'maps' ? 'map' : 'rules', focus); }
   }
   else if (route === 'operative') { pendingOpId=ME.id;opFactionFilter='all';goTab('op', focus); }
-  else if (route === 'settings') { SL82_SETTINGS_SUBROUTE='settings'; setTab='video'; goTab('settings', focus); }
+  else if (route === 'settings') { SL82_SETTINGS_SUBROUTE='settings'; setTab=touchMode?'controls':'video'; goTab('settings', focus); }
   else if (route === 'customization') { setTab = 'customization'; goTab('settings', focus); }
   else if (route === 'keybinds') goTab('keys', focus);
   else if (route === 'records') goTab('rec', focus);
@@ -12125,8 +12224,8 @@ function onMenuShown() {
 }
 var lastShownPaused = false;
 function resetPage() {
-  (SPEC[setTab]||[]).forEach(function (it) { if (it.k) { var o = it.o || 'G'; objOf(o)[it.k] = defOf(o)[it.k]; persist(o); } });
-  if(setTab==='touch'){mobileHud={style:MOBILE_HUD_DEFAULT.style,opacity:MOBILE_HUD_DEFAULT.opacity,fire2:MOBILE_HUD_DEFAULT.fire2,hand:'right',editing:false,positions:{}};saveMobileHud();}
+  (touchMode ? mobileSettingsSpec(setTab) : SPEC[setTab]||[]).forEach(function (it) { if (it.k) { var o = it.o || 'G'; objOf(o)[it.k] = defOf(o)[it.k]; persist(o); } });
+  if((touchMode&&setTab==='controls')||setTab==='touch'){mobileHud={style:MOBILE_HUD_DEFAULT.style,opacity:MOBILE_HUD_DEFAULT.opacity,fire2:MOBILE_HUD_DEFAULT.fire2,hand:'right',editing:false,positions:{}};saveMobileHud();}
   baseFov = S.fov; applyG(); renderStrip(); renderBody(true);
 }
 function resetAll() {
@@ -12209,13 +12308,14 @@ $('#mn-nav').addEventListener('keydown', function (e) {
 });
 $('.mn-main').addEventListener('keydown', function (e) {
   var current = e.target.closest && e.target.closest('.subtabs [data-sub]');
-  if (!current || !['ArrowLeft','ArrowRight','Home','End'].includes(e.code)) return;
+  var moves = touchMode ? ['ArrowUp','ArrowDown'] : ['ArrowLeft','ArrowRight'];
+  if (!current || !moves.concat('Home','End').includes(e.code)) return;
   var tabs = [].slice.call(document.querySelectorAll('.subtabs [data-sub]'));
   var i = tabs.indexOf(current);
   if (i < 0) return;
   e.preventDefault();
   var n = e.code === 'Home' ? 0 : e.code === 'End' ? tabs.length - 1 :
-    (i + (e.code === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+    (i + (e.code === moves[1] ? 1 : tabs.length - 1)) % tabs.length;
   setTab = tabs[n].getAttribute('data-sub'); SL82_SETTINGS_SUBROUTE='settings'; renderBody(false); renderNav(); uiTick(true);
   var focus = $('.subtabs [data-sub="' + setTab + '"]'); if (focus) focus.focus({preventScroll:true});
 });
@@ -12230,6 +12330,10 @@ $('.mn-main').addEventListener('click', function (e) {
     if(firstLoadout){chooseLobbyWeapon(firstLoadout);lobbyAudioCue('weapon');}renderBody(false);return;
   }
   if ((b = t.closest('[data-loadout-finish]'))) { var selectedLobbyFinish=Number(b.getAttribute('data-loadout-finish')),availableLobbyFinishes=weaponFinishList(finishWeapon);lobbyAudioCue(availableLobbyFinishes[selectedLobbyFinish]&&availableLobbyFinishes[selectedLobbyFinish].legendary?'legendary':'weapon');setFinish(selectedLobbyFinish,finishWeapon);renderBody(true);return; }
+  if ((b = t.closest('[data-mobile-rule-tab]'))) {
+    mobileRuleTab = b.getAttribute('data-mobile-rule-tab'); renderBody(false);
+    $('[data-mobile-rule-tab][aria-pressed=true]')?.focus({preventScroll:true}); uiTick(true); return;
+  }
   if ((b = t.closest('[data-net]'))) { if (!b.disabled) mpAction(b); return; }
   if (t.closest('[data-quick-mode]')) return;
   if (t.closest('#btn-start,#btn-restart,#btn-quit')) return;
@@ -12239,11 +12343,17 @@ $('.mn-main').addEventListener('click', function (e) {
   if ((b = t.closest('button[data-o][data-k][data-v]'))) {
     if (b.disabled) return;
     var o = b.getAttribute('data-o'), k = b.getAttribute('data-k'), cur = objOf(o)[k], v = b.getAttribute('data-v');
+    if (o === 'R' && mobileOfflineRuleAction('edit', k, typeof cur === 'number' ? Number(v) : v)) return;
     setVal(o, k, typeof cur === 'number' ? Number(v) : v); renderBody(true); uiTick(true); return;
   }
   if ((b = t.closest('[data-act]'))) {
     var a = b.getAttribute('data-act');
     if(a==='mobile-guide-replay'){mobileGuide.replay();b.textContent='Guide ready for gameplay';return;}
+    if (a === 'mobile-settings-back') {
+      if (mpConnected()) sl82GoRoute('multiplayer', true); else goTab('play', true);
+      return;
+    }
+    if (['mobile-rules-apply','mobile-rules-cancel','mobile-rules-reset'].includes(a)) { mobileOfflineRuleAction(a.slice(13)); return; }
     if(a==='rules-back'){sl82ReturnFromRules();return;} 
     if(a==='confirm-operator'){setOp(pendingOpId);return;}
     if(a==='mobile-hud-reset'){mobileHud={style:MOBILE_HUD_DEFAULT.style,opacity:MOBILE_HUD_DEFAULT.opacity,fire2:MOBILE_HUD_DEFAULT.fire2,hand:'right',editing:false,positions:{}};G.touchSize=100;G.touchLayout='simple';saveObj(G_KEY,G);saveMobileHud();applyHud();renderBody(true);uiTick(true);return;} if(a==='mobile-hud-edit'){if(!touchMode||state!=='paused')return;mobileHud.editing=true;saveMobileHud();resume();return;} if(a==='mobile-hud-position-reset'){mobileHud.positions={};saveMobileHud();uiTick(true);return;}
@@ -12278,7 +12388,7 @@ $('.mn-main').addEventListener('change', function (e) {
   if(t.matches('select[data-loadout-weapon]')){if(chooseLobbyWeapon(t.value)){lobbyAudioCue('weapon');loadoutCategory='all';renderBody(true);}return;}
   if(t.hasAttribute('data-mobile-hud-fire2')){mobileHud.fire2=!!t.checked;saveMobileHud();uiTick(true);return;}
   if(t.hasAttribute('data-mobile-hud-opacity')){saveMobileHud();return;}
-  if(t.matches('select[data-o][data-k]')){var so=t.getAttribute('data-o'),sk=t.getAttribute('data-k'),sv=objOf(so)[sk];setVal(so,sk,typeof sv==='number'?Number(t.value):t.value);uiTick(true);return;}
+  if(t.matches('select[data-o][data-k]')){var so=t.getAttribute('data-o'),sk=t.getAttribute('data-k'),sv=objOf(so)[sk];var next=typeof sv==='number'?Number(t.value):t.value;if(so==='R'&&mobileOfflineRuleAction('edit',sk,next))return;setVal(so,sk,next);uiTick(true);return;}
   if (!t.getAttribute('data-k')) return;
   if (t.type === 'range') { persist(t.getAttribute('data-o')); return; }
   if (t.type === 'checkbox') { setVal(t.getAttribute('data-o'), t.getAttribute('data-k'), t.checked); uiTick(true); }
@@ -12645,10 +12755,7 @@ function mpMsg(m) {
     }
     case 'lobby': {
       var renderKey = mpLobbyRenderKey(m), lobbyNeedsRender = renderKey !== MP.lobbyRenderKey;
-      var draft = MP.ruleEdits;
-      if (draft?.sending && draft.session === MP.session && mpRulesMatch(m, draft.patch)) {
-        clearTimeout(draft.timer); draft.sending = false; draft.patch = {}; draft.message = ''; lobbyNeedsRender = true;
-      }
+      if (mpConfirmRules(m)) lobbyNeedsRender = true;
       MP.lobby = m; MP.names = {}; m.players.forEach(function (p) { MP.names[p.id] = p.name; });
       MP.mode = m.mode || 'versus';
       var me = mpMe(); if (me) { MP.host = me.host; if (!MP.on || MP.mode === 'infection') MP.myTeam = me.team; if(MP.mode==='infection')MP.myInfected=!!me.infected; }
@@ -13239,7 +13346,7 @@ function mpBotsHtml(L, coop, isHost, lobbyPhase, saving) {
 }
 function mpRulesDraft() {
   if (!MP.ruleEdits || MP.ruleEdits.session !== MP.session) {
-    MP.ruleEdits = { session: MP.session, patch: {}, sending: false, message: '' };
+    MP.ruleEdits = { session: MP.session, patch: {}, pendingPatch: null, sending: false, message: '' };
   }
   return MP.ruleEdits;
 }
@@ -13253,6 +13360,13 @@ function mpRulesMatch(lobby, patch) {
       : lobby[key] === patch[key];
   });
 }
+function mpConfirmRules(lobby) {
+  var draft = MP.ruleEdits;
+  if (!draft?.pendingPatch || draft.pendingPatch !== draft.patch || draft.session !== MP.session || !mpRulesMatch(lobby, draft.pendingPatch)) return false;
+  clearTimeout(draft.timer);
+  draft.sending = false; draft.patch = {}; draft.pendingPatch = null; draft.message = '';
+  return true;
+}
 function mpCanEditRules() {
   return mpConnected() && MP.host && MP.lobby && MP.lobby.phase === 'lobby';
 }
@@ -13261,22 +13375,27 @@ function mpRulesAction(action, value, field) {
   var draft = mpRulesDraft(), patch = draft.patch;
   if (!['apply-rules','cancel-rules','mode','rounds','time','kills','cash','auto','bots','bomb','start'].includes(action)) return false;
   if (draft.sending) return true;
+  if (action !== 'apply-rules' && action !== 'start') draft.pendingPatch = null;
   if (action === 'cancel-rules') {
     draft.patch = {}; draft.message = '';
   } else if (action === 'apply-rules') {
     if (!Object.keys(patch).length) return true;
-    draft.sending = true; draft.message = '';
+    draft.sending = true; draft.pendingPatch = patch; draft.message = '';
     mpSend(Object.assign({ t: 'cfg' }, patch));
     draft.timer = setTimeout(function () {
       if (MP.ruleEdits !== draft || MP.session !== draft.session || !draft.sending) return;
-      draft.sending = false; draft.message = 'The host did not confirm these changes. Review and try Apply again.';
+      draft.sending = false; draft.message = 'Confirmation is delayed. Review or retry Apply.';
       mpRefreshPanel();
     }, 3500);
+  } else if (touchMode && action === 'mode' && Object.keys(patch).every(function (key) { return key === 'mode'; })) {
+    draft.message = '';
+    if (MP.lobby.mode === value) delete patch.mode; else patch.mode = value;
   } else if (action === 'mode' || action === 'start') {
     if (!Object.keys(patch).length) return false;
     draft.message = 'Apply or cancel pending rule changes first.';
   } else {
     draft.message = '';
+    if (patch.mode) return true;
     var group = action === 'bots' || action === 'bomb' ? action : null;
     var key = group ? field : action;
     var next = action === 'auto' ? value === '1' : field === 'balance' ? value === 'true'
@@ -13294,7 +13413,7 @@ function mpRulesView(lobby, patch) {
   if (patch.bomb) view.bomb = Object.assign({}, lobby.bomb, { settings: Object.assign({}, lobby.bomb?.settings, patch.bomb) });
   return view;
 }
-function mpBombRulesHtml(L,lobbyPhase){
+function mpBombRulesHtml(L,lobbyPhase,expanded){
   var b=(L.bomb&&L.bomb.settings)||{bestOf:7,roundSeconds:90,bombSeconds:35,plantSeconds:4,defuseSeconds:6};
   var rows=[
     {key:'bestOf',label:'Best of',values:[[3,'3'],[5,'5'],[7,'7'],[9,'9']]},
@@ -13308,7 +13427,55 @@ function mpBombRulesHtml(L,lobbyPhase){
     return '<div class="srow"><span class="lb">'+row.label+'</span><div class="seg">'+choices+'</div></div>';
   }).join('');
   var supported=L.bomb&&L.bomb.supported,help=supported?'A/B sites validated for the selected arena.':'Bomb Defusal unavailable: '+esc(L.bomb&&L.bomb.unsupportedReason||'arena validation pending');
+  if (expanded) return controls + '<p class="small">' + help + '</p>';
   return '<details class="mp-bomb-settings"><summary><b>Bomb rules</b><small>Best of '+b.bestOf+' · round '+Math.floor(b.roundSeconds/60)+':'+('0'+b.roundSeconds%60).slice(-2)+' · fuse '+b.bombSeconds+'s · plant '+b.plantSeconds+'s · defuse '+b.defuseSeconds+'s · tap to edit</small></summary><div class="seg">'+controls+'</div></details><p class="small">'+help+'</p>';
+}
+function mobileLanRulesHtml(L, mode, coop, editable, draft, canStart, selected) {
+  var patch = draft ? draft.patch : {}, dirty = Object.keys(patch).length > 0, saving = !!draft?.sending;
+  var canEdit = editable && !saving, fieldsEnabled = canEdit && !patch.mode;
+  var view = dirty ? mpRulesView(L, patch) : L;
+  var status = saving ? 'Waiting for host…' : dirty ? 'Unsaved rule changes' : !MP.host ? 'Read only · host sets rules' : editable ? 'Host · rules saved' : 'Match active · rules locked';
+  var sections = { match: '<p class="small">Arena: ' + esc(selected ? selected[1] : L.map) + '</p>' };
+  var actions = '<button type="button" class="btn ghost" data-host-route="multiplayer">Back to Lobby</button><button type="button" class="btn ghost" data-host-route="maps">Maps</button>';
+  function row(label, key, options, enabled, active) {
+    var longOptions = key === 'mode' || key === 'auto' ? ' sl-mobile-long-options' : '';
+    return '<div class="srow"><span class="lb">' + label + '</span><div class="seg' + longOptions + '" role="group" aria-label="' + label + '">' +
+      options.map(function (choice) {
+        return '<button type="button" data-net="' + key + '" data-v="' + choice[0] + '" aria-pressed="' + (active === choice[0]) + '"' +
+          (enabled ? '' : ' disabled') + '>' + choice[1] + '</button>';
+      }).join('') + '</div></div>';
+  }
+  sections.match += row('Mode', 'mode', [['versus', 'Tactical'], ['deathmatch', 'Team Deathmatch'], ['ffa', 'Free-for-all'], ['bomb', 'Bomb Defusal'], ['outbreak', 'Co-op Outbreak'], ['infection', 'Infection']],
+    canEdit && (!dirty || !!patch.mode), view.mode || mode);
+  if (patch.mode) {
+    sections.match += '<p class="small">Apply the mode change before editing its other rules.</p>';
+  } else {
+    sections.match += row('Starting cash', 'cash', [[800, '$800'], [2000, '$2,000'], [5000, '$5,000'], [9000, '$9,000']], fieldsEnabled, view.cash || 800);
+    sections.match += row('After the match', 'auto', [[1, 'Start next match'], [0, 'Return to lobby']], fieldsEnabled, view.auto ? 1 : 0);
+    sections.roster = mpBotsHtml(view, coop, !!MP.host, fieldsEnabled, !fieldsEnabled);
+    if (mode === 'bomb') {
+      sections.timing = mpBombRulesHtml(view, fieldsEnabled, true);
+    } else if (mode === 'deathmatch' || mode === 'ffa') {
+      sections.timing = row('Kill target', 'kills', [[10, '10'], [20, '20'], [30, '30'], [50, '50']], fieldsEnabled, view.kills) +
+        row('Match time', 'time', [[180, '3:00'], [300, '5:00'], [600, '10:00'], [900, '15:00']], fieldsEnabled, view.time);
+    } else if (!coop) {
+      sections.timing = row('Rounds to win', 'rounds', [[1, '1'], [3, '3'], [5, '5'], [8, '8'], [10, '10']], fieldsEnabled, view.rounds) +
+        row('Round time', 'time', [[60, '1:00'], [100, '1:40'], [150, '2:30'], [180, '3:00']], fieldsEnabled, view.time);
+    }
+  }
+  if (draft?.message || MP.err) status = esc(draft?.message || MP.err);
+  if (editable && !canStart && !dirty) status = mode === 'ffa' ? 'Host · add another combatant' : mode === 'bomb' && !L.bomb?.supported ?
+    'Host · choose a validated A/B arena' : 'Host · both teams need players';
+  var footer = '';
+  if (editable) {
+    var disabled = dirty && !saving ? '' : ' disabled';
+    footer = '<button type="button" class="btn ghost" data-net="cancel-rules"' + disabled + '>Cancel</button>' +
+      '<button type="button" class="btn" data-net="apply-rules"' + disabled + '>Apply Rules</button>' +
+      '<button type="button" class="btn ghost" data-net="start"' + (canStart && !dirty && !saving ? '' : ' disabled') + '>Start Match</button>';
+  } else if (MP.host) {
+    footer = '<button type="button" class="btn ghost" data-net="endmatch">End Match</button>';
+  }
+  return mobileRulesHtml(actions, sections, status, footer);
 }
 function mpHostRouteHtml(head,L,route){
   var me=mpMe(),lobbyPhase=L.phase==='lobby',mode=L.mode||'versus',coop=mode==='outbreak'||mode==='infection',counts=[0,0],col=['',''];
@@ -13321,6 +13488,7 @@ function mpHostRouteHtml(head,L,route){
   var draft = host && route === 'rules' && lobbyPhase ? mpRulesDraft() : null;
   var dirty = !!(draft && Object.keys(draft.patch).length), saving = !!draft?.sending;
   var canEdit = editable && !saving;
+  if (touchMode && route === 'rules') return mobileLanRulesHtml(L, mode, coop, editable, draft, canStart, selected);
   var h=head.replace('Multiplayer',route==='maps'?'Maps':route==='rules'?'Match rules':'Multiplayer');
   if (route === 'maps' || route === 'rules') {
     h += '<div class="sl-lan-setup-nav"><button type="button" class="btn ghost" data-host-route="multiplayer">Back to Lobby</button><button type="button" class="btn ghost" data-host-route="'+(route==='maps'?'rules':'maps')+'">'+(route==='maps'?'Match Rules':'Maps')+'</button></div>';
@@ -13387,6 +13555,7 @@ function mpPanel(head) {
   if(mpLocalHostOwned)h+='<div class="setfoot"><button type="button" class="btn ghost" data-net="stop-local">Stop Hosting</button></div>';
   var me = mpMe(), isHost = !!(me && me.host), lobbyPhase = L.phase === 'lobby', col = ['', ''], cnt = [0, 0];
   if (isHost || SL82_HOST_SUBROUTE === 'rules' || SL82_HOST_SUBROUTE === 'maps') return mpHostRouteHtml(h,L,SL82_HOST_SUBROUTE);
+  if (touchMode) h += '<div class="sl-lan-setup-nav"><button type="button" class="btn ghost" data-host-route="rules">View Match Rules</button></div>';
   L.players.forEach(function (p) {
     if (p.team !== 0 && p.team !== 1) return; cnt[p.team]++;
     col[p.team] += mpRow(p);
@@ -15337,6 +15506,89 @@ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav .mn-s
 html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn input[type=range] { min-height:44px; }
 
 .mn-panel .sl-match-rules-back{justify-self:start;min-height:42px}
+/* DEV24.2: full-height touch console with a separate scroll area and action bar. */
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start .mn-main {
+  display:flex!important; flex-direction:column; overflow:hidden!important; min-height:0;
+  padding-block:6px max(6px,env(safe-area-inset-bottom,0px))!important;
+}
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start .mn-main::after { display:none; }
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start #mn-context { display:none!important; }
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:.8rem!important; white-space:normal!important; overflow-wrap:anywhere; }
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start #pn-dyn:not([hidden]) {
+  display:flex!important; flex:1 1 auto; min-height:0; min-width:0;
+  max-height:none!important; overflow:hidden!important; margin:0; padding:0!important;
+}
+html.touch-device #ov-start .sl-mobile-console {
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto; flex:1 1 100%;
+  min-height:0; min-width:0; color:#eff6f3; background:#0b171c;
+  border:1px solid #375257; border-radius:8px; overflow:hidden;
+  font-family:system-ui,sans-serif; font-size:.94rem; line-height:1.35;
+}
+html.touch-device #ov-start :is(.sl-mobile-console-head,.sl-mobile-console-foot) {
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+  padding:5px 8px; background:#14272d;
+}
+html.touch-device #ov-start .sl-mobile-console-head { border-bottom:1px solid #375257; }
+html.touch-device #ov-start .sl-mobile-console-foot { margin:0; border-top:1px solid #375257; }
+html.touch-device #ov-start .sl-mobile-console-head h2 { flex:1 1 auto; margin:0; font:700 1.15rem/1.2 system-ui,sans-serif; }
+html.touch-device #ov-start .sl-mobile-console-foot [role=status] { flex:1 1 110px; font-size:.875rem; color:#d1e8df; }
+html.touch-device #ov-start .sl-mobile-console-body {
+  display:grid; grid-template-columns:minmax(108px,22%) minmax(0,1fr); min-height:0;
+}
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start #pn-dyn .sl-mobile-console-tabs {
+  display:flex!important; flex-direction:column; align-items:stretch; justify-content:flex-start;
+  gap:4px; overflow:auto; touch-action:pan-y; padding:6px; margin:0; min-width:0;
+  background:#101f24; border-right:1px solid #375257;
+}
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start #pn-dyn .sl-mobile-console-tabs button {
+  flex:0 0 auto; width:100%; text-align:left; justify-content:flex-start; background:#172b31;
+  border:1px solid #365258; border-radius:4px; color:#eff6f3;
+}
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start #pn-dyn .sl-mobile-console-tabs button:is([aria-selected=true],[aria-pressed=true]) {
+  background:#235047; border-color:#77d9c3; box-shadow:inset 3px 0 #77d9c3;
+}
+html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start #pn-dyn .sl-mobile-console :is(button,select,summary,input:not([type=checkbox]),a.btn) {
+  min-width:44px!important; min-height:44px!important; max-width:100%; box-sizing:border-box;
+  padding:5px 9px; font-size:.875rem!important; line-height:1.25;
+  letter-spacing:normal!important; white-space:normal!important; overflow-wrap:anywhere;
+}
+html.touch-device #ov-start .sl-mobile-console button:focus-visible {
+  outline:2px solid #a7f0dc; outline-offset:-3px;
+}
+html.touch-device #ov-start .sl-mobile-console-scroll {
+  min-width:0; min-height:0; overflow:auto; touch-action:pan-y; padding:8px; overscroll-behavior:contain;
+}
+html.touch-device #ov-start .sl-mobile-console-scroll .srow {
+  display:flex!important; flex-wrap:wrap; align-items:center; gap:6px; min-width:0;
+  padding:7px 9px; margin:0 0 6px; border:1px solid #2d4248; background:#101f24; border-radius:4px;
+}
+html.touch-device #ov-start .sl-mobile-console-scroll .srow > :is(.lb,label) {
+  flex:1 1 100%; min-width:0; padding:0; font:600 .95rem/1.3 system-ui,sans-serif;
+}
+html.touch-device #ov-start .sl-mobile-console-scroll .srow:has(> input[type=checkbox]) > label {
+  flex:1 1 75%; display:flex; flex-direction:column; justify-content:center; min-height:44px;
+}
+html.touch-device #ov-start .sl-mobile-console-scroll small {
+  display:block; color:#b9d0c9; font:400 .84rem/1.4 system-ui,sans-serif; white-space:normal; overflow-wrap:anywhere;
+}
+html.touch-device #ov-start .sl-mobile-console-scroll :is(.seg,.setfoot,.hud-hand-options) {
+  display:flex; flex-wrap:wrap; gap:5px; min-width:0; max-width:100%;
+}
+html.touch-device #ov-start .sl-mobile-console-scroll .srow .seg { flex:1 1 100%; }
+html.touch-device #ov-start .sl-mobile-console-scroll .seg button { flex:0 1 auto; }
+html.touch-device #ov-start #pn-dyn .sl-mobile-console-scroll .sl-mobile-long-options {
+  display:grid!important; grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr));
+}
+html.touch-device #ov-start #pn-dyn .sl-mobile-console-scroll .sl-mobile-long-options button { width:100%; }
+html.touch-device #ov-start .sl-mobile-console-scroll .srow input[type=range] { flex:1 1 55%; min-width:0; }
+html.touch-device #ov-start .sl-mobile-console-scroll .srow input[type=checkbox] { width:44px; height:44px; flex:none; margin:0; }
+html.touch-device #ov-start .sl-mobile-console-scroll .srow :is(select,textarea) { width:100%; }
+html.touch-device #ov-start .sl-mobile-console-scroll output { min-width:3ch; }
+html.touch-device #ov-start .sl-mobile-console-scroll :is(p,.small,[role=alert]) { font-size:.875rem; line-height:1.4; }
+@media (max-width:520px) {
+  html.touch-device #ov-start .sl-mobile-console-body { grid-template-columns:minmax(94px,25%) minmax(0,1fr); }
+  html.touch-device #ov-start .sl-mobile-console-foot [role=status] { flex-basis:100%; }
+}
 </style>
 <div id="sl-intro" role="dialog" aria-modal="true" aria-label="Sightline introduction" hidden data-phase="splash">
 <div class="si-bar si-top"></div><div class="si-bar si-bot"></div>

@@ -3,12 +3,12 @@ f5f0c4fd7fbb46156930016017390da715ab2743a9906be21799ebf07f6ba64b  ANDROID-SECURI
 7494493077462b2b9a059374b72475987e960065a2b8ea6dec8a07c2e171732b  app/build.gradle
 fca9a7d1d04b9d68f812873a442379888fc1aefa909fab5971b7b43c11030edf  app/src/main/AndroidManifest.xml
 47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11  app/src/main/assets/phone-host/character-realism.js
-27fb4936332232f5d219a914ef4de52969029960db3fa90323949de059ee528b  app/src/main/assets/phone-host/index.html
+44c43d69c99d117f5a954c0d859957839d53df9fcd699bffaf1da443961804af  app/src/main/assets/phone-host/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/phone-host/infection-evasion.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/phone-host/navigation.js
 6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53  app/src/main/assets/phone-host/rook117/rook117-model.js
 02e241733b263accf8aa77e98e2ebe354e698a7d8c93cbb42c74bfd9b8542d42  app/src/main/assets/phone-host/server.js
-7aec9a393bbca68b36da9219b1d41f543f408382d2bc7766a4eb4b224a3c7a63  app/src/main/assets/phone-host/SHA256SUMS
+3581a4380a5231856da7bd869be6ef5bf03c52892d78494923127e21d86ec716  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js
@@ -17,7 +17,7 @@ d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/a
 545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f  app/src/main/assets/www/character-skins.js
 e49ec0b3d6d8d87e14626c833686996793232bb82bc3d42c00341bcee5b4894a  app/src/main/assets/www/combat-foundation.js
 ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272  app/src/main/assets/www/deathmatch-rules.js
-2e124ea7f06b6caa921bfe4fd8e4e147b3ace4fec93b49a2fecddd3882235eb2  app/src/main/assets/www/index.html
+1c5ceaa7777b0cb1752fc4f4e8d989b0eb2bcf87ca4491498050ae37fdbed94c  app/src/main/assets/www/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/www/infection-evasion.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/www/navigation.js
 6978d8b88cff5770caf2d5c73030b56fc08df7a7ff584fc7a743318fb10e4a53  app/src/main/assets/www/rook117/rook117-model.js
@@ -32,7 +32,7 @@ f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493  app/src/main/a
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/www/zombie-hunt.js
 b8f5a22f0528b581a7c1c39599e31e95df0f19f47ce895aad29a2cdad62e4117  app/src/main/java/com/sightline/v3/HostPolicy.java
 9acfbfeab4a6c616bbb518226b05761d8894e50493af13a661bcc0258e5520de  app/src/main/java/com/sightline/v3/LanHostService.java
-8ede84621bf2d30699dc382db96f9c6d4f91159638190f83dd5c53fd77fbde7c  app/src/main/java/com/sightline/v3/MainActivity.java
+61d281a5b15970e426c4202ab9c8cc8ccf8c9c48e0807664cc2586aa14fc0b1f  app/src/main/java/com/sightline/v3/MainActivity.java
 8f010cdfea8ff723672eb33c22ea2a5d86f0892600a4ab390b27c48767d2b914  app/src/main/java/com/sightline/v3/UpdateManager.java
 bdcf6b4a260bf2517d77b83e967e8abaa48171f11e0de305daff2585cc642028  app/src/main/java/com/sightline/v3/UpdatePolicy.java
 ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847  app/src/main/res/drawable-nodpi/ic_sightline_foreground.png

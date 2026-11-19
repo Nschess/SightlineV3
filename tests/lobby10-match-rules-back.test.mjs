@@ -16,6 +16,7 @@ function routeHarness(page, { host = false, connected = false } = {}) {
   assert.ok(start >= 0 && end > start, 'actual Lobby 10 route functions are present');
   const transitions = [];
   const context = {
+    touchMode: false,
     SL82_RULES_RETURN_ROUTE: '',
     SL82_HOST_SUBROUTE: 'multiplayer',
     document: { querySelector: () => ({ content: host ? 'lan-host' : 'offline' }) },
@@ -137,5 +138,66 @@ test('Connected host keeps staged rule edits across Maps and Lobby and applies o
     assert.equal(context.mpCanEditRules(), false);
     assert.equal(context.mpRulesAction('cash', '9000'), false);
     assert(transitions.every(({ tab }) => tab === 'net'));
+  }
+});
+
+test('Mobile mode change is an isolated host-acknowledged draft', () => {
+  for (const page of Object.values(pages)) {
+    const { context } = routeHarness(page, { connected: true });
+    const sent = [];
+    let timeout;
+    Object.assign(context, {
+      touchMode: true,
+      MP: { host: true, session: 'host-session', lobby: { phase: 'lobby', mode: 'versus', cash: 800 } },
+      mpSend: packet => sent.push(JSON.parse(JSON.stringify(packet))), mpRefreshPanel() {},
+      setTimeout: callback => { timeout = callback; return 1; }, clearTimeout() {}
+    });
+    vm.runInNewContext(page.slice(page.indexOf('function mpRulesDraft()'), page.indexOf('function mpBombRulesHtml(')), context);
+    context.sl82GoRoute('rules', false);
+    context.mpRulesAction('mode', 'bomb');
+    context.mpRulesAction('time', '180');
+    assert.equal(context.MP.lobby.mode, 'versus');
+    context.sl82GoRoute('maps', false);
+    context.sl82GoRoute('rules', false);
+    assert.equal(context.MP.ruleEdits.patch.mode, 'bomb');
+    assert.equal(sent.length, 0);
+    context.mpRulesAction('apply-rules');
+    assert.deepEqual(sent, [{ t: 'cfg', mode: 'bomb' }]);
+    assert.equal(context.MP.ruleEdits.sending, true);
+    assert.equal(context.mpConfirmRules({ mode: 'versus' }), false);
+    timeout();
+    assert.equal(context.MP.ruleEdits.sending, false);
+    assert.equal(context.mpConfirmRules({ mode: 'bomb' }), true);
+    assert.equal(context.MP.ruleEdits.pendingPatch, null);
+    context.mpRulesAction('mode', 'ffa');
+    context.mpRulesAction('apply-rules');
+    timeout();
+    context.mpRulesAction('mode', 'infection');
+    assert.equal(context.mpConfirmRules({ mode: 'ffa' }), false);
+    assert.equal(context.MP.ruleEdits.patch.mode, 'infection');
+  }
+});
+
+test('Mobile offline draft applies only its edited fields and Cancel preserves saved rules', () => {
+  for (const page of Object.values(pages)) {
+    const saves = [];
+    const context = {
+      touchMode: true, menuTab: 'rules', R: { mode: 'tactical', cash: 800 }, R_KEY: 'rules',
+      canPick: () => true, mpConnected: () => false, renderBody() {}, uiTick() {},
+      saveObj: (_, rules) => saves.push({ ...rules }), applyRules() {}, refreshSpec() {}
+    };
+    const start = page.indexOf('var MOBILE_SET_TABS =');
+    const end = page.indexOf('function mobileOfflineRulesHtml()', start);
+    vm.runInNewContext(page.slice(start, end), context);
+    context.mobileOfflineRuleAction('edit', 'cash', 2000);
+    assert.equal(context.R.cash, 800);
+    context.mobileOfflineRuleAction('cancel');
+    assert.equal(saves.length, 0);
+    context.mobileOfflineRuleAction('edit', 'cash', 5000);
+    context.menuTab = 'map';
+    context.R.mode = 'bomb';
+    context.menuTab = 'rules';
+    context.mobileOfflineRuleAction('apply');
+    assert.deepEqual(saves, [{ mode: 'bomb', cash: 5000 }]);
   }
 });
