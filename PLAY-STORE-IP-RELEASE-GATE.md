@@ -1,6 +1,6 @@
 # Google Play IP and release gate
 
-**BLOCKED** for the Play candidate based on source `a222f1483a2210e370f81fbce885517398e4ba6d`. This phase reconciled source inputs. The signed production bundle, final listing exports and owner release authorization remain pending. See the [rights register](RIGHTS-INVENTORY.md) and [naming review](NAMING-AND-TRADEMARK-REVIEW.md). IP and impersonation sources rechecked 2026-11-19.
+**BLOCKED** for the Play candidate based on source `d07afb3c467c9389d3fd6a902b546991b4e44d8f`. DEV25.9 checked the exact diagnostic APK and underlying production source inputs. The signed production bundle, final listing exports and owner release authorization remain pending. See the [rights register](RIGHTS-INVENTORY.md) and [naming review](NAMING-AND-TRADEMARK-REVIEW.md). IP and impersonation sources rechecked 2026-11-20.
 
 | Gate | Candidate evidence and required close-out | Status |
 | --- | --- | --- |
