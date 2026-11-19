@@ -10107,7 +10107,7 @@ function addPuff(p, color, ttl) {
   effects.push({ obj: L.obj, ttl: ttl || 0.35, grow: true, rec: L, pool: puffPool });
 }
 function addShell() {
-  if (G.fx === 'low' || effects.length > 200) return;
+  if (G.fx === 'low' || (androidRefreshBridge && G.adaptive && perfLvl > 0) || effects.length > 200) return;
   var L = shellPool.pop();
   if (!L) { if (!shellGeo) { shellGeo = new THREE.BoxGeometry(0.035, 0.012, 0.012); shellMat = new THREE.MeshBasicMaterial({ color: 0xc9a24a }); } L = { obj: new THREE.Mesh(shellGeo, shellMat) }; scene.add(L.obj); }
   var m = L.obj, r = tmpV.set(1, 0, 0).applyQuaternion(camera.quaternion), f = tmpV2.set(0, 0, -1).applyQuaternion(camera.quaternion);
@@ -10117,8 +10117,8 @@ function addShell() {
 }
 function addDecal(h) {
   if (!h.face) return;
+  var cap = G.fx === 'low' || (androidRefreshBridge && G.adaptive && perfLvl > 0) ? 0 : G.fx === 'med' ? 28 : 70; if (!cap) return;
   var n = h.face.normal.clone().transformDirection(h.object.matrixWorld);
-  var cap = G.fx === 'low' ? 0 : G.fx === 'med' ? 28 : 70; if (!cap) return;
   if (!decalGeo) { decalGeo = new THREE.CircleGeometry(0.06, 8); decalMat = new THREE.MeshBasicMaterial({ color: 0x211c12, transparent: true, opacity: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }); }
   var m = new THREE.Mesh(decalGeo, decalMat);      /* one shared geometry and material: bullet holes cost no GPU allocations */
   m.position.copy(h.point).addScaledVector(n, 0.01); m.lookAt(m.position.clone().add(n));
@@ -12131,7 +12131,7 @@ function setVal(o, k, v, commit) {
   if (o === 'S' && k === 'fov') baseFov = S.fov;
   if (o === 'S') renderStrip();
   if (o === 'R') { applyRules(); refreshSpec(); renderOps(); }
-  else if (o === 'G') { if (k === 'fpsCap') { androidAdaptiveLimit = 0; renderNextDue = 0; renderCap = -1; resetFpsWindow(); scheduleVideoApply(); } else if (k === 'renderScale' || k === 'adaptive' || k === 'fastMode') { if (k === 'adaptive') androidAdaptiveLimit = 0; scheduleVideoApply(); } else if (k === 'shadows' || k === 'brightness') applyG(); else if (k.indexOf('xh') === 0) applyXh(); else if (['master', 'musicVol', 'sfxVol', 'uiVol', 'muted', 'menuAmbience', 'uiSound'].includes(k)) applyAudio(); else applyHud(); }
+  else if (o === 'G') { if (k === 'fpsCap') { resetAndroidPerfSettings(); renderNextDue = 0; renderCap = -1; resetFpsWindow(); scheduleVideoApply(); } else if (k === 'renderScale' || k === 'adaptive' || k === 'fastMode') { if (k === 'adaptive') resetAndroidPerfSettings(); scheduleVideoApply(); } else if (k === 'shadows' || k === 'brightness') applyG(); else if (k.indexOf('xh') === 0) applyXh(); else if (['master', 'musicVol', 'sfxVol', 'uiVol', 'muted', 'menuAmbience', 'uiSound'].includes(k)) applyAudio(); else applyHud(); }
 }
 function squadText() {
   if (R.mode === 'infection') { var count=Math.max(2,Math.min(64,R.bots||6)); return 'Zombie Infection · The selected number is AI bots, in addition to you ('+count+' bots = '+(count+1)+' participants). Bots start as allied Red/Blue survivors; two become Patient Zero after 10 seconds. If infected, you respawn as Hollowed and can hunt survivors; sunrise awards the survivor side.'; }
@@ -12751,7 +12751,7 @@ $('.mn-main').addEventListener('click', function (e) {
   if ((b = t.closest('[data-sub]'))) { setTab = b.getAttribute('data-sub'); SL82_SETTINGS_SUBROUTE='settings'; renderBody(false); renderNav(); var chosen = $('.subtabs [data-sub="' + setTab + '"]'); if (chosen) chosen.focus({preventScroll:true}); uiTick(true); return; }
   if ((b = t.closest('[data-q]'))) {
     var q = QUALITY[b.getAttribute('data-q')], previousCap = G.fpsCap;
-    androidAdaptiveLimit = 0;
+    resetAndroidPerfSettings();
     Object.assign(G, q);
     if (G.fpsCap !== previousCap) { renderNextDue = 0; renderCap = -1; resetFpsWindow(); }
     saveObj(G_KEY, G); applyG(); renderBody(true); uiTick(true); return;
@@ -14337,6 +14337,14 @@ function sampleRafCadence(now) {
 var androidRefreshBridge = window.SightlineDisplay, androidRefreshHint = null;
 var androidDisplay = null, androidAdaptiveLimit = 0, androidGameTarget = 60;
 var androidPendingTarget = 0, androidTargetSince = 0, androidHighBudgetTier = false;
+var androidPowerCap = 120, androidPendingPowerCap = 120, androidPowerSince = 0;
+function syncAndroidPowerCap(now) {
+  if (!androidDisplay) return;
+  var thermal = androidDisplay.thermalStatus;
+  var cap = thermal >= 4 ? 30 : thermal >= 3 || androidDisplay.batterySaver ? 60 : 120;
+  if (cap !== androidPendingPowerCap) { androidPendingPowerCap = cap; androidPowerSince = now; }
+  if (cap < androidPowerCap || (cap > androidPowerCap && now - androidPowerSince >= 12000)) androidPowerCap = cap;
+}
 function androidSelectedCap() {
   return Number(G.fpsCap) || (G.mobileQuality === 'competitive' ? 120 : G.mobileQuality === 'balanced' ? 90 : 60);
 }
@@ -14347,7 +14355,7 @@ function updateAndroidRefreshHint(inPlay) {
   if (!androidRefreshBridge || typeof androidRefreshBridge.postMessage !== 'function') return;
   var wanted = 'auto';
   if (androidDisplay && inPlay && !document.hidden && !gameContextLost && !androidDisplay.batterySaver) {
-    wanted = String(Math.min(androidSelectedCap(), androidDisplay.maxHz, G.adaptive && androidAdaptiveLimit || 120));
+    wanted = String(Math.min(androidSelectedCap(), androidDisplay.maxHz, androidPowerCap, G.adaptive && androidAdaptiveLimit || 120));
   }
   if (wanted === androidRefreshHint) return;
   androidRefreshBridge.postMessage(wanted);
@@ -14360,11 +14368,13 @@ if (androidRefreshBridge) androidRefreshBridge.onmessage = function (event) {
   var maxHz = Math.max.apply(null, data.supportedHz);
   if (!Number.isFinite(maxHz) || maxHz <= 0) return;
   data.maxHz = Math.round(maxHz);
+  data.thermalStatus = Number.isInteger(data.thermalStatus) ? data.thermalStatus : -1;
   androidDisplay = data;
 };
 function syncAndroidGameTarget(now) {
+  syncAndroidPowerCap(now);
   var active = androidEffectiveHz();
-  var next = Math.min(Math.round(active), androidSelectedCap(), androidDisplay && androidDisplay.batterySaver ? 60 : 120);
+  var next = Math.min(Math.round(active), androidSelectedCap(), androidPowerCap);
   if (G.adaptive && androidAdaptiveLimit && next > androidAdaptiveLimit) {
     // If Android changes the refresh rate after settling on a lower cap,
     // keep the pace aligned to an even divisor of the new display cadence.
@@ -14389,6 +14399,7 @@ window.addEventListener('sightline-display-resume', function () {
   androidDisplay = null;
   androidRefreshHint = null;
   androidPendingTarget = 0;
+  androidPendingPowerCap = androidPowerCap;
 });
 function frameBudgetMs(cap, callbackBestHz) {
   // A rendered workload can hold requestAnimationFrame at 30 callbacks/s on
@@ -14429,6 +14440,7 @@ function renderCapAllows(now, cap) {
 function resetFpsWindow() {
   fpsN = 0; fpsT = 0; fpsMeasured = 0;
   frameCursor = 0; frameCount = 0; frameSkipNext = true;
+  if (androidRefreshBridge) resetAndroidPerfEvidence();
   perfEma = 16.7; perfT = 0; perfBad = 0; perfGood = 0;
 }
 function performanceInfo() {
@@ -14451,6 +14463,11 @@ function performanceInfo() {
     androidSupportedRefreshHz: androidDisplay ? androidDisplay.supportedHz : null,
     androidRequestedRefreshHz: androidDisplay ? androidDisplay.hintHz : null,
     androidBatterySaver: androidDisplay ? androidDisplay.batterySaver : null,
+    androidThermalStatus: androidDisplay && androidDisplay.thermalStatus >= 0 ? androidDisplay.thermalStatus : null,
+    androidPowerCapFps: androidRefreshBridge ? androidPowerCap : null,
+    androidFpsProbe: androidPerf.probe ? androidPerf.probe.target : null,
+    androidAdaptiveMeanIntervalMs: androidRefreshBridge ? Math.round(androidPerf.mean * 100) / 100 : null,
+    androidAdaptiveLateFramesPercent: androidRefreshBridge ? Math.round(androidPerf.latePercent) : null,
     androidGameTargetFps: androidRefreshBridge ? androidGameTarget : null,
     androidSustainedLoadLimitFps: androidAdaptiveLimit || null,
     frameP95Ms: frameStats.p95, frameP99Ms: frameStats.p99,
@@ -14503,18 +14520,128 @@ document.addEventListener('visibilitychange', function() {
   // callback cadence after resume instead of retaining the old display's peak.
   rafLast = 0; rafCount = 0; rafIndex = 0; rafHz = 0; rafHzBest = 0; rafReportT = 0;
   androidRefreshHint = null;
-  if (document.hidden) updateAndroidRefreshHint(false);
+  if (document.hidden) { finishAndroidFpsProbe(false, false); updateAndroidRefreshHint(false); }
   renderNextDue = 0; renderCap = -1; last = performance.now(); resetFpsWindow();
 });
 window.addEventListener('orientationchange', function() {
   rafLast = 0; rafCount = 0; rafHz = 0; rafHzBest = 0;
   renderNextDue = 0; last = performance.now(); resetFpsWindow();
 });
+
+var androidPerf = {
+  elapsed:0, frames:0, busy:0, late:0, good:0, bad:0, headroom:0,
+  cooldown:0, retry:20000, pendingQuality:false, probe:null, mean:0, latePercent:0
+};
+function resetAndroidPerfEvidence() {
+  androidPerf.elapsed = androidPerf.frames = androidPerf.busy = androidPerf.late = 0;
+  androidPerf.good = androidPerf.bad = androidPerf.headroom = 0;
+}
+function finishAndroidFpsProbe(success, failed) {
+  var probe = androidPerf.probe;
+  if (!probe) return;
+  androidPerf.probe = null;
+  if (!success) androidAdaptiveLimit = probe.previousLimit;
+  else if (probe.target >= Math.min(androidSelectedCap(), androidDisplay.maxHz)) androidAdaptiveLimit = 0;
+  androidPerf.cooldown = failed ? androidPerf.retry : 12000;
+  androidPerf.retry = failed ? Math.min(120000, androidPerf.retry * 2) : 20000;
+  resetAndroidPerfEvidence();
+}
+function resetAndroidPerfSettings() {
+  finishAndroidFpsProbe(false, false);
+  androidAdaptiveLimit = 0;
+  androidPerf.cooldown = 0;
+  androidPerf.retry = 20000;
+  resetAndroidPerfEvidence();
+}
+function nextAndroidRecoveryTarget() {
+  if (!androidDisplay || !androidAdaptiveLimit) return 0;
+  var ceiling = Math.min(androidSelectedCap(), androidDisplay.maxHz, androidPowerCap);
+  var next = ceiling > androidAdaptiveLimit && androidEffectiveHz() + .5 >= ceiling ? ceiling : Infinity;
+  for (var i = 0; i < androidDisplay.supportedHz.length; i++) {
+    var rate = Math.round(androidDisplay.supportedHz[i]);
+    if (rate <= ceiling && rate > androidAdaptiveLimit && rate < next) next = rate;
+  }
+  return Number.isFinite(next) ? next : 0;
+}
+function tickAndroidPerformance(raw, busyMs) {
+  if (!G.adaptive) {
+    if (perfLvl) { perfLvl = 0; androidPerf.pendingQuality = true; }
+    return;
+  }
+  if (!Number.isFinite(raw) || raw <= 0) return;
+  var p = androidPerf, budget = 1000 / androidGameTarget;
+  var interval = Math.min(raw, 250);
+  var thermal = androidDisplay ? androidDisplay.thermalStatus : -1;
+  var canRecover = !!androidDisplay && !androidDisplay.batterySaver && thermal < 2 && androidPowerCap === 120;
+  if (p.probe && !canRecover) finishAndroidFpsProbe(false, false);
+  if (p.probe && androidGameTarget < p.probe.target) {
+    p.probe.wait += interval;
+    if (p.probe.wait >= 8000) finishAndroidFpsProbe(false, true);
+    return;
+  }
+  p.cooldown = Math.max(0, p.cooldown - interval);
+  p.elapsed += interval;
+  p.frames++;
+  p.busy += busyMs;
+  // A capped cadence can be quantized to two different refresh intervals.
+  // Count a late frame only outside that normal scheduling spread.
+  var refreshInterval = 1000 / androidEffectiveHz();
+  var scheduledSlots = Math.ceil((budget - .01) / refreshInterval);
+  if (interval > (scheduledSlots + .45) * refreshInterval) p.late++;
+  if (p.elapsed < 750) return;
+  var duration = p.elapsed, cpu = p.busy / p.frames;
+  p.mean = duration / p.frames;
+  p.latePercent = 100 * p.late / p.frames;
+  var pressured = p.mean > budget * 1.13 || p.latePercent > 25;
+  var clean = p.mean <= budget * 1.035 && p.latePercent <= 22;
+  p.bad = pressured ? p.bad + duration : 0;
+  p.good = clean && canRecover ? p.good + duration : 0;
+  p.elapsed = p.frames = p.busy = p.late = 0;
+  if (p.probe) {
+    p.probe.sampled += duration;
+    if (p.bad >= 1500 || p.probe.sampled >= 8000) finishAndroidFpsProbe(false, true);
+    else if (p.good >= 4500) finishAndroidFpsProbe(true, false);
+    return;
+  }
+  var next = canRecover && androidAdaptiveLimit ? nextAndroidRecoveryTarget() : 0;
+  p.headroom = clean && next && cpu < 650 / next ? p.headroom + duration : 0;
+  if (p.cooldown > 0) return;
+  if (p.bad >= 2250 && perfLvl < 3) {
+    perfLvl++;
+    p.cooldown = 2500;
+    p.pendingQuality = true;
+    resetAndroidPerfEvidence();
+  } else if (p.bad >= 6000 && androidGameTarget > 30) {
+    var hz = androidEffectiveHz();
+    androidAdaptiveLimit = Math.max(30, Math.round(hz / Math.ceil(hz / (androidGameTarget * .82))));
+    p.cooldown = 12000;
+    resetAndroidPerfEvidence();
+  } else if (p.good >= 18000) {
+    // CPU submission is only a gate. The actual faster frames decide the trial.
+    if (next && p.headroom >= 18000) {
+      p.probe = { target:next, previousLimit:androidAdaptiveLimit, wait:0, sampled:0 };
+      androidAdaptiveLimit = next;
+      resetAndroidPerfEvidence();
+    } else if (perfLvl > 0 && !p.headroom && p.good >= 30000 && cpu < budget * .65) {
+      perfLvl--;
+      p.cooldown = 12000;
+      p.pendingQuality = true;
+      resetAndroidPerfEvidence();
+    }
+  }
+}
 var perfEma = 16.7, perfT = 0, perfBad = 0, perfGood = 0, perfHold = 0, perfUpNeed = 24, perfLastUp = -99;
 /* P11.5.7: preserve legibility: never crush the scene to 64% to hide a CPU bottleneck.
    Keep resolution near the pixel budget; shadows/effects are cheaper first. */
 var PERF_SCALE = [1, 0.97, 0.94, 0.90];
-function applyPerf() { perfScale = PERF_SCALE[perfLvl]; botShadowsOn = perfLvl < 3; applyShadowBudget(); resize(); }
+function applyPerf() {
+  perfScale = PERF_SCALE[perfLvl];
+  botShadowsOn = perfLvl < 3;
+  if (typeof androidRefreshBridge !== 'undefined' && androidRefreshBridge && perfLvl > 0)
+    while (decals.length) scene.remove(decals.pop());
+  applyShadowBudget();
+  resize();
+}
 function perfTick(raw) {
   if (!G.adaptive) { if (perfLvl) { perfLvl = 0; applyPerf(); } return; }
   if (raw > 250 || raw <= 0) return; // tab restore / debugger / invalid frame
@@ -14524,26 +14651,16 @@ function perfTick(raw) {
   if (perfHold > 0) return;
   // 120 on a 60 Hz browser targets 60, while callbacks stuck at 30 on a
   // 60 Hz display must still trigger recovery. A deliberate 30 cap does not.
-  var deviceAware = typeof androidRefreshBridge !== 'undefined' && !!androidRefreshBridge;
-  var budget = deviceAware ? 1000 / androidGameTarget : frameBudgetMs(G.fpsCap, rafHzBest);
+  var budget = frameBudgetMs(G.fpsCap, rafHzBest);
   // The legacy 13.5 ms floor misses sustained loss of 120 Hz frames.
   // Apply a tighter trigger only to the opt-in Competitive profile.
   var competitive = G.mobileQuality === 'competitive' && touchMode && Number(G.fpsCap) === 120;
-  var degradeAt = (deviceAware || competitive) ? budget * 1.24 : Math.max(13.5, budget * 1.28);
-  var restoreAt = (deviceAware || competitive) ? budget * 1.08 : Math.max(11, budget * 1.06);
+  var degradeAt = competitive ? budget * 1.24 : Math.max(13.5, budget * 1.28);
+  var restoreAt = competitive ? budget * 1.08 : Math.max(11, budget * 1.06);
   if (perfEma > degradeAt) { perfBad++; perfGood = 0; }
   else if (perfEma < restoreAt) { perfGood++; perfBad = 0; }
   else { perfBad = 0; perfGood = 0; }
   if (perfBad >= 3 && perfLvl < 3) { if (perfLvl > 0 && T - perfLastUp < 40) perfUpNeed = Math.min(240, perfUpNeed * 2); perfLvl++; perfBad = 0; perfHold = 2; applyPerf(); }
-  else if (deviceAware && perfLvl === 3 && perfBad >= 12 && androidGameTarget > 30) {
-    // Hold the lower target until the player changes the setting or reloads.
-    // A capped FPS sample cannot prove enough headroom to raise the cap.
-    var activeHz = androidEffectiveHz();
-    var next = Math.round(activeHz / Math.ceil(activeHz / (androidGameTarget * .82)));
-    androidAdaptiveLimit = Math.max(30, next);
-    perfBad = 0;
-    perfHold = 4;
-  }
   else if (perfGood >= perfUpNeed && perfLvl > 0) { perfLvl--; perfGood = 0; perfHold = 2; perfLastUp = T; applyPerf(); }
 }
 /* Offline AI is decoupled from display refresh. Large rosters use a lower
@@ -14633,7 +14750,7 @@ var P0FrameDiag = (function () {
 var menuBotLast = 0;
 var simCpuEma = 0;
 var gameContextLost = false;
-canvas.addEventListener('webglcontextlost', function () { gameContextLost = true; resetFpsWindow(); updateAndroidRefreshHint(false); if (G.fps) fpsEl.textContent = 'FPS unavailable'; });
+canvas.addEventListener('webglcontextlost', function () { gameContextLost = true; finishAndroidFpsProbe(false, false); resetFpsWindow(); updateAndroidRefreshHint(false); if (G.fps) fpsEl.textContent = 'FPS unavailable'; });
 canvas.addEventListener('webglcontextrestored', function () { gameContextLost = false; last = performance.now(); pausedDrawn = false; resetFpsWindow(); });
 var lastRender = 0, pausedDrawn = false;
 function frame(now) {
@@ -14643,16 +14760,19 @@ function frame(now) {
   if (inPlay && androidRefreshBridge) cap = syncAndroidGameTarget(now);
   updateAndroidRefreshHint(inPlay);
   if (inPlay !== fpsWasPlaying) {
+    if (!inPlay) finishAndroidFpsProbe(false, false);
     fpsWasPlaying = inPlay; resetFpsWindow(); last = now; renderNextDue = 0;
   }
   if (!renderCapAllows(now, effectiveRenderCap(cap, rafHzBest, rafCount))) return;
   if (state === 'paused') { if (pausedDrawn) return; pausedDrawn = true; } else pausedDrawn = false;
+  if (androidPerf.pendingQuality) { androidPerf.pendingQuality = false; applyPerf(); }
   updateLobbyPreviewForFrame(state==='idle'&&menuOpen());
   lastRender = now;
   var p0Frame = inPlay ? P0FrameDiag.begin() : null;
   if (LAN_DIAG) { LAN_DIAG.frame(now, MP.on && (state === 'live' || state === 'roundend')); LAN_DIAG.lobbyFrame(now, mpConnected() && state === 'idle' && menuOpen()); }
   var raw = Math.max(0, now - last), dt = Math.min(0.05, raw / 1000); last = now;
-  var reportFps = inPlay && !gameContextLost && fpsT + raw / 1000 >= 0.5;
+  var measureLiveFrame = inPlay && !gameContextLost && !document.hidden && !frameSkipNext;
+  var reportFps = measureLiveFrame && fpsT + raw / 1000 >= 0.5;
   if (M && (state === 'live' || state === 'buy')) mpSupplyTick(now, false);
   if (reportFps) netEl.hidden = !(G.showNet && MP.on);
   if (reportFps && MP.on) {
@@ -14685,7 +14805,7 @@ function frame(now) {
     if(state==='live'&&!MP.on&&R.mode==='ffa')tickSoloFFA();
     updateNades(dt); tickStore();
     if (state === 'live') {
-      perfTick(raw);
+      if (!androidRefreshBridge) perfTick(raw);
       if (OB.on && OB.inf) roundT = OB.t; else roundT -= dt;
       if (MP.on) { if (roundT < 0) roundT = 0; if(MP.mode==='infection'&&MP.infStatus)renderInfectionStatus(); }
       else if(R.mode==='ffa'){if(roundT<=0){roundT=0;finishSoloFFA('Match time expired');}}
@@ -14719,8 +14839,10 @@ function frame(now) {
   finally { if (botVisuals) restoreOfflineBots(); }
   frameStats.renderCpuMs = performance.now() - renderStarted; frameStats.drawCalls=renderer.info.render.calls; frameStats.triangles=renderer.info.render.triangles;
   if (!gameContextLost) {
+    if (androidRefreshBridge && measureLiveFrame && state === 'live')
+      tickAndroidPerformance(raw, performance.now() - simStarted);
     sampleFrame(raw);
-    if (inPlay) { fpsT += raw / 1000; if (raw > 0) fpsN++; }
+    if (measureLiveFrame && raw > 0) { fpsT += raw / 1000; fpsN++; }
   }
   if (reportFps) {
     readFrameStats();

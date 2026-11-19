@@ -62,7 +62,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "27723ba6f480c9e71c5980c8c81710d3da2432d412bf91e2f7ebe51b120b5bd8";
+    private static final String HOST_BUNDLE_SHA256 = "7b55ff7914ba8973d4812f9b1c2455a3a1d15f7dfec9276d294d559e6a5d4638";
     private static final String DEV20_HOST_BUNDLE_SHA256 = "88e15be18fde11843d72b6905be41d30bf277e11fae81d479a25c677ae2b5b3d";
     private static final String DEV18_2_HOST_BUNDLE_SHA256 = "9bcc0b6245a6934508c9fed3315a231625eff1b8a5d2a62b96bb96cc9b7544cc";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
@@ -797,6 +797,15 @@ public final class MainActivity extends Activity {
     private JavaScriptReplyProxy displayReply;
     private int requestedGameFps;
     private String lastDisplayState;
+    private Runnable stopThermalMonitoring;
+
+    private static final class ThermalMonitoring {
+        static Runnable start(PowerManager power, java.util.concurrent.Executor executor, Runnable changed) {
+            PowerManager.OnThermalStatusChangedListener listener = status -> changed.run();
+            power.addThermalStatusListener(executor, listener);
+            return () -> power.removeThermalStatusListener(listener);
+        }
+    }
     private final DisplayManager.DisplayListener gameDisplayListener = new DisplayManager.DisplayListener() {
         @Override public void onDisplayAdded(int id) {}
         @Override public void onDisplayRemoved(int id) {}
@@ -820,11 +829,19 @@ public final class MainActivity extends Activity {
         IntentFilter filter = new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(powerSaveListener, filter, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(powerSaveListener, filter);
+        if (Build.VERSION.SDK_INT >= 29) {
+            stopThermalMonitoring = ThermalMonitoring.start(getSystemService(PowerManager.class),
+                    getMainExecutor(), this::refreshGameDisplay);
+        }
     }
 
     private void stopDisplayMonitoring() {
         getSystemService(DisplayManager.class).unregisterDisplayListener(gameDisplayListener);
         unregisterReceiver(powerSaveListener);
+        if (stopThermalMonitoring != null) {
+            stopThermalMonitoring.run();
+            stopThermalMonitoring = null;
+        }
         clearGameDisplay();
     }
 
@@ -862,7 +879,9 @@ public final class MainActivity extends Activity {
                     && mode.getPhysicalHeight() == activeMode.getPhysicalHeight()) rates.add(mode.getRefreshRate());
         }
         rates.add(activeMode.getRefreshRate());
-        boolean saver = getSystemService(PowerManager.class).isPowerSaveMode();
+        PowerManager power = getSystemService(PowerManager.class);
+        boolean saver = power.isPowerSaveMode();
+        int thermal = Build.VERSION.SDK_INT >= 29 ? power.getCurrentThermalStatus() : -1;
         float hint = 0f;
         if (!saver && requestedGameFps > 0) {
             float[] supported = display.getSupportedRefreshRates();
@@ -871,12 +890,16 @@ public final class MainActivity extends Activity {
                 int index = 0;
                 for (float rate : rates) supported[index++] = rate;
             }
-            hint = chooseGameRefreshRate(supported, requestedGameFps);
+            int thermalCap = thermal >= PowerManager.THERMAL_STATUS_CRITICAL ? 30
+                    : thermal >= PowerManager.THERMAL_STATUS_SEVERE ? 60 : 120;
+            hint = chooseGameRefreshRate(supported, Math.min(requestedGameFps, thermalCap));
+            if (hint == 0f && thermalCap == 120 && requestedGameFps < 60)
+                hint = chooseAlignedRefreshRate(supported, requestedGameFps);
         }
         setWindowRefreshHint(hint);
         String state = "{\"activeHz\":" + display.getRefreshRate()
                 + ",\"modeHz\":" + activeMode.getRefreshRate() + ",\"supportedHz\":" + rates
-                + ",\"batterySaver\":" + saver + ",\"hintHz\":" + hint + "}";
+                + ",\"batterySaver\":" + saver + ",\"thermalStatus\":" + thermal + ",\"hintHz\":" + hint + "}";
         if (!state.equals(lastDisplayState)) {
             displayReply.postMessage(state);
             lastDisplayState = state;
@@ -889,6 +912,16 @@ public final class MainActivity extends Activity {
             if (rate <= cap + .5f && rate > best) best = rate;
         }
         return best;
+    }
+
+    static float chooseAlignedRefreshRate(float[] supported, int cap) {
+        // Match an evenly paced lower game rate to a supported display mode.
+        float best = Float.POSITIVE_INFINITY;
+        for (float rate : supported) {
+            if (rate <= 120.5f && Math.abs(rate - cap * Math.round(rate / cap)) < .5f)
+                best = Math.min(best, rate);
+        }
+        return Float.isFinite(best) ? best : 0f;
     }
 
     private void clearGameDisplay() {

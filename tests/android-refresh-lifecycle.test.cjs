@@ -18,7 +18,7 @@ test('resume discards stale cadence and re-arms the render scheduler', () => {
   assert.ok(anchor > 0, 'performance lifecycle listener exists');
   const end = html.indexOf('\n});', anchor);
   const snippet = html.slice(anchor, end + 4);
-  const ctx = { androidRefreshHint: true, rafLast: 500, rafCount: 96, rafIndex: 22, rafHz: 120, rafHzBest: 120, rafReportT: 990,
+  const ctx = { androidRefreshHint: true, finishAndroidFpsProbe() {}, rafLast: 500, rafCount: 96, rafIndex: 22, rafHz: 120, rafHzBest: 120, rafReportT: 990,
     renderNextDue: 1000, renderCap: 120, last: 500, resetCount: 0,
     performance: { now: () => 5000 }, resetFpsWindow() { ctx.resetCount++; },
     document: { addEventListener(type, fn) { assert.equal(type, 'visibilitychange'); ctx.listener = fn; } } };
@@ -91,9 +91,12 @@ function androidFixture(cap = 120, mobileQuality = 'competitive') {
   const bridge={postMessage(command){messages.push(command);}};
   const ctx={G:{fpsCap:cap, mobileQuality, adaptive:true},gameContextLost:false,document:{hidden:false},
     window:{SightlineDisplay:bridge, addEventListener(name,listener){events[name]=listener;}},
-    resetFpsWindow(){}, resize(){}};
+    resetFpsWindow(){ ctx.resetAndroidPerfEvidence(); }, resize(){}, perfLvl:0};
   vm.createContext(ctx);
   vm.runInContext(hint,ctx);
+  const controller=section(html,'var androidPerf =','var perfEma =');
+  assert.equal(controller,section(host,'var androidPerf =','var perfEma ='));
+  vm.runInContext(controller,ctx);
   function report(activeHz, supportedHz, options={}) {
     bridge.onmessage({data:JSON.stringify({activeHz,modeHz:activeHz,supportedHz,batterySaver:false,hintHz:0,...options})});
   }
@@ -128,11 +131,12 @@ test('refresh decrease and battery saver are immediate, increases need stability
   assert.equal(ctx.syncAndroidGameTarget(2200),60);
   report(90,[60,90,120]);
   assert.equal(ctx.syncAndroidGameTarget(2700),60);
-  assert.equal(ctx.syncAndroidGameTarget(4500),90);
+  assert.equal(ctx.syncAndroidGameTarget(14200),60);
+  assert.equal(ctx.syncAndroidGameTarget(16000),90);
   ctx.updateAndroidRefreshHint(true);
   ctx.updateAndroidRefreshHint(false);
   events['sightline-display-resume']();
-  assert.equal(ctx.syncAndroidGameTarget(4550),60);
+  assert.equal(ctx.syncAndroidGameTarget(16050),60);
   ctx.updateAndroidRefreshHint(true);
   assert.deepEqual(messages,['auto','120','auto','auto']);
 });
@@ -149,18 +153,102 @@ test('Auto profiles differ and sustained overload lowers the cap only at the gra
   report(90,[60,90]);
   ctx.syncAndroidGameTarget(0);
   assert.equal(ctx.syncAndroidGameTarget(1800),90);
-  ctx.touchMode=true; ctx.T=10; ctx.perfLvl=0; ctx.applyShadowBudget=()=>{};
-  vm.runInContext(section(html,'var perfEma = 16.7','/* Offline AI is decoupled'),ctx);
-  for (let i=0;i<3*60;i++) ctx.perfTick(1000/60);
-  assert.ok(ctx.perfLvl>=1);
+  let now=1800;
+  function frames(ms, interval, cpu = 3) {
+    for (let i=0; i<Math.ceil(ms/interval); i++) {
+      now += interval;
+      ctx.syncAndroidGameTarget(now);
+      ctx.tickAndroidPerformance(interval,cpu);
+    }
+  }
+  frames(3000,1000/60);
+  assert.equal(ctx.perfLvl,1);
   assert.equal(ctx.androidAdaptiveLimit,0);
-  for (let i=0;i<14*60;i++) ctx.perfTick(1000/60);
+  frames(15000,1000/60);
   assert.equal(ctx.perfLvl,3);
   assert.equal(ctx.androidAdaptiveLimit,45);
-  assert.equal(ctx.syncAndroidGameTarget(20000),45);
+  assert.equal(ctx.androidGameTarget,45);
+  frames(19000,1000/45,13); // CPU alone rules out a 60 Hz recovery trial.
+  assert.equal(ctx.androidPerf.probe,null);
+  frames(19500,1000/45);
+  assert.equal(ctx.androidPerf.probe.target,60);
   report(60,[60,90]);
-  assert.equal(ctx.syncAndroidGameTarget(20100),30,'fall back to an even divisor when Android changes display cadence');
+  frames(3500,1000/45); // Reopening the target exposes the sustained pressure.
+  assert.equal(ctx.androidPerf.probe,null);
+  assert.equal(ctx.androidAdaptiveLimit,45);
   report(90,[60,90]);
-  assert.equal(ctx.syncAndroidGameTarget(20200),30);
-  assert.equal(ctx.syncAndroidGameTarget(23000),45);
+  frames(12000,1000/45);
+  assert.equal(ctx.androidPerf.probe,null,'failed probes enforce a cooldown');
+  frames(10000,1000/45);
+  assert.equal(ctx.androidPerf.probe.target,60);
+  report(60,[60,90]);
+  frames(7000,1000/60);
+  assert.equal(ctx.androidAdaptiveLimit,60);
+  frames(19000,1000/60);
+  assert.equal(ctx.androidPerf.probe.target,90);
+  report(90,[60,90]);
+  frames(7000,1000/90);
+  assert.equal(ctx.androidAdaptiveLimit,0);
+  assert.equal(ctx.androidGameTarget,90);
+});
+
+test('thermal caps cancel rate probes and protect upward recovery', () => {
+  const {ctx,report}=androidFixture();
+  report(120,[60,90,120]);
+  ctx.syncAndroidGameTarget(0);
+  assert.equal(ctx.syncAndroidGameTarget(1800),120);
+  ctx.androidAdaptiveLimit=90;
+  ctx.androidPerf.probe={target:90,previousLimit:60,wait:0,sampled:0};
+  report(120,[60,90,120],{thermalStatus:3});
+  assert.equal(ctx.syncAndroidGameTarget(1900),60);
+  ctx.tickAndroidPerformance(1000/60,3);
+  assert.equal(ctx.androidAdaptiveLimit,60);
+  assert.equal(ctx.androidPerf.probe,null);
+  report(120,[60,90,120],{thermalStatus:4});
+  assert.equal(ctx.syncAndroidGameTarget(1950),30);
+  report(120,[60,90,120],{thermalStatus:0});
+  ctx.syncAndroidGameTarget(2000);
+  assert.equal(ctx.syncAndroidGameTarget(13999),30);
+  assert.equal(ctx.syncAndroidGameTarget(14000),30);
+  assert.equal(ctx.syncAndroidGameTarget(15800),60);
+});
+
+test('a 90 FPS cap on a 120 Hz cadence does not count regular quantization as load', () => {
+  const {ctx,report}=androidFixture(90);
+  report(120,[60,120]);
+  ctx.syncAndroidGameTarget(0);
+  assert.equal(ctx.syncAndroidGameTarget(1800),90);
+  for(let i=0;i<1800;i++) ctx.tickAndroidPerformance((i%3===2?2:1)*1000/120,3);
+  assert.equal(ctx.perfLvl,0);
+  assert.equal(ctx.androidPerf.latePercent,0);
+});
+
+test('both asset trees sample actual live submissions, with frame accounting after the renderer', () => {
+  const start='  if (!gameContextLost) {\n    if (androidRefreshBridge && measureLiveFrame';
+  const offline=html.replace(/\r\n/g,'\n'), hosted=host.replace(/\r\n/g,'\n');
+  const report=section(offline,start,'  if (p0Frame) P0FrameDiag.finish');
+  assert.ok(hosted.includes(report.trimEnd()));
+  for (const page of [offline,hosted]) {
+    const frame=page.indexOf('function frame(now)');
+    assert.ok(page.indexOf('renderer.render(scene, camera)',frame)<page.indexOf(start,frame));
+  }
+});
+
+test('a refresh trial cannot promote FPS when the OS stays at the lower rate', () => {
+  const {ctx,report}=androidFixture();
+  report(60,[60,120]);
+  ctx.syncAndroidGameTarget(0);
+  ctx.androidAdaptiveLimit=60;
+  for (let i=1;i<=1200;i++) {
+    ctx.syncAndroidGameTarget(i*1000/60);
+    ctx.tickAndroidPerformance(1000/60,3);
+  }
+  assert.equal(ctx.androidPerf.probe.target,120);
+  for (let i=1201;i<=1770;i++) {
+    assert.equal(ctx.syncAndroidGameTarget(i*1000/60),60);
+    ctx.tickAndroidPerformance(1000/60,3);
+  }
+  assert.equal(ctx.androidPerf.probe,null);
+  assert.equal(ctx.androidAdaptiveLimit,60);
+  assert.ok(ctx.androidPerf.cooldown>0);
 });
