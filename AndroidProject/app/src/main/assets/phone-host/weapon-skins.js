@@ -19,7 +19,6 @@ var LEGENDARY_PROTOTYPES={
  falcon:{title:'Solar Talon',overlay:true,inspect:{duration:1.5,x:-.07,y:.03,z:.03,rx:.1,ry:-.3,rz:.2},metal:0x8f6727,polymer:0x0e0908,trim:0xf2c14e,dark:0x0a0605,glow:0xffc247,tracer:0xffd77a,impact:0xff7a2a,flash:0xfff3c8,reticle:'#ffe39a',reticleBorder:'rgba(255,194,71,.5)',roughness:.4,metalness:.7,motif:3,desc:'Brass feather-scale plating, an engraved sun disc and a three-talon muzzle with ember-gold energy lines.'},
  smg:{title:'Phantom Circuit',inspect:{duration:1.38,x:-.10,y:.028,z:.025,rx:.08,ry:-.29,rz:.25},metal:0x343943,polymer:0x12151e,trim:0x8b70ba,dark:0x090c12,glow:0xc05bff,tracer:0xd19aff,impact:0x9d63d7,flash:0xe6c0ff,reticle:'#dfbaff',reticleBorder:'rgba(185,126,255,.52)',roughness:.39,metalness:.78,motif:4,desc:'Enclosed induction cassette, vented suppressor sleeve and a restrained violet circuit core.'},
  breacher:{title:'Infernal Forge',inspect:{duration:1.62,x:-.067,y:.018,z:.036,rx:-.19,ry:.26,rz:-.23},metal:0x64452f,polymer:0x1a1715,trim:0xd2945a,dark:0x100d0b,glow:0xff903d,tracer:0xffbd70,impact:0xd97639,flash:0xffcf91,reticle:'#ffc27e',reticleBorder:'rgba(231,145,68,.48)',roughness:.52,metalness:.72,motif:5,desc:'Blackened steel action, vented pump jacket and a contained amber forge chamber.'},
- rook117:{title:'Emerald Revenant',pack:'SightlineEmeraldRevenant',inspect:{duration:1.48,x:-.092,y:.034,z:.043,rx:.11,ry:-.36,rz:.18},metal:0x536145,polymer:0x172017,trim:0xa3bd68,dark:0x0b120d,glow:0x67ff82,tracer:0x9be884,impact:0x68bb67,flash:0xb0e594,reticle:'#b7ff9d',reticleBorder:'rgba(113,236,120,.48)',roughness:.43,metalness:.74,motif:6,desc:'Jade scale shader, twin wyrm eyes, a reactive rail spine and emerald helix effects over the authored ROOK117.'},
  carbine:{title:'Celestial Vanguard',inspect:{duration:1.52,x:-.058,y:.039,z:.026,rx:-.10,ry:.41,rz:-.27},metal:0xa2a9a9,polymer:0x1d2938,trim:0xd7bc83,dark:0x101822,glow:0x72d8ff,tracer:0xb5ecff,impact:0x8bc9e8,flash:0xe2f7ff,reticle:'#dcf7ff',reticleBorder:'rgba(132,218,255,.5)',roughness:.29,metalness:.84,motif:7,desc:'Faceted split-titanium receiver, vented free-float shroud, open precision holographic sight and a protected cyan power cell.'},
 ranger:{title:'Helios Eclipse',pack:'SightlineEclipse',inspect:{duration:1.5,x:-.07,y:.03,z:.03,rx:.1,ry:-.3,rz:.2},metal:0x1a1522,polymer:0x0b0a10,trim:0xffb22e,dark:0x050505,glow:0xffb22e,tracer:0xffb040,impact:0xffb040,flash:0xffd98a,reticle:'#ffe6a8',reticleBorder:'rgba(255,255,255,.4)',roughness:.4,metalness:.7,motif:8,desc:'Original Legendary: Helios Eclipse'},
 tide:{title:'Prismatic Aurora',pack:'SightlinePrism',inspect:{duration:1.5,x:-.07,y:.03,z:.03,rx:.1,ry:-.3,rz:.2},metal:0x10131c,polymer:0x07080d,trim:0xb9d4ff,dark:0x050505,glow:0xb9d4ff,tracer:0xbfd8ff,impact:0xbfd8ff,flash:0xdfe8ff,reticle:'#e6f0ff',reticleBorder:'rgba(255,255,255,.4)',roughness:.4,metalness:.7,motif:8,desc:'Original Legendary: Prismatic Aurora'},
@@ -31,7 +30,7 @@ needle:{title:'Tempest Needle',pack:'SightlineTempest',inspect:{duration:1.5,x:-
 };
 var LEGEND_WEAPONS={smg:true,breacher:true,rook117:true,carbine:true,stinger:true,aurora:true,falcon:true,longbow:true,ranger:true,tide:true,hawk:true,scatter:true,bulwark:true,rampart:true,needle:true};
 function legendEntry(id,base,seed){
- var p=LEGENDARY_PROTOTYPES[id];
+ var p=legendarySpec(id);
  if(p)return {id:id+'-3',weapon:id,family:3,legendary:true,tier:'Legendary',name:p.title+' \u00b7 '+base,
   desc:'LEGENDARY \u00b7 '+p.desc,metal:p.metal,polymer:p.polymer,trim:p.trim,dark:p.dark,glow:p.glow,tracer:p.tracer,impact:p.impact,flash:p.flash,
   reticle:p.reticle,reticleBorder:p.reticleBorder,roughness:p.roughness,metalness:p.metalness,motif:p.motif,theme:p.title,seed:seed};
@@ -292,129 +291,6 @@ function buildPrototypeRig(T,key,host){
   shields.instanceMatrix.needsUpdate=true;ribs.instanceMatrix.needsUpdate=true;pumpGroup.add(shields,ribs);
   var barrelRing=new T.Mesh(new T.TorusGeometry(.0168,.0018,5,14),trim);barrelRing.position.set(0,.022,-.688);barrelRing.userData.finishBadge=true;grp.add(barrelRing);
   core=mesh('forge-mark',new T.OctahedronGeometry(.008,0),glow,.030,.011,.075);core.rotation.z=Math.PI/4;core.scale.set(.65,.9,.45);
- }else if(key==='rook117'){
-  // Emerald Revenant is fitted around P1181's authored receiver, mag, and barrel.
-  // This is a shaped armor kit and a mounted optic, not a color-only overlay.
-  function sourceFor(zone,needle){
-   var found=null;if(!host||!host.traverse)return null;
-   host.traverse(function(o){if(found||!o.isMesh)return;var mats=Array.isArray(o.material)?o.material:[o.material];
-    for(var mi=0;mi<mats.length;mi++){var m=mats[mi],name=(m&&m.name)||o.name||'';
-     if(m&&m.userData&&m.userData.sightlineAuthoredBase&&m.userData.sightlineZone===zone&&(!needle||name.indexOf(needle)>=0)){found=m;break;}}
-   });return found;
-  }
-  function finishFrom(zone,needle,color,metalness,roughness){
-   var src=sourceFor(zone,needle),m=src?src.clone():new Std({color:color,metalness:metalness,roughness:roughness});
-   m.color.setHex(color);m.metalness=metalness;m.roughness=roughness;
-   if(m.emissive)m.emissive.setHex(0x000000);m.emissiveIntensity=0;m.needsUpdate=true;return m;
-  }
-  metal=finishFrom('metal','coated gunmetal',0x536e56,.72,.46);
-  ceramic=finishFrom('polymer','graphite polymer',0x17251b,.10,.54);
-  trim=finishFrom('metal','parkerized steel',0x9cbc76,.66,.34);
-  dark=finishFrom('recess','recess',0x09120c,.18,.72);
-  glow=new T.MeshStandardMaterial({color:0x75ff92,emissive:0x36e765,emissiveIntensity:.72,metalness:.12,roughness:.26});
-  var lensMat=new T.MeshStandardMaterial({color:0x6ebc8a,emissive:0x153c26,emissiveIntensity:.12,metalness:.18,roughness:.12,transparent:true,opacity:.19,side:T.DoubleSide,depthWrite:false});
-  var ringMat=new T.MeshBasicMaterial({color:0x8dffad,transparent:true,opacity:.72,blending:T.AdditiveBlending,depthWrite:false});
-  var hullPts=[[-.132,-.027],[-.119,-.009],[-.095,.000],[-.073,.023],[-.044,.034],[.012,.033],[.053,.025],[.097,.019],[.125,.006],[.119,-.020],[.098,-.039],[.048,-.043],[.018,-.032],[-.053,-.033],[-.083,-.044],[-.116,-.039]];
-  function dualShape(name,points,x,y,z,depth,mat,bevel){
-   var sh=new T.Shape();points.forEach(function(p,i){if(!i)sh.moveTo(p[0],p[1]);else sh.lineTo(p[0],p[1]);});sh.closePath();
-   var geo=new T.ExtrudeGeometry(sh,{steps:1,depth:depth,bevelEnabled:true,bevelSegments:2,bevelThickness:bevel,bevelSize:bevel,curveSegments:2});geo.computeVertexNormals();
-   var m=new T.InstancedMesh(geo,mat,2);m.name='legend-rook117-'+name;m.userData.finishBadge=true;
-   [-1,1].forEach(function(side){O.position.set(side*x,y,z);O.rotation.set(0,side*Math.PI/2,0);O.scale.set(1,1,1);O.updateMatrix();m.setMatrixAt(side>0?1:0,O.matrix);});
-   m.instanceMatrix.needsUpdate=true;grp.add(m);batches.push(m);return m;
-  }
-  // Deep, bevelled receiver shells establish the Legendary silhouette.
-  dualShape('stepped-revenant-cheeks',hullPts,.033,0,-.088,.010,metal,.0022);
-  dualShape('jade-receiver-cassette',[[-.086,-.019],[-.068,.004],[-.043,.021],[.012,.022],[.061,.013],[.087,.004],[.078,-.020],[.040,-.030],[-.028,-.027],[-.061,-.032]],.044,.002,-.088,.004,ceramic,.0012);
-  var armor=[],poly=[],edges=[],inlays=[],hardware=[];
-  for(var side=-1;side<=1;side+=2){
-   poly.push(part(side*.049,.003,-.086,.0025,.016,.128));
-   edges.push(part(side*.050,.031,-.086,.002,.0025,.176),part(side*.050,-.029,-.086,.002,.0025,.143));
-   // The relief leaves the authored bolt handle clear and moving.
-   poly.push(part(side*.047,.020,-.153,.002,.013,.045));
-   for(var i=0;i<5;i++)inlays.push(part(side*.050,.010,-.168+i*.033,.0018,.0022,.020,side*.18));
-   for(var j=0;j<4;j++)hardware.push(part(side*.051,.012,-.181+j*.060,.0045,.0045,.0045));
-  }
-  armor.push(part(0,.073,-.136,.050,.007,.094));
-  for(var rs=0;rs<6;rs++)edges.push(part(0,.078,-.309+rs*.016,.044,.002,.006));
-  for(var rs2=0;rs2<4;rs2++)hardware.push(part(0,.078,-.190+rs2*.020,.036,.002,.004));
-  batch('receiver-armor',metal,armor);batch('ceramic-insets',ceramic,poly);
-  batch('machined-edges',trim,edges);batch('signal-inlays',glow,inlays);batch('flush-hardware',dark,hardware);
-  // Ported muzzle jacket is sized around the authored barrel tip.
-  var muzzle=new T.Mesh(new T.CylinderGeometry(.016,.014,.052,10,1,true),metal);
-  muzzle.name='legend-rook117-ported-muzzle-jacket';muzzle.position.set(0,.009,-.714);muzzle.rotation.x=Math.PI/2;muzzle.userData.finishBadge=true;grp.add(muzzle);
-  var muzzleBands=new T.InstancedMesh(new T.TorusGeometry(.014,.0017,5,14),trim,2);
-  muzzleBands.name='legend-rook117-muzzle-bands';[-.741,-.687].forEach(function(z,i){O.position.set(0,.009,z);O.rotation.set(0,0,0);O.scale.set(1,1,1);O.updateMatrix();muzzleBands.setMatrixAt(i,O.matrix);});
-  muzzleBands.instanceMatrix.needsUpdate=true;muzzleBands.userData.finishBadge=true;grp.add(muzzleBands);
-  // Open-window optic uses the P1181 sight line y=.117; aim and FOV stay as configured.
-  var opticGroup=new T.Group();opticGroup.name='legend-rook117-premium-holo-optic';grp.add(opticGroup);
-  var opticBars=new T.InstancedMesh(unit,trim,7);opticBars.name='legend-rook117-optic-machined-frame';
-  var frameParts=[[-.023,.117,-.136,.004,.052,.046],[.023,.117,-.136,.004,.052,.046],
-   [0,.143,-.136,.050,.005,.046],[0,.091,-.136,.050,.005,.046],
-   [-.014,.080,-.136,.005,.020,.032],[.014,.080,-.136,.005,.020,.032],
-   [0,.068,-.136,.052,.008,.076]];
-  frameParts.forEach(function(a,i){O.position.set(a[0],a[1],a[2]);O.rotation.set(0,0,0);O.scale.set(a[3],a[4],a[5]);O.updateMatrix();opticBars.setMatrixAt(i,O.matrix);});
-  opticBars.instanceMatrix.needsUpdate=true;opticBars.userData.finishBadge=true;opticGroup.add(opticBars);
-  var glass=new T.Mesh(new T.PlaneGeometry(.035,.035),lensMat);glass.name='legend-rook117-optic-glass';glass.position.set(0,.117,-.136);glass.userData.finishBadge=true;glass.userData.legendNoWorldOverlay=true;opticGroup.add(glass);
-  var reticleRing=new T.Mesh(new T.RingGeometry(.0024,.0032,12),ringMat);reticleRing.name='legend-rook117-physical-reticle';reticleRing.position.set(0,.117,-.126);reticleRing.userData.finishBadge=true;reticleRing.userData.legendNoWorldOverlay=true;opticGroup.add(reticleRing);
-  // PBR emission plus a small additive sprite gives a bloom-free emerald glow.
-  core=mesh('revenant-crest',new T.OctahedronGeometry(.013,1),glow,.052,.010,-.086);core.scale.set(.62,1.25,.70);
-  var coreBack=null;if(!host){coreBack=mesh('revenant-crest-back',new T.OctahedronGeometry(.013,1),glow,-.052,.010,-.086);coreBack.scale.set(.62,1.25,.70);}
-  var coreRings=new T.InstancedMesh(new T.TorusGeometry(.016,.0017,5,16),ringMat,2);coreRings.name='legend-rook117-reactor-retaining-rings';
-  [-1,1].forEach(function(side){O.position.set(side*.049,.010,-.086);O.rotation.set(0,side*Math.PI/2,0);O.scale.set(1,1,1);O.updateMatrix();coreRings.setMatrixAt(side>0?1:0,O.matrix);});
-  coreRings.instanceMatrix.needsUpdate=true;coreRings.userData.finishBadge=true;grp.add(coreRings);
-  var rookGlowSprite=null;
-  if(typeof document!=='undefined'){
-   var canvas=document.createElement('canvas');canvas.width=canvas.height=64;var ctx=canvas.getContext('2d');
-   if(ctx){var grad=ctx.createRadialGradient(32,32,1,32,32,31);grad.addColorStop(0,'rgba(128,255,160,.74)');grad.addColorStop(.28,'rgba(76,234,118,.48)');grad.addColorStop(1,'rgba(36,255,102,0)');ctx.fillStyle=grad;ctx.fillRect(0,0,64,64);
-    var tex=new T.CanvasTexture(canvas),sm=new T.SpriteMaterial({map:tex,transparent:true,blending:T.AdditiveBlending,depthWrite:false,opacity:.58});
-    rookGlowSprite=new T.Sprite(sm);rookGlowSprite.name='legend-rook117-emerald-emitter-halo';rookGlowSprite.position.set(.060,.010,-.086);rookGlowSprite.scale.set(.054,.054,1);rookGlowSprite.userData.finishBadge=true;rookGlowSprite.userData.legendNoWorldOverlay=true;grp.add(rookGlowSprite);}
-  }
-  // The hinged core guard opens within the existing reload clock.
-  var reloadDoors=new T.InstancedMesh(unit,metal,2);reloadDoors.name='legend-rook117-kinetic-core-guards';reloadDoors.userData.finishBadge=true;grp.add(reloadDoors);
-  var doorSides=[-1,1],doorPivot=new T.Object3D(),doorLocal=new T.Object3D(),doorMatrix=new T.Matrix4();
-  function updateReloadDoors(opening){
-   for(var di=0;di<2;di++){var side=doorSides[di];
-    doorPivot.position.set(side*.046,.027+.008*opening,-.086);doorPivot.rotation.set(0,0,side*.72*opening);doorPivot.scale.set(1,1,1);doorPivot.updateMatrix();
-    doorLocal.position.set(side*.002,-.012,0);doorLocal.rotation.set(0,0,0);doorLocal.scale.set(.004,.025,.068);doorLocal.updateMatrix();
-    doorMatrix.multiplyMatrices(doorPivot.matrix,doorLocal.matrix);reloadDoors.setMatrixAt(di,doorMatrix);
-   }
-   reloadDoors.instanceMatrix.needsUpdate=true;
-  }
-  updateReloadDoors(0);
-  // Jackets follow the actual animated magazine and replacement magazine.
-  var magazineDecor=[];
-  function makeMagazineJacket(parent,name){
-   var assembly=new T.Group();assembly.name='legend-rook117-'+name;parent.add(assembly);
-   var sh=new T.Shape();sh.moveTo(-.050,-.071);sh.lineTo(-.034,-.076);sh.quadraticCurveTo(-.024,-.026,-.031,.028);sh.lineTo(-.039,.074);sh.lineTo(.039,.074);sh.lineTo(.031,.028);sh.quadraticCurveTo(.024,-.026,.034,-.076);sh.lineTo(.050,-.071);sh.lineTo(.047,-.082);sh.lineTo(-.047,-.082);sh.closePath();
-   var geo=new T.ExtrudeGeometry(sh,{depth:.055,bevelEnabled:true,bevelSegments:2,bevelThickness:.0015,bevelSize:.0015,curveSegments:4});
-   var shell=new T.Mesh(geo,ceramic);shell.name='legend-rook117-curved-magazine-shell';shell.rotation.y=Math.PI/2;shell.position.set(-.0275,-.122,-.145);shell.userData.finishBadge=true;assembly.add(shell);
-   assembly.visible=false;return assembly;
-  }
-  var mag=host&&host.userData&&host.userData.mag,fresh=host&&host.userData&&host.userData.fresh;
-  if(mag){magazineDecor.push(makeMagazineJacket(mag,'moving-magazine-jacket'));if(fresh)magazineDecor.push(makeMagazineJacket(fresh,'fresh-magazine-jacket'));}
-  else magazineDecor.push(makeMagazineJacket(grp,'static-magazine-jacket'));
-  var reloadFill=mesh('reload-charge-indicator',new T.BoxGeometry(.002,.004,.048),glow,.051,.007,-.086);reloadFill.visible=false;reloadFill.scale.z=.01;
-  var st={t:0,hot:0,ping:0,reload:0,reloading:false,inspect:0,detail:'high',fx:'high'};
-  return {group:grp,state:st,opticGroup:opticGroup,magazineDecor:magazineDecor,
-   mount:function(root){root.add(grp);},
-   setVisible:function(v){grp.visible=!!v;magazineDecor.forEach(function(m){m.visible=!!v;});},
-   setOpticVisible:function(v){opticGroup.visible=!!v;},
-   update:function(dt,o){o=o||{};st.t+=dt;st.fx=o.fx||st.fx;st.hot=Math.max(0,st.hot-dt*2.4);st.ping=Math.max(0,st.ping-dt*2.8);st.inspect=Math.max(0,st.inspect-dt*1.4);
-    var reduced=st.fx==='low'||st.detail==='low',pulse=.5+.5*Math.sin(st.t*2.15),charge=st.reloading?Math.max(0,Math.min(1,st.reload)):0;
-    glow.emissiveIntensity=reduced?.48:.62+.32*pulse+st.hot*.22+st.ping*.20+st.inspect*.12;core.material.emissiveIntensity=glow.emissiveIntensity;if(coreBack)coreBack.material.emissiveIntensity=glow.emissiveIntensity;
-    var power=reduced?1:1+.08*pulse+.18*st.hot+.12*st.ping+.1*st.inspect;
-    if(coreBack){[core,coreBack].forEach(function(c){c.scale.set(.62*power,1.25*power,.70*power);c.rotation.y=reduced?0:st.t*.8;});}
-    else{core.scale.set(.62*power,1.25*power,.70*power);core.rotation.y=reduced?0:st.t*.8;}
-    coreRings.visible=st.detail!=='low';coreRings.rotation.x=reduced?0:Math.sin(st.t*1.4)*.08;
-    if(rookGlowSprite){rookGlowSprite.visible=st.detail!=='low';rookGlowSprite.material.opacity=reduced?.24:.38+.14*pulse+.13*st.hot;}
-    reloadFill.visible=st.reloading&&st.detail!=='low';if(st.reloading){reloadFill.scale.z=.014+.034*charge;reloadFill.position.z=-.086+(charge-.5)*.032;}
-    var opening=st.reloading?Math.max(0,Math.min(1,(charge-.16)/.12))*(1-Math.max(0,Math.min(1,(charge-.68)/.18))):0;
-    updateReloadDoors(opening);
-   },
-   setDetail:function(v){st.detail=v==='low'?'low':'high';},
-   setReload:function(p,active){if(active){st.reloading=true;st.reload=Math.max(0,Math.min(1,p));}else{if(st.reloading&&st.reload>.85)st.ping=1;st.reloading=false;st.reload=0;reloadFill.visible=false;updateReloadDoors(0);}},
-   inspect:function(active){st.inspect=active?1:0;},fire:function(){st.hot=1;},hit:function(){st.ping=1;},kill:function(){st.ping=1;st.hot=1;},awaken:function(){st.hot=1;st.ping=1;}
-  };
  }else if(key==='carbine'){
   // VR-18: satin split receiver plates, chamfered side rails, optic side caps
   // kept outside the transparent sight window, and a restrained muzzle band.
@@ -434,8 +310,8 @@ function buildPrototypeRig(T,key,host){
  batch('signal-inlays',glow,inlays);batch('flush-hardware',dark,hardware);
  // A narrow reload indicator slides only in presentation time; the real reload
  // clock and magazine animation remain owned by the original weapon code.
- var reloadBaseZ=key==='smg'?-.047:key==='breacher'?.018:key==='rook117'?.002:-.035;
- var reloadX=key==='breacher'?.029:key==='rook117'?.036:.032;
+ var reloadBaseZ=key==='smg'?-.047:key==='breacher'?.018:-.035;
+ var reloadX=key==='breacher'?.029:.032;
  reloadFill=mesh('reload-charge-indicator',new T.BoxGeometry(.0018,.004,.052),glow,reloadX,.012,reloadBaseZ);
  reloadFill.visible=false;reloadFill.scale.z=.01;
  var st={t:0,hot:0,ping:0,reload:0,reloading:false,inspect:0,detail:'high',fx:'high'};
@@ -481,12 +357,11 @@ function buildOriginalLegendaryRig(T,key,host){
  var muzzleZ=host&&host.userData&&host.userData.muzzle?host.userData.muzzle.position.z:-.72;
  var foreStart=muzzleZ+.085,foreEnd=Math.min(-.25,muzzleZ+.34),foreLen=Math.max(.16,foreEnd-foreStart),foreZ=(foreStart+foreEnd)*.5;
  var recFront=foreEnd-.025,recRear=.105,recZ=(recFront+recRear)*.5,recLen=recRear-recFront;
- var width=key==='breacher'?.088:key==='rook117'?.078:key==='carbine'?.074:key==='stinger'?.072:.068;
+ var width=key==='breacher'?.088:key==='carbine'?.074:key==='stinger'?.072:.068;
  box('forged-receiver-core',width,.066,recLen,0,.002,recZ,metal,0);
  var receiverProfiles={
   smg:[[-.24,-.026],[-.21,.010],[-.16,.045],[-.05,.047],[.14,.031],[.22,.010],[.19,-.025],[.05,-.045],[-.08,-.041]],
   breacher:[[-.24,-.030],[-.22,.020],[-.16,.049],[.12,.047],[.23,.022],[.19,-.024],[.03,-.041],[-.15,-.036]],
-  rook117:[[-.25,-.027],[-.21,.003],[-.14,.043],[-.04,.050],[.12,.041],[.23,.014],[.18,-.021],[.07,-.034],[.015,-.057],[-.13,-.039]],
   carbine:[[-.24,-.030],[-.20,.022],[-.13,.050],[.14,.046],[.23,.020],[.20,-.020],[.06,-.043],[-.10,-.034]],
   stinger:[[-.252,-.025],[-.232,.020],[-.190,.047],[-.128,.049],[-.080,.034],[.112,.038],[.213,.022],[.239,-.002],[.202,-.027],[.126,-.040],[.018,-.036],[-.094,-.043],[-.195,-.036]]
  }[key];
@@ -564,7 +439,6 @@ function buildOriginalLegendaryRig(T,key,host){
    if(key==='stinger')profile('sulfur-tapered-hex-fore-end-'+s,s,foreZ,surf,[[-foreLen*.54,-.020],[-foreLen*.48,.015],[-foreLen*.32,.032],[foreLen*.34,.030],[foreLen*.51,.010],[foreLen*.43,-.025],[foreLen*.02,-.033],[-foreLen*.36,-.030]],metal,.007);
    else if(key==='smg')profile('circuit-handguard-armor-'+s,s,foreZ,surf,[[ -foreLen*.53,-.010],[-foreLen*.42,.031],[foreLen*.43,.031],[foreLen*.53,-.005],[foreLen*.36,-.029],[-foreLen*.33,-.029]],metal,.006);
   else if(key==='breacher')profile('forged-vented-pump-jacket-'+s,s,foreZ,surf,[[-foreLen*.52,-.022],[-foreLen*.48,.015],[-foreLen*.32,.033],[foreLen*.37,.031],[foreLen*.51,.014],[foreLen*.45,-.028],[0,-.035]],metal,.007);
-  else if(key==='rook117')profile('revenant-long-vent-handguard-'+s,s,foreZ,surf,[[-foreLen*.54,-.018],[-foreLen*.46,.025],[-foreLen*.30,.034],[foreLen*.38,.031],[foreLen*.52,.009],[foreLen*.39,-.029],[-foreLen*.35,-.032]],metal,.007);
   else if(key==='carbine')profile('vanguard-tapered-freefloat-armor-'+s,s,foreZ,surf,[[-foreLen*.54,-.021],[-foreLen*.46,.021],[-foreLen*.32,.034],[foreLen*.27,.030],[foreLen*.51,.012],[foreLen*.44,-.026],[foreLen*.05,-.036],[-foreLen*.36,-.032]],metal,.008);
   else profile('vanguard-freefloat-handguard-'+s,s,foreZ,surf,[[-foreLen*.53,-.024],[-foreLen*.48,.018],[-foreLen*.31,.029],[foreLen*.40,.028],[foreLen*.52,.014],[foreLen*.48,-.020],[0,-.033]],metal,.006);
  });
@@ -577,8 +451,6 @@ function buildOriginalLegendaryRig(T,key,host){
  }else if(key==='breacher'){
   cylinder('multiport-forge-brake',.033,.026,.070,0,.020,muzzleZ-.020,metal,10);
   [-1,1].forEach(function(s){box('brake-side-port-'+s,.004,.018,.040,s*.027,.020,muzzleZ-.020,dark,0);});
- }else if(key==='rook117'){
-  cylinder('three-prong-revenant-flash-hider',.022,.016,.052,0,.020,muzzleZ-.018,metal,10);
   [-1,0,1].forEach(function(s){box('flash-hider-prong-'+s,.004,.010,.075,s*.014,.020,muzzleZ-.030,trim,0);});
  }else if(key==='carbine'){
   cylinder('vanguard-triport-compensator',.023,.019,.066,0,.020,muzzleZ-.018,metal,12);
@@ -602,7 +474,7 @@ function buildOriginalLegendaryRig(T,key,host){
  railZs.forEach(function(z,i){box('continuous-top-rail-slot-'+i,width*.65,.004,.010,0,.051,z,trim,0);});
  box('upper-optic-rail',width*.56,.006,.23,0,.054,recZ-.025,dark,0);
  // Skin-specific stock silhouettes.
-  if(key==='smg'||key==='rook117'||key==='carbine'||key==='stinger'){
+  if(key==='smg'||key==='carbine'||key==='stinger'){
   var stockZ=.43,rootZ=.12,stockY=.006;
   if(key==='smg'){
    [-1,1].forEach(function(s){beam('phantom-open-stock-rail-'+s,[s*.022,stockY,rootZ],[s*.034,.020,stockZ-.05],.006,metal);beam('phantom-stock-diagonal-'+s,[s*.034,.020,stockZ-.05],[s*.022,-.014,rootZ+.08],.005,trim);});
@@ -613,10 +485,6 @@ function buildOriginalLegendaryRig(T,key,host){
    beam('sulfur-stock-cheek-rest',[-.031,.038,.312],[.031,.038,.312],.006,ceramic);
    beam('sulfur-stock-crossbar',[-.034,-.003,.252],[.034,-.003,.252],.0045,dark);
    box('sulfur-rubber-recoil-pad',.070,.096,.024,0,.010,.397,dark,0);
-  }else if(key==='rook117'){
-   [-1,1].forEach(function(s){beam('revenant-skeleton-stock-rail-'+s,[s*.021,.008,rootZ],[s*.030,.020,stockZ-.045],.007,metal);beam('revenant-stock-brace-'+s,[s*.030,.020,stockZ-.045],[s*.021,-.014,rootZ+.06],.005,trim);});
-   beam('revenant-stock-cheek-rest',[ -.031,.038,stockZ-.075],[.031,.038,stockZ-.075],.007,ceramic);
-   box('revenant-rubber-buttpad',.078,.112,.030,0,-.002,stockZ, dark,0);
   }else{
    [-1,1].forEach(function(s){beam('vanguard-triangle-stock-upper-'+s,[s*.025,.025,rootZ],[s*.037,.018,stockZ-.055],.006,trim);beam('vanguard-triangle-stock-lower-'+s,[s*.025,-.045,rootZ+.035],[s*.037,.018,stockZ-.055],.006,metal);});
    beam('vanguard-stock-spine',[0,-.045,rootZ+.035],[0,.025,rootZ],.005,dark);
@@ -645,8 +513,6 @@ function buildOriginalLegendaryRig(T,key,host){
   [-1,1].forEach(function(s){box('forge-chamber-heat-shield-'+s,.006,.060,.078,s*(coreX+.009),coreY,coreZ,metal,0,chamber);});
   }else if(key==='stinger'){
    [-1,1].forEach(function(s){beam('sulfur-core-retainer-'+s,[s*.037,-.018,coreZ-.026],[s*.037,.034,coreZ+.026],.003,trim,chamber);});
-  }else if(key==='rook117'){
-  [-1,1].forEach(function(s){beam('revenant-reactor-yoke-'+s,[s*.040,-.020,coreZ],[s*.040,.035,coreZ],.004,trim,chamber);});
  }else{
   [-1,1].forEach(function(s){beam('vanguard-crystal-retainer-'+s,[s*.040,-.021,coreZ-.028],[s*.040,.030,coreZ+.028],.003,trim,chamber);});
  }
@@ -656,9 +522,8 @@ function buildOriginalLegendaryRig(T,key,host){
  [-1,1].forEach(function(s){var hinge=new T.Group();hinge.position.set(s*(coreX+.010),coreY,coreZ);mark(hinge,'reactor-shutter-hinge-'+s);var leaf=new T.Mesh(new T.BoxGeometry(.006,.052,.066),metal);leaf.position.x=-s*.004;mark(leaf,'reactor-shutter-leaf-'+s,hinge);shutters.push([hinge,s]);});
  var magShells=[];
  function makeMagazine(parent,label){var assembly=new T.Group();assembly.name=namePrefix+label;parent.add(assembly);
-  var y=key==='rook117'?-.132:key==='smg'?-.132:-.142,z=key==='rook117'?-.145:key==='smg'?.020:-.080;
+  var y=key==='smg'?-.132:-.142,z=key==='smg'?.020:-.080;
    var pts=key==='stinger'?[[-.057,-.211],[-.050,-.060],[-.034,-.040],[.038,-.045],[.055,-.100],[.067,-.205],[.038,-.227],[-.040,-.225]]:
-    key==='rook117'?[[-.020,-.205],[-.040,-.154],[-.036,-.085],[-.010,-.045],[.038,-.042],[.070,-.110],[.095,-.192],[.055,-.232]]:
    key==='breacher'?[[-.075,-.215],[-.071,-.042],[.062,-.042],[.068,-.215],[.046,-.230],[-.050,-.230]]:
    key==='smg'?[[-.042,-.190],[-.040,-.046],[.047,-.046],[.051,-.190],[.035,-.206],[-.030,-.206]]:
    [[-.052,-.213],[-.050,-.048],[.049,-.048],[.052,-.213],[.035,-.226],[-.034,-.226]];
@@ -710,7 +575,7 @@ function buildOriginalLegendaryRig(T,key,host){
    box('sulfur-front-sight-protector-left',.0028,.013,.009,-.009,sightY+.004,optZ-.172,metal,0,opticGroup);
    box('sulfur-front-sight-protector-right',.0028,.013,.009,.009,sightY+.004,optZ-.172,metal,0,opticGroup);
   }else{
-  var windowH=key==='breacher'?.044:.052,windowW=key==='smg'?.055:key==='rook117'?.052:.048;
+  var windowH=key==='breacher'?.044:.052,windowW=key==='smg'?.055:.048;
   box('optic-outer-cheek-left',.006,windowH,.050,-windowW*.46,sightY,optZ,metal,0,opticGroup);
   box('optic-outer-cheek-right',.006,windowH,.050,windowW*.46,sightY,optZ,metal,0,opticGroup);
   box('optic-hood-top',windowW,.006,.050,0,sightY+windowH*.5,optZ,trim,0,opticGroup);
@@ -744,7 +609,7 @@ function buildOriginalLegendaryRig(T,key,host){
    if(carbineBoltGroup||stingerBoltGroup){state.cycle=Math.max(0,state.cycle-dt*8.5);state.inspect+=(state.inspectTarget-state.inspect)*Math.min(1,dt*7);}
    var reduced=state.fx==='low'||state.detail==='low',pulse=reduced?.5:.5+.5*Math.sin(state.t*(key==='breacher'?5.1:3.2));
    glow.emissiveIntensity=reduced?.40:.72+.52*pulse+state.hot*.42+state.hit*.55+state.kill*.38;
-   rotor.rotation.x=reduced?0:state.t*(key==='smg'?3.8:key==='breacher'?1.7:key==='rook117'?2.4:2.9);
+   rotor.rotation.x=reduced?0:state.t*(key==='smg'?3.8:key==='breacher'?1.7:2.9);
    cell.rotation.y=reduced?0:state.t*(key==='breacher'?.8:1.15);cell.scale.set(1+.08*pulse, .78+.10*pulse, 1.22+.08*pulse);
    reactorGlow.visible=!reduced;reactorGlow.material.opacity=reduced?0:.12+.18*pulse+.14*state.hot+.12*state.hit+.15*state.kill;
    var q=state.reloading?Math.max(0,Math.min(1,state.reload)):0,open=state.reloading?Math.max(0,Math.min(1,(q-.16)/.18))*(1-Math.max(0,Math.min(1,(q-.70)/.20))):0;
@@ -758,9 +623,9 @@ function buildOriginalLegendaryRig(T,key,host){
   fire:function(){state.hot=1;if(carbineBoltGroup||stingerBoltGroup){state.cycle=1;state.inspectTarget=0;}},hit:function(){state.hit=1;},kill:function(){state.kill=1;state.hot=1;},awaken:function(){state.hot=1;state.hit=1;}
  };
 }
-function verifiedLegendaryPack(key){var sp=LEGENDARY_PROTOTYPES[key],pack=sp&&sp.pack&&typeof window!=='undefined'?window[sp.pack]:null;return pack&&pack.weapon===key&&pack.finish&&pack.finish.name===sp.title&&typeof pack.buildRig==='function'?pack:null;}
-function buildLegendaryRig(T,key,host){if(!LEGEND_WEAPONS[key])throw new Error('Legendary source is not verified for '+key);var sp=LEGENDARY_PROTOTYPES[key],pack=verifiedLegendaryPack(key);if(pack)return pack.buildRig(T,host,sp);if(sp&&sp.overlay&&typeof SightlineLegendaryOverlay!=='undefined')return SightlineLegendaryOverlay.buildRig(T,key,host,sp);return key==='longbow'?buildRig(T):buildOriginalLegendaryRig(T,key,host);}
-function legendarySpec(key){return LEGENDARY_PROTOTYPES[key]||null;}
+function verifiedLegendaryPack(key){var sp=legendarySpec(key),pack=sp&&sp.pack&&typeof window!=='undefined'?window[sp.pack]:null;return pack&&pack.weapon===key&&pack.finish&&pack.finish.name===sp.title&&typeof pack.buildRig==='function'?pack:null;}
+function buildLegendaryRig(T,key,host){if(!LEGEND_WEAPONS[key])throw new Error('Legendary source is not verified for '+key);var sp=legendarySpec(key),pack=verifiedLegendaryPack(key);if(pack)return pack.buildRig(T,host,sp);if(key==='rook117')throw new Error('Contour Relay pack unavailable');if(sp&&sp.overlay&&typeof SightlineLegendaryOverlay!=='undefined')return SightlineLegendaryOverlay.buildRig(T,key,host,sp);return key==='longbow'?buildRig(T):buildOriginalLegendaryRig(T,key,host);}
+function legendarySpec(key){return key==='rook117'?globalThis.SightlineContourRelay?.spec||null:LEGENDARY_PROTOTYPES[key]||null;}
 /* ---------- lightning bolts (tracers) ---------- */
 function createBolts(THREE,scene){
  var LAYERS=[[0xffffff,1],[0x6fe9ff,.75],[0xffd36b,.55]],active=[],i,j,N=24;

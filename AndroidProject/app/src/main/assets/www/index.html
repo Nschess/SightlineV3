@@ -153,8 +153,6 @@ a { color: inherit; }
 #reticle.legendary-smg::after { content:"";position:absolute;left:50%;top:50%;width:1px;height:23px;transform:translate(-50%,-50%);background:linear-gradient(transparent 0 38%,var(--legend-reticle) 38% 62%,transparent 62%); }
 #reticle.legendary-breacher::before { content:"";position:absolute;left:50%;top:50%;width:11px;height:11px;transform:translate(-50%,-50%) rotate(45deg);border:1px solid var(--legend-reticle-border);border-radius:1px;box-shadow:0 0 2px var(--legend-reticle); }
 #reticle.legendary-breacher::after { content:"";position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border:1px dotted var(--legend-reticle-border);border-radius:50%; }
-#reticle.legendary-rook117::before { content:"";position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%) rotate(45deg);border:1px solid var(--legend-reticle-border);border-radius:50% 50% 2px 50%;box-shadow:0 0 3px var(--legend-reticle); }
-#reticle.legendary-rook117::after { content:"";position:absolute;left:50%;top:50%;width:22px;height:1px;transform:translate(-50%,-50%);background:linear-gradient(90deg,transparent 0 38%,var(--legend-reticle) 38% 62%,transparent 62%); }
 #reticle.legendary-carbine::before { content:"";position:absolute;left:50%;top:50%;width:19px;height:19px;transform:translate(-50%,-50%);border:1px solid var(--legend-reticle-border);border-radius:3px;box-shadow:0 0 2px var(--legend-reticle); }
 #reticle.legendary-carbine::after { content:"";position:absolute;left:50%;top:50%;width:25px;height:25px;transform:translate(-50%,-50%);background:linear-gradient(var(--legend-reticle),var(--legend-reticle)) center/1px 25px no-repeat,linear-gradient(90deg,var(--legend-reticle),var(--legend-reticle)) center/25px 1px no-repeat;clip-path:polygon(0 0,30% 0,30% 30%,70% 30%,70% 0,100% 0,100% 30%,70% 30%,70% 70%,100% 70%,100% 100%,70% 100%,70% 70%,30% 70%,30% 100%,0 100%,0 70%,30% 70%,30% 30%,0 30%); }
 /* overlays */
@@ -7032,7 +7030,6 @@ function installWeaponOptic(g,k,previewId){
  // Aim down the real front post for irons; other families center their real
  // apertures on the same camera axis, including the magnified housing.
  g.userData.sightY=id==='iron'?(k==='pistol'||k==='hawk'?.053:.105):(k==='pistol'||k==='hawk'?.078:.103);
- legendRookOpticSync(g,!!selectedLegendaryFinish(k));
 }
 function changeWeaponOptic(k,id){
  if(!SightlineOptics.set(k,id))return false;
@@ -9954,7 +9951,6 @@ var tracerPool = [], puffPool = [], shellPool = [], puffGeo = null, shellGeo = n
 var LEGEND_FX_MOTION={
  smg:{twist:.12,spread:.072,lift:.21,speed:.58,grav:.08,spin:17,count:4,pattern:'pulse'},
  breacher:{twist:.48,spread:.092,lift:.31,speed:.78,grav:2.9,spin:7,count:3,pattern:'fan'},
- rook117:{twist:.27,spread:.078,lift:.35,speed:.64,grav:1.7,spin:9,count:4,pattern:'fracture'},
  carbine:{twist:.88,spread:.070,lift:.28,speed:.68,grav:1.35,spin:12,count:3,pattern:'orbit'},
  stinger:{twist:.62,spread:.088,lift:.42,speed:.70,grav:.55,spin:14,count:4,pattern:'circuit'},
  aurora:{twist:1.08,spread:.083,lift:.57,speed:.48,grav:-.20,spin:5,count:4,pattern:'bloom'},
@@ -9968,7 +9964,7 @@ var LEGEND_FX_MOTION={
  rampart:{twist:3.58,spread:.094,lift:.61,speed:.73,grav:.32,spin:11,count:4,pattern:'phoenix'},
  needle:{twist:3.91,spread:.068,lift:.68,speed:.88,grav:-.10,spin:20,count:4,pattern:'fork'}
 };
-var legendFxPools={},legendFxActive=0,legendPackFxs=Object.create(null),LEGENDARY_PACK_FX_KEYS={rampart:1,needle:1,rook117:1,ranger:1,tide:1,hawk:1,scatter:1,bulwark:1},legendFxForward=new THREE.Vector3(0,0,1),legendFxNormal=new THREE.Vector3(),tmpLegendPos=new THREE.Vector3();
+var legendFxPools={},legendFxActive=0,legendPackFxs=Object.create(null),LEGENDARY_PACK_FX_KEYS={rampart:1,needle:1,ranger:1,tide:1,hawk:1,scatter:1,bulwark:1},legendFxForward=new THREE.Vector3(0,0,1),legendFxNormal=new THREE.Vector3(),tmpLegendPos=new THREE.Vector3();
 function legendFxThornbloomGeometry(size){
  var positions=[],indices=[],count=8,i,a,cx,cy,tx,ty,inner,shoulder,tip,half;
  for(i=0;i<count;i++){
@@ -10021,7 +10017,6 @@ function legendFxShape(key,type){
  }
  if(key==='smg')return new THREE.TorusGeometry(.064,.0032,4,16);
  if(key==='breacher')return new THREE.RingGeometry(.055,.075,8);
- if(key==='rook117')return new THREE.OctahedronGeometry(.054,0);
  if(key==='carbine')return new THREE.DodecahedronGeometry(.062,0);
  if(key==='stinger')return legendFxStarGeometry(.068,.043,6,0);
  if(key==='aurora')return new THREE.IcosahedronGeometry(.058,0);
@@ -10067,7 +10062,6 @@ function updateLegendKillSignature(e,q,key){
   var o=e.obj,s=e.legendFxScale,fade=Math.max(0,1-q),t=e.life*q;
   if(key==='smg'){o.scale.setScalar(s*(1+q*1.8));o.rotation.set(e.baseRotX,e.baseRotY,e.baseRotZ+t*9);o.position.set(e.baseX,e.baseY+t*.025,e.baseZ);o.material.opacity=fade*.76;}
   else if(key==='breacher'){o.scale.setScalar(s*(1+q*1.35));o.rotation.set(e.baseRotX+t*4,e.baseRotY,e.baseRotZ);o.position.set(e.baseX,e.baseY+t*.26,e.baseZ);o.material.opacity=fade*.8;}
-  else if(key==='rook117'){o.scale.setScalar(s*(.82+q*1.05));o.rotation.set(e.baseRotX+t*5.5,e.baseRotY-t*4.1,e.baseRotZ);o.material.opacity=fade*fade*.84;}
   else if(key==='carbine'){o.scale.setScalar(s*(.65+q*2.15));o.rotation.set(e.baseRotX+t*2.8,e.baseRotY,e.baseRotZ-t*5.2);o.position.set(e.baseX+Math.sin(q*6)*.025,e.baseY,e.baseZ);o.material.opacity=fade*.78;}
   else if(key==='stinger'){var pulse=.94+Math.sin(q*Math.PI*8)*.09;o.scale.setScalar(s*(.7+q*1.5)*pulse);o.rotation.set(e.baseRotX,e.baseRotY+t*8,e.baseRotZ+t*2);o.material.opacity=fade*(.68+.22*Math.abs(Math.sin(q*Math.PI*6)));}
   else if(key==='aurora'){o.scale.setScalar(s*(.72+q*2.7));o.rotation.set(e.baseRotX+t*.7,e.baseRotY,e.baseRotZ-t*1.8);o.position.set(e.baseX,e.baseY+t*.19,e.baseZ);o.material.opacity=Math.pow(fade,1.35)*.84;}
@@ -10085,6 +10079,7 @@ function updateLegendKillSignature(e,q,key){
 var legendCosmeticFailures=Object.create(null);
 function reportLegendCosmeticFailure(key,phase,error){var token=String(key||'unknown')+':'+phase;if(legendCosmeticFailures[token])return;legendCosmeticFailures[token]=1;try{console.warn('Legendary '+phase+' cosmetic failed; gameplay continues for '+key,error);}catch(_warnError){}}
 function legendConfirmedHit(key,target,eventId,suppressAudio,finishOverride,pan){
+  if(key==='rook117')return;
   var f=finishOverride||selectedLegendaryFinish(key),g=guns[key];if(!f||!target||!claimLegendEvent('hit',eventId))return;
   if(g&&legendActive(g)&&g.userData.legendRig.hit&&legendaryEffectsEnabled())try{g.userData.legendRig.hit();}catch(animErr){reportLegendCosmeticFailure(key,'hit animation',animErr);}
   try{var p=tmpLegendPos.set(target.x,(target.y||0)+1.12,target.z);spawnLegendFx(key,'hit',p,null,finishOverride);}
@@ -10094,6 +10089,7 @@ function legendConfirmedHit(key,target,eventId,suppressAudio,finishOverride,pan)
 var legendKillVisualFailures=Object.create(null);
 function reportLegendKillVisualFailure(key,error){if(legendKillVisualFailures[key])return;legendKillVisualFailures[key]=1;try{console.warn('Legendary elimination visual failed; preserving kill audio for '+key,error);}catch(_warnError){}}
 function legendConfirmedElimination(key,target,eventId,finishOverride,pan,localSource,volume){
+  if(key==='rook117')return;
   var f=finishOverride||selectedLegendaryFinish(key),g=guns[key];if(!f||!target||!claimLegendEvent('elimination',eventId))return;
   var reduced=legendaryEffectsReduced(),visual=legendaryEffectsEnabled();
   if(localSource!==false&&g&&legendActive(g)&&g.userData.legendRig.kill&&!reduced){try{g.userData.legendRig.kill();}catch(err){reportLegendKillVisualFailure(key,err);}}
@@ -10107,7 +10103,6 @@ function legendEliminationBurst(key,target,finish){
   for(var i=0;i<count;i++){
     var phase=i/count,a=motion.twist+phase*Math.PI*2,dx=Math.cos(a),dz=Math.sin(a),dy=motion.lift+(i%2)*.11;
     if(pattern==='fan')a=motion.twist+(phase-.5)*1.65,dx=Math.cos(a),dz=Math.sin(a),dy+=.08;
-    else if(pattern==='fracture')a=motion.twist+Math.floor(i/2)*Math.PI+(i%2)*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a),dy+=(i%2)*.18;
     else if(pattern==='orbit')a=motion.twist+i*2.399963,dx=Math.cos(a)-Math.sin(a)*.28,dz=Math.sin(a)+Math.cos(a)*.28;
     else if(pattern==='circuit')a=motion.twist+(i%4)*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a),dy+=(i%2)*.22;
     else if(pattern==='bloom')a=motion.twist+phase*Math.PI*2,dx=Math.cos(a)*.82,dz=Math.sin(a)*.82,dy+=.2+(i%2)*.1;
@@ -10191,11 +10186,6 @@ function legendaryPackElimination(key,pos,from){
   try{var fx=legendaryPackFx(key);if(!fx||!fx.eliminate)return false;if(fx.setLow)fx.setLow(G.fx==='med');fx.eliminate(pos,from);return true;}
   catch(err){reportLegendKillVisualFailure(key,err);return false;}
 }
-function legendRookOpticSync(g,active){
- if(!g||!g.userData||g.userData.weaponKey!=='rook117')return;
- var rig=g.userData.legendRig;
- if(rig&&rig.setOpticVisible)rig.setOpticVisible(!!active);
-}
 function legendSync(g,f){
   if(!g||!g.userData)return;
   if(f&&f.legendary){
@@ -10206,7 +10196,6 @@ function legendSync(g,f){
     else{var sourcePack=legendaryPackForAudio(key);g.userData.legendaryVisualDiagnostic=sourcePack?{weapon:key,source:'authored-legendary-pack',version:sourcePack.version,design:sourcePack.finish.name,replacesFactory:false,baseGeometryPreserved:true}:null;}
     if(key!=='rook117'&&g.userData.legendRig.setOpticVisible)g.userData.legendRig.setOpticVisible(true);
   }else if(g.userData.legendRig){if(g.userData.legendRig.setVisible)g.userData.legendRig.setVisible(false);else g.userData.legendRig.group.visible=false;g.userData.legendaryVisualDiagnostic=null;}
-  legendRookOpticSync(g,!!(f&&f.legendary));
 }
 function legendActive(g){var r=g&&g.userData&&g.userData.legendRig;return !!(r&&r.group.visible);}
 function syncLegendaryReplacement(g,active){
@@ -10234,7 +10223,6 @@ function sfxLegend(name,vol){
 var LEGEND_AUDIO_PROFILES={
  smg:{root:640,mode:'pulse',filter:'highpass',cut:1150,noise:.13,partials:[1,1.47,2.29]},
  breacher:{root:126,mode:'forge',filter:'lowpass',cut:2050,noise:.32,partials:[1,2.11,3.37]},
- rook117:{root:164,mode:'spectral',filter:'bandpass',cut:1450,noise:.10,partials:[1,2.73,4.08]},
  carbine:{root:276,mode:'vanguard',filter:'bandpass',cut:2850,noise:.105,partials:[1,1.52,2.29]},
  stinger:{root:226,mode:'sulfur',filter:'bandpass',cut:1760,noise:.13,partials:[1,2.09,3.42]},
  aurora:{root:356,mode:'ice',filter:'bandpass',cut:2760,noise:.045,partials:[1,1.618,2.414]},
@@ -10247,7 +10235,6 @@ var LEGEND_AUDIO_PROFILES={
 var LEGEND_FIRE_DESIGN={
  smg:{duration:.105,low:510,body:1480,ring:3100,click:2450,mech:2600,attack:.0028,decay:.041,noise:.14,bodyGain:.18,ringGain:.08,mechGain:.045,subGain:.13,slapMs:14,slapGain:.06},
  breacher:{duration:.235,low:82,body:205,ring:650,click:1250,mech:970,attack:.0065,decay:.118,noise:.19,bodyGain:.24,ringGain:.07,mechGain:.045,subGain:.32,slapMs:24,slapGain:.10},
- rook117:{duration:.168,low:114,body:177,ring:910,click:1840,mech:1510,attack:.0042,decay:.083,noise:.12,bodyGain:.21,ringGain:.09,mechGain:.04,subGain:.24,slapMs:19,slapGain:.09},
  carbine:{duration:.152,low:156,body:332,ring:940,click:2580,mech:1640,attack:.0032,decay:.064,noise:.13,bodyGain:.23,ringGain:.085,mechGain:.052,subGain:.22,slapMs:17,slapGain:.085},
  stinger:{duration:.132,low:138,body:430,ring:1180,click:2140,mech:1560,attack:.0027,decay:.055,noise:.13,bodyGain:.22,ringGain:.075,mechGain:.052,subGain:.20,slapMs:15,slapGain:.072},
  aurora:{duration:.162,low:245,body:980,ring:2870,click:4160,mech:5120,attack:.0038,decay:.091,noise:.07,bodyGain:.13,ringGain:.12,mechGain:.025,subGain:.16,slapMs:18,slapGain:.11},
@@ -10307,7 +10294,7 @@ function upgradeLegendaryFireCue(key,sr,source,variant){
  var gain=peak>.001?.78/peak:1;for(i=0;i<len;i++)out[i]*=gain;
  return out;
 }
-function legendaryPackForAudio(key){var spec=SightlineWeaponSkins.legend.prototype(key),pack=spec&&spec.pack&&window[spec.pack];return pack&&pack.weapon===key&&pack.finish&&pack.finish.name===spec.title?pack:null;}
+function legendaryPackForAudio(key){if(key==='rook117')return null;var spec=SightlineWeaponSkins.legend.prototype(key),pack=spec&&spec.pack&&window[spec.pack];return pack&&pack.weapon===key&&pack.finish&&pack.finish.name===spec.title?pack:null;}
 function hasLegendaryAudio(key){return !!LEGEND_AUDIO_PROFILES[key]||!!legendaryPackForAudio(key);}
 function trimPackAudio(data,sr,offset,duration){if(!data||!data.length)return null;var start=Math.max(0,Math.min(data.length-1,Math.floor((offset||0)*sr))),length=Math.max(1,Math.min(data.length-start,Math.floor(duration*sr))),out=new Float32Array(length);for(var i=0;i<length;i++){var fade=Math.min(1,i/(sr*.006),(length-1-i)/(sr*.012));out[i]=data[start+i]*Math.max(0,fade);}return out;}
 function legendaryPackAudioSamples(pack,key,event,sr){
@@ -10382,7 +10369,6 @@ function legendAudioBuffer(key,event,variant){
    var a=Math.sin(phase),wave;
    if(pr.mode==='pulse')wave=(a>=0?1:-1)*.58+Math.sin(phase*2)*.27+Math.sin(phase*3.03)*.15;
    else if(pr.mode==='forge')wave=a*.64+Math.sin(phase*2.11)*.23+(2/Math.PI)*Math.asin(Math.sin(phase*1.43))*.13;
-   else if(pr.mode==='spectral')wave=(2/Math.PI)*Math.asin(a)*.61+Math.sin(phase*2.73)*.27+Math.sin(phase*4.08)*.12;
    else if(pr.mode==='wasp')wave=a*.42+Math.sin(phase*2.17)*.33+Math.sin(phase*3.61)*.25;
    else if(pr.mode==='sulfur')wave=(a>=0?1:-1)*.36+Math.sin(phase*2.09)*.38+Math.sin(phase*3.42)*.26;
    else if(pr.mode==='ice')wave=a*.54+Math.sin(phase*1.618)*.30+Math.sin(phase*2.414)*.16;
@@ -10419,7 +10405,7 @@ function legendAudioSourceGain(key,event,buffer,scale){
  var amount=Math.max(0,Math.min(1.25,scale===undefined?1:Number(scale)||0)),own=legendAudioRms(buffer);
  var kill=event==='elimination'||event==='kill-confirm'||event==='kill-chain',ratio=event==='fire'?LEGEND_AUDIO_FIRE_RMS_RATIO:kill?LEGEND_AUDIO_KILL_RMS_RATIO:0;
  if(ratio>0&&own>1e-6){var reference=legendAudioRms(shotBuffer(key));if(reference>1e-6)return Math.max(.0001,Math.min(LEGEND_AUDIO_MAX_SOURCE_GAIN,reference*.5*ratio*amount/own));}
- var skinGain=key==='rook117'?1.8:1;return Math.max(.0001,Math.min(.28,LEGEND_AUDIO_GAIN[event]*skinGain*amount));
+ return Math.max(.0001,Math.min(.28,LEGEND_AUDIO_GAIN[event]*amount));
 }
 function legendReleaseAudioVoice(record){
  if(!record||record.released)return;record.released=true;legendAudioVoices=Math.max(0,legendAudioVoices-1);
@@ -10458,7 +10444,7 @@ function legendFlushPendingAudio(){
  for(var i=0;i<queue.length;i++){var item=queue[i];if(item.cancelled)continue;if(now>item.expires){if(item.event==='fire'&&typeof item.factoryFallback==='function')try{item.factoryFallback();}catch(_expiredFallbackError){}continue;}item.cancelPlaying=legendPlayAudioEvent(item.key,item.event,item.pan,item.scale,item.priority);if(!item.cancelPlaying&&typeof item.factoryFallback==='function'){try{item.factoryFallback();}catch(_fallbackError){}}}
 }
 function legendAudioEvent(key,event,pan,scale,priority,factoryFallback){
- if(!soundOn||!G.legendaryAudio||!AC)return null;var cuePriority=legendAudioPriority(event,priority);
+ if(key==='rook117'||!soundOn||!G.legendaryAudio||!AC)return null;var cuePriority=legendAudioPriority(event,priority);
  if(AC.state==='running')return legendPlayAudioEvent(key,event,pan,scale,cuePriority);
  if(AC.state!=='suspended'&&AC.state!=='interrupted')return null;
  var now=performance.now();
@@ -10532,7 +10518,7 @@ function legendTick(g,dt,rf,isReloading){
 }
 function legendBoltsTick(dt){if(legendMgr)legendMgr.tick(dt);for(var k in legendPackFxs)legendPackFxs[k].tick(dt);}
 function legendFire(g,mp,end,hit){
-  var rig=g&&g.userData&&g.userData.legendRig,key=g&&g.userData&&g.userData.weaponKey||'longbow';if(!rig||!end)return;
+  var rig=g&&g.userData&&g.userData.legendRig,key=g&&g.userData&&g.userData.weaponKey||'longbow';if(key==='rook117'||!rig||!end)return;
   if(legendaryEffectsEnabled())try{rig.fire();}catch(animErr){reportLegendCosmeticFailure(key,'fire animation',animErr);}
   try{
     var sourcePack=legendaryPackForAudio(key);
@@ -10773,7 +10759,7 @@ function tryFire(edge) {
   camera.rotation.x=P.pitch+P.punch;
   camera.updateMatrixWorld(true);
   var origin = camera.position.clone(), npel = w.pellets || 1, end = null, hitBots = [];
-  var gun = gunFor(cur), mp = new THREE.Vector3(), mpDirs = [], legendHit = false, legendWorldImpactSeen=false, shotFinish=selectedLegendaryFinish(cur);
+  var gun = gunFor(cur), mp = new THREE.Vector3(), mpDirs = [], legendHit = false, legendWorldImpactSeen=false, shotFinish=cur==='rook117'?null:selectedLegendaryFinish(cur);
   gun.userData.muzzle.getWorldPosition(mp);
   for (var pi = 0; pi < npel; pi++) {
     var psp = w.pellets ? w.pelletSpread * (1 + speedFrac * 0.6) * (1 - P.crouch * 0.15) : sp;
@@ -13576,9 +13562,7 @@ function legendaryWorldOverlayGeometry(key){
  if(!meshes.length)throw new Error('Legendary replacement has no geometry for '+key);
  var geometry=bakeMerge(meshes),profile=WORLD_WEAPON_PRESENTATION[key],meta=WORLD_WEAPON_META[key],bounds=geometry.boundingBox||new THREE.Box3().setFromBufferAttribute(geometry.attributes.position),size=bounds.getSize(new THREE.Vector3());
  if(!profile||!(size.z>.1&&size.z<2))throw new Error('Invalid Legendary world bounds for '+key+': '+size.x+','+size.y+','+size.z);
- // ROOK117's exported third-person asset is rooted at the receiver; its hand
- // grips are pose offsets, so keep the replacement on that same root anchor.
- var anchor=key==='rook117'?[0,0,0]:(meta&&meta.rightAnchor||profile.grip||[0,0,0]),scale=profile.length/size.z;
+ var anchor=meta&&meta.rightAnchor||profile.grip||[0,0,0],scale=profile.length/size.z;
  if(!Number.isFinite(scale)||scale<.1||scale>3)throw new Error('Unsafe Legendary world scale for '+key+': '+scale);
  geometry.translate(-anchor[0],-anchor[1],-anchor[2]);geometry.scale(scale,scale,scale);geometry.computeBoundingBox();geometry.computeBoundingSphere();
  var geos=new Set(),mats=new Set();
@@ -13594,6 +13578,12 @@ function mpApplyWorldFinish(u,key){
  var id=key+':'+ix;
  if(u.worldFinish===id)return;
  var finish=weaponFinishList(key)[ix]||FINISHES[0];
+ if(finish.id===SightlineContourRelay.finish.id){
+  if(!WORLD_FINISH_MATS[id]&&WORLD_WEAPON_META[key])WORLD_FINISH_MATS[id]=SightlineContourRelay.createWorldMaterial(THREE,WORLD_WEAPON_META[key]);
+  u.worldGun.material=WORLD_FINISH_MATS[id]||WORLD_MAT;u.worldFinish=id;
+  if(u.worldGun.userData.legendSkinOverlay)u.worldGun.userData.legendSkinOverlay.visible=false;
+  return;
+ }
  if(!WORLD_FINISH_MATS[id]){var mat=WORLD_MAT.clone();if(finish.metal)mat.color.setHex(finish.metal);WORLD_FINISH_MATS[id]=mat;}
  u.worldGun.material=finish.legendary?WORLD_LEGEND_BASE_HIDDEN_MAT:WORLD_FINISH_MATS[id];u.worldFinish=id;
  if(finish.legendary){
@@ -13990,8 +13980,9 @@ function mpFx(m) {
   var ix=u.finishes&&Number.isInteger(u.finishes[m.w])?u.finishes[m.w]:0,finish=weaponFinishList(m.w)[ix]||FINISHES[0];
   var dx = m.e[0] - u.x, dy = m.e[1] - 1.4, dz = m.e[2] - u.z, l = Math.hypot(dx, dy, dz) || 1;
   if (!(WEAPONS[m.w] && WEAPONS[m.w].melee)) {
-    if (effects.length < 160) addTracer(tvA.set(u.x + dx / l * 0.7, 1.4 + dy / l * 0.7, u.z + dz / l * 0.7), tvB.set(m.e[0], m.e[1], m.e[2]), finish.legendary&&legendaryEffectsEnabled()?(finish.tracer||finish.flash):0xffe6a0, 0.05);
-    if(finish.legendary&&legendaryEffectsEnabled()){u.flash.material=legendaryWorldFlashMaterial(finish);u.flash.getWorldPosition(tmpLegendPos);spawnLegendFx(m.w,'muzzle',tmpLegendPos,null,finish);}else u.flash.material=FLASH_M;
+    var styledFx=m.w!=='rook117'&&finish.legendary&&legendaryEffectsEnabled();
+    if (effects.length < 160) addTracer(tvA.set(u.x + dx / l * 0.7, 1.4 + dy / l * 0.7, u.z + dz / l * 0.7), tvB.set(m.e[0], m.e[1], m.e[2]), styledFx?(finish.tracer||finish.flash):0xffe6a0, 0.05);
+    if(styledFx){u.flash.material=legendaryWorldFlashMaterial(finish);u.flash.getWorldPosition(tmpLegendPos);spawnLegendFx(m.w,'muzzle',tmpLegendPos,null,finish);}else u.flash.material=FLASH_M;
     u.flash.visible = true; u.flashT = 0.05;
     u.weaponPulse=1;
     var dist = Math.hypot(u.x - P.x, u.z - P.z),pan=shotPan(u.x,u.z),remoteShotScale=.9/(1+dist*.07);
@@ -14575,11 +14566,6 @@ function updatePlayer(dt) {
     gu.fresh.visible = rf > dropAt && rf < seatEnd;
     gu.fresh.position.set((reloadStyle.side||0)*.09*inv-.05*inv,-.3*inv,.08*inv);
     gu.fresh.rotation.set(0,0,Math.sin(fr*Math.PI)*(reloadStyle.magTilt||0));
-    // Emerald Revenant adds a restrained wrist roll while the existing support
-    // hand seats the replacement magazine; the same rf window and reload clock
-    // remain authoritative for every weapon.
-    var rookLegendReload=cur==='rook117'&&legendActive(g)&&rf>seatStart&&rf<seatEnd;
-    gu.fresh.rotation.x=rookLegendReload?Math.sin((rf-.24)/.46*Math.PI)*.12:0;
     var activeSupportHand=gu.fpSupportPivot||gu.left;
     if (activeSupportHand) {
       if (gu.fpSupportPivot || g.userData.vr18ModelVersion === 'VR18-V3.3-R') {
@@ -14617,7 +14603,6 @@ function updatePlayer(dt) {
   g.visible = P.alive && !(adsT > 0.90 && w.scope) && !qaHideFPViewmodel;
   if (g.userData.optic) g.userData.optic.visible=(cur === 'carbine' || adsT<0.80);
   if (g.userData.profileOptic) {var sightType=g.userData.profileOptic.userData.sightType;g.userData.profileOptic.visible=!SightlineOptics.has(cur)&&((sightType===1||sightType===2)||adsT<0.81);}
-  if(cur==='rook117')legendRookOpticSync(g,legendActive(g));
   /* scope */
   var legacyTargetFov = opticFov(cur), hipFov = gameplayHipFov();
   var targetFov = gameplayOpticFov(cur);
@@ -14644,7 +14629,7 @@ function updatePlayer(dt) {
   if (legendaryScope) el.scope.style.setProperty('--legend-ads', String(Math.min(1, adsT)));
   el.ret.hidden = !(adsT > 0.90 && !w.scope && !w.melee && (!SightlineOptics.has(cur)||SightlineOptics.current(cur)!=='iron') && state === 'live' && P.alive);
   el.ret.className=SightlineOptics.has(cur)?(SightlineOptics.current(cur)==='holo'?'holo':SightlineOptics.current(cur)==='iron'?'iron':'optic'):(/holo|prismatic/i.test(w.sight)?'holo':/optic|reflex/i.test(w.sight)?'optic':'iron');
-  var legendaryAds=selectedLegendaryFinish(cur);
+  var legendaryAds=cur==='rook117'?null:selectedLegendaryFinish(cur);
   var isLegendaryReticle=!!(legendaryAds&&adsT>.90&&el.ret.hidden===false);
   el.ret.classList.toggle('legendary-reticle',isLegendaryReticle);
   el.ret.classList.toggle('legendary-'+cur,isLegendaryReticle);

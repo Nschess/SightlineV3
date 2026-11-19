@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {existsSync,readFileSync} from 'node:fs';
+import {existsSync,readFileSync,readdirSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {Script} from 'node:vm';
@@ -51,6 +51,16 @@ for(const name of ['legendary-packs.js']){
   assert.ok(page.includes(`<script src="${name}"></script>`),`host page missing ${name}`);
   assert.ok(readFileSync(join(offline,name)).equals(readFileSync(join(host,name))),`offline copy differs: ${name}`);
 }
+for(const tree of [host,offline]){
+  for(const asset of readdirSync(tree,{recursive:true,withFileTypes:true})){
+    if(!asset.isFile())continue;
+    assert.doesNotMatch(asset.name,/emerald.revenant|verdant|revenant/i);
+    if(!/\.(html|js|cjs|json)$/.test(asset.name))continue;
+    assert.doesNotMatch(readFileSync(join(asset.parentPath,asset.name),'utf8'),/SightlineEmeraldRevenant|SightlineVerdant|Emerald Revenant|verdant-wyrm|legend-rook117-|revenant-/i,asset.name);
+  }
+  assert.ok(readFileSync(join(tree,'legendary-packs.js'),'utf8').includes("id: 'rook117-3'"),'Contour Relay must retain the established finish ID');
+}
+console.log('PASS Contour Relay ID and exclusion of former cosmetic from both release input trees');
 const themeName='sightline-theme.mp3';
 const themeBytes=readFileSync(join(host,themeName));
 const themeHash=hash(themeBytes);

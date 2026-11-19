@@ -3,11 +3,11 @@ f5f0c4fd7fbb46156930016017390da715ab2743a9906be21799ebf07f6ba64b  ANDROID-SECURI
 9a159883c2abd473b597b092ed98e185673f5615f33c100cf0de38d0078c4240  app/build.gradle
 fca9a7d1d04b9d68f812873a442379888fc1aefa909fab5971b7b43c11030edf  app/src/main/AndroidManifest.xml
 47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11  app/src/main/assets/phone-host/character-realism.js
-70038eb8087f58fe4131c868f29771cf666ddb88926400013ef404f1a142c36b  app/src/main/assets/phone-host/index.html
+b631aff135f9d31402a211998b66345a0fa21fdbd636e0f18ee25fe036d76d43  app/src/main/assets/phone-host/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/phone-host/infection-evasion.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/phone-host/navigation.js
 72dc3139c286af6f18645b7ee470d368cd3e37475d5913be2b6030b281acaf8d  app/src/main/assets/phone-host/server.js
-96f314ae0da1479b1b85a28a60f2b86ade738bc97d78a99a28834b219fb2de4f  app/src/main/assets/phone-host/SHA256SUMS
+65c0e90ede263d80061c7eb3e137147cfa2c27ce9d83a6d3d73e9299896b05c5  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js
@@ -16,7 +16,7 @@ d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/a
 545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f  app/src/main/assets/www/character-skins.js
 e49ec0b3d6d8d87e14626c833686996793232bb82bc3d42c00341bcee5b4894a  app/src/main/assets/www/combat-foundation.js
 ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272  app/src/main/assets/www/deathmatch-rules.js
-a5f78a7f1ee7ef207e9bf21eca0676e7cfc449540d169535dcc0e0285741c6ac  app/src/main/assets/www/index.html
+599598850644fe8b6ed37a1e3f960787ad0d8833354b27ddfee5e2341ee3341d  app/src/main/assets/www/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/www/infection-evasion.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/www/navigation.js
 8936f0875708df045563db447d1f73dc13565a42bb3cef91e541b21f067a2043  app/src/main/assets/www/squad-loadout.js
@@ -24,13 +24,13 @@ a5f78a7f1ee7ef207e9bf21eca0676e7cfc449540d169535dcc0e0285741c6ac  app/src/main/a
 e295d8386da013cdecb83b99892684aca350e72220c1ebeec0b0fe4cbde04c5e  app/src/main/assets/www/survivor-evasion.js
 9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2  app/src/main/assets/www/three.min.js
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/www/weapon-realism.js
-d05277319eec398ba49f1610175f339c8b19603371f90f2068b7a580da296ee1  app/src/main/assets/www/weapon-skins.js
+1f99c2f16f2119551c6c18fe7169549895b558827d65348474ce8f2bf8aa5f07  app/src/main/assets/www/weapon-skins.js
 5196acceff0c4e4fd440371671660bce1c46a43e94305f22bc72532538937227  app/src/main/assets/www/zombie-balance.js
 f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493  app/src/main/assets/www/zombie-counterplay.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/www/zombie-hunt.js
 d09efef6cf313ff9df10fdd49307a1006d2139bd2d80b9e456c83fbf47db5937  app/src/main/java/com/sightline/v3/HostPolicy.java
 3ff3b6ee6b693d7fa30f405ea17ab7ce2012613f0b4b7020348d73357e570c99  app/src/main/java/com/sightline/v3/LanHostService.java
-e62177de9658df28920151239bab66f8df5a39d677edd5a343dee96de1bf0e9e  app/src/main/java/com/sightline/v3/MainActivity.java
+fee1de94ce6adc4f75a0eccf9fedc7a923f1f17c1d9f680abdfcd55183f71d05  app/src/main/java/com/sightline/v3/MainActivity.java
 8f010cdfea8ff723672eb33c22ea2a5d86f0892600a4ab390b27c48767d2b914  app/src/main/java/com/sightline/v3/UpdateManager.java
 bdcf6b4a260bf2517d77b83e967e8abaa48171f11e0de305daff2585cc642028  app/src/main/java/com/sightline/v3/UpdatePolicy.java
 ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847  app/src/main/res/drawable-nodpi/ic_sightline_foreground.png
@@ -106,6 +106,6 @@ ddd97d80b22b017286b5c10e6646024100e7f399d10613724612732e7e15dc56  UPDATE-RELEASE
 239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b  app/src/main/assets/www/mp-transport-policy.js
 5019df75db61481896131eb3b968380b076cbb29aa3e0e053fa17f86205e1606  app/src/debug/AndroidManifest.xml
 183ccd89a26d41a967aa77f207603b0c0ca5d5ec75a78bd1eb6733602b773ef6  app/src/debug/res/xml/network_security_config.xml
-db86107d00dc84f9de86ac29eca14d2f7259e04859e86f2db4513df9fcfda7ef  app/src/main/assets/phone-host/legendary-packs.js
-db86107d00dc84f9de86ac29eca14d2f7259e04859e86f2db4513df9fcfda7ef  app/src/main/assets/www/legendary-packs.js
+e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/assets/phone-host/legendary-packs.js
+e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/assets/www/legendary-packs.js
 8a20dc34aef607324d0e75343eb1ed83090c9da20d04cfb5a70784250126f268  app/src/main/java/com/sightline/v3/LanPagePolicy.java

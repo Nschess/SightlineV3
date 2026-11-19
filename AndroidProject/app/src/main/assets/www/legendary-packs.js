@@ -11,7 +11,7 @@
      - Shot: fire-wave stock->muzzle, muzzle flare + shock rings, comet tracer with twin fire
        strands, impact fireball with rising embers. Reload: fire banks down, rekindles with a whoomp.
      - Equip "rebirth" sweep + synthesised phoenix cry. All audio synthesised, no asset files.
-   Contract (same as SightlineEclipse / SightlineVerdant):
+   Contract (same as SightlineEclipse):
      finish, weapon, buildRig(THREE), createFx(THREE, scene), decorate(btn,f,sel), equipSound/rearmSound/mixShot */
 (function (global) {
 'use strict';
@@ -3189,469 +3189,117 @@ makeLegend({
 })(window);
 
 
-/* ---- Legendary module restored from the user-supplied source archive ---- */
-/* Provenance: original Verdant module SHA-256 c7dc825c243afe0d9b05c36cc5ee0ead3c99cad39fcd081694856b9d02e84aeb; only firearm/finish identity metadata is adapted to the archived Rook117 Emerald Revenant mapping. Geometry, anchors, shader, FX, and synthesized sound implementation are retained. */
-/* ---- legendary-verdant.js ---- */
-/* Sightline legendary finish: EMERALD REVENANT (ROOK117)
-   Original design. Cosmetic only: no damage, ammo, recoil, hit or network behaviour is touched.
-
-   What it adds
-     - Dark-jade body with living dragon-scale seams (hex-scale shader patched into the gun's own
-       Phong materials, shared in gun space so stock/receiver/handguard/mag read as one hide).
-     - Slit-pupil wyrm eyes on both receiver flanks (blink, narrow when firing), a glowing spine of
-       fins along the top rail, glow slats on the handguard, drifting firefly spores, muzzle flare
-       with three leaf-shaped shock rings.
-     - Shot: scale-wave surges stock->muzzle, barrel heat builds in full-auto, emerald helix tracer,
-       impact spore burst + shock ring. Built cheap for 700 rpm: pooled, nothing allocated per frame.
-     - Equip "awakening" sweep, reload dimming/recharge, rearm surge, synthesised audio.
-   Contract used by index.html (same as SightlineEclipse):
-     finish, weapon, buildRig(THREE), createFx(THREE, scene), decorate(btn,f,sel),
-     equipSound / rearmSound / mixShot (Float32Array generators) */
 (function (global) {
-'use strict';
+  'use strict';
 
-var FINISH = {
-  name: 'Emerald Revenant', legendary: true, legendKind: 'verdant',
-  metal: 0x10241a, polymer: 0x07110b, trim: 0x5dff9a,
-  desc: 'LEGENDARY · emerald scale shader, twin wyrm eyes, reactive rail spine, jade helix tracers'
-};
-
-/* ------------------------------------------------------------------ shaders */
-var GLSL_COMMON = 'uniform float uT,uPulse,uHeat,uAwake,uDim,uGain,uLow;\nvarying vec3 vEcl;\n';
-var GLSL_FRAG_FUNCS =
-  'float eH(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n' +
-  'vec2 eHex(vec2 p,out vec2 id){vec2 r=vec2(1.,1.7320508),h=r*.5;vec2 a=mod(p,r)-h,b=mod(p-h,r)-h;\n' +
-  ' vec2 g=dot(a,a)<dot(b,b)?a:b; id=p-g; return g;}\n';
-
-var SURF_OLD = '{\n float t=vEcl.y;\n vec3 q=vEcl*vec3(46.,46.,16.); vec3 f=abs(fract(q)-.5); float ln=smoothstep(.46,.5,max(f.y,f.z)); diffuseColor.rgb*=1.-ln*.5;\n diffuseColor.rgb=mix(diffuseColor.rgb*.64,diffuseColor.rgb*1.2,smoothstep(-.012,.014,t));\n float inl=smoothstep(.0025,.0,abs(t-.0105))+smoothstep(.0022,.0,abs(t+.0085));\n diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.3,1.,.6)*.9,clamp(inl,0.,1.)*.9);\n float sc=step(.96,fract(sin(floor(vEcl.z*70.)*12.9+floor(vEcl.y*70.)*78.2)*437.5)); diffuseColor.rgb*=1.-sc*.3;\n}\n';
-var GLSL_EMISSIVE =
-  '{\n' +
-  ' vec2 uv=vec2(vEcl.z*40.,(vEcl.y+vEcl.x)*40.);\n' +
-  ' uv.y+=sin(vEcl.z*9.)*.6;\n' +
-  ' vec2 id; vec2 g=eHex(uv,id);\n' +
-  ' float rr=length(g+vec2(0.,.12)); float seam=smoothstep(.40,.5,rr)*smoothstep(-.12,.28,g.y);\n' +
-  ' float hs=eH(id);\n' +
-  ' float band=pow(.5+.5*sin(vEcl.z*11.-uT*3.2),2.5);\n' +
-  ' float breath=.55+.45*sin(uT*1.4+hs*6.28);\n' +
-  ' float spark=step(.988,hs)*(.5+.5*sin(uT*4.+hs*60.));\n' +
-  ' if(uLow>.5)spark*=.5;\n' +
-  ' float waveP=exp(-pow((vEcl.z-(.5-uPulse*1.2))*9.,2.))*step(0.,uPulse);\n' +
-  ' float waveA=exp(-pow((vEcl.z-(.5-uAwake*1.4))*6.,2.))*step(0.,uAwake);\n' +
-  ' float lit=seam*(.14+.86*band)*breath*(1.-uDim)+(waveP+waveA)*(.28+seam*1.5+(1.-seam)*.35)+uHeat*(.15+seam*.9)*.5;\n' +
-  ' float fill=(1.-seam)*(.02+.1*waveP+.08*waveA)*(1.-uDim);\n' +
-  ' vec3 col=mix(vec3(.05,.95,.42),vec3(.78,1.,.3),clamp(waveP*.8+waveA*.6+uHeat*.5+band*.15,0.,1.));\n' +
-  ' float fres=pow(1.-clamp(dot(normal,normalize(vViewPosition)),0.,1.),3.);\n' +
-  ' vec3 rim=mix(vec3(.05,.8,.6),vec3(.7,1.,.3),.5+.5*sin(uT*.7+vEcl.z*5.))*fres*(.45+uHeat*.5);\n' +
-  ' totalEmissiveRadiance+=(col*lit*1.25+vec3(.04,.5,.2)*fill+vec3(.7,1.,.75)*spark*.4*(1.-uDim)+rim)*uGain;\n' +
-  '}\n';
-
-function patchMaterial(mat, U, gain) {
-  mat.onBeforeCompile = function (sh) {
-    sh.uniforms.uT = U.uT; sh.uniforms.uPulse = U.uPulse; sh.uniforms.uHeat = U.uHeat;
-    sh.uniforms.uAwake = U.uAwake; sh.uniforms.uDim = U.uDim; sh.uniforms.uLow = U.uLow;
-    sh.uniforms.uInv = U.uInv; sh.uniforms.uGain = { value: gain };
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform mat4 uInv;\nvarying vec3 vEcl;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvEcl=(uInv*modelMatrix*vec4(transformed,1.)).xyz;');
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\n' + GLSL_COMMON + GLSL_FRAG_FUNCS)
-      .replace('#include <color_fragment>', '#include <color_fragment>\n' + SURF_OLD)
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' + GLSL_EMISSIVE);
-  };
-  mat.customProgramCacheKey = function () { return 'verdant-wyrm-v2'; };
-  mat.needsUpdate = true;
-  return mat;
-}
-
-/* ------------------------------------------------------------------ textures */
-var texCache = {};
-function canvasTex(T, key, size, draw) {
-  if (texCache[key]) return texCache[key];
-  var c = document.createElement('canvas'); c.width = c.height = size;
-  draw(c.getContext('2d'), size);
-  return (texCache[key] = new T.CanvasTexture(c));
-}
-function flareTex(T) {
-  return canvasTex(T, 'vflare', 128, function (g, s) {
-    var h = s / 2, gr = g.createRadialGradient(h, h, 0, h, h, h);
-    gr.addColorStop(0, 'rgba(240,255,225,1)'); gr.addColorStop(.12, 'rgba(120,255,160,.95)');
-    gr.addColorStop(.38, 'rgba(20,190,90,.32)'); gr.addColorStop(1, 'rgba(0,150,70,0)');
-    g.fillStyle = gr; g.fillRect(0, 0, s, s);
-    g.globalCompositeOperation = 'lighter';
-    var l = g.createLinearGradient(0, h, s, h); l.addColorStop(0, 'rgba(120,255,170,0)'); l.addColorStop(.5, 'rgba(220,255,210,.85)'); l.addColorStop(1, 'rgba(120,255,170,0)');
-    g.fillStyle = l; g.fillRect(0, h - 2, s, 4);
+  // Independently written Contour Relay finish. Uses the stock ROOK117 mesh.
+  const spec = Object.freeze({
+    title: 'Contour Relay',
+    pack: 'SightlineContourRelay',
+    desc: 'Neutral slate, low-contrast etched contours and muted amber witness marks.',
+    inspect: Object.freeze({duration: 1.55, x: -.132, y: .075, z: .046, rx: .07, ry: -.95, rz: .21}),
+    metal: 0x3e494f, polymer: 0x343e44, trim: 0x596467, dark: 0x232a2e,
+    roughness: .91, metalness: .025
   });
-}
-function discTex(T) {
-  return canvasTex(T, 'vdisc', 64, function (g, s) {
-    var h = s / 2, gr = g.createRadialGradient(h, h, 0, h, h, h);
-    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.4, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
-    g.fillStyle = gr; g.fillRect(0, 0, s, s);
-  });
-}
-/* Wyrm eye: emerald iris, vertical slit pupil, dark lid shadow. Drawn once. */
-function eyeTex(T) {
-  return canvasTex(T, 'veye', 256, function (g, s) {
-    var h = s / 2; g.clearRect(0, 0, s, s);
-    var glow = g.createRadialGradient(h, h, s * .08, h, h, h);
-    glow.addColorStop(0, 'rgba(190,255,150,1)'); glow.addColorStop(.45, 'rgba(40,220,110,.75)'); glow.addColorStop(1, 'rgba(0,160,80,0)');
-    g.fillStyle = glow; g.fillRect(0, 0, s, s);
-    g.save(); g.beginPath(); g.ellipse(h, h, s * .43, s * .26, 0, 0, 6.2832); g.clip();
-    var iris = g.createRadialGradient(h, h, s * .02, h, h, s * .43);
-    iris.addColorStop(0, '#f4ffc4'); iris.addColorStop(.35, '#7dff8f'); iris.addColorStop(.75, '#14b45a'); iris.addColorStop(1, '#04361c');
-    g.fillStyle = iris; g.fillRect(0, 0, s, s);
-    g.strokeStyle = 'rgba(230,255,180,.35)'; g.lineWidth = 2;
-    for (var i = 0; i < 18; i++) { var a = i * Math.PI / 9; g.beginPath(); g.moveTo(h + Math.cos(a) * s * .1, h + Math.sin(a) * s * .07); g.lineTo(h + Math.cos(a) * s * .42, h + Math.sin(a) * s * .26); g.stroke(); }
-    g.restore();
-    g.fillStyle = '#020805'; g.beginPath(); g.ellipse(h, h, s * .05, s * .22, 0, 0, 6.2832); g.fill();
-    g.strokeStyle = 'rgba(190,255,170,.9)'; g.lineWidth = 4; g.beginPath(); g.ellipse(h, h, s * .43, s * .26, 0, 0, 6.2832); g.stroke();
-  });
-}
+  const finish = Object.freeze({id: 'rook117-3', name: spec.title});
+  const toMaterial = Object.freeze({metal: 'receiver', handguard: 'foreend'});
+  const noAnimation = () => {};
 
-/* ------------------------------------------------------------------ the rig */
-var ANCHOR = {
-  muzzle: [0.0, 0.018, -0.70],
-  eye: { x: 0.0207, y: 0.017, z: -0.098 },
-  spine: { y: 0.0715, z0: 0.10, z1: -0.44, n: 9 },
-  slats: { x: 0.0289, y: 0.012, z0: -0.20, z1: -0.345, n: 4 },
-  spore: { cx: 0.0, cy: 0.02, z0: 0.40, z1: -0.62 }
-};
-
-function buildRig(T, host) {
-  var A = ANCHOR, group = new T.Group(); group.name = 'verdant-wyrm-rig';
-  var U = { uT: { value: 0 }, uPulse: { value: -1 }, uHeat: { value: 0 }, uAwake: { value: -1 }, uDim: { value: 0 }, uLow: { value: 0 }, uInv: { value: new T.Matrix4() } };
-  var S = { t: 0, pulse: -1, heat: 0, awake: -1, dim: 0, boost: 0, flare: 0, flash: 0, rf: 0, reloading: false, low: false, pendingRearm: false, rearmFx: 0, chase: 9, blink: 0, nextBlink: 2.5 };
-  var add = { transparent: true, depthWrite: false, blending: T.AdditiveBlending };
-  function basic(color, opacity, extra) { var o = { color: color, opacity: opacity }; for (var k in add) o[k] = add[k]; for (var e in (extra || {})) o[e] = extra[e]; return new T.MeshBasicMaterial(o); }
-
-  /* --- sculpted receiver scales and captive faceted reactor ------------------------------- */
-  var emeraldArmor = new T.MeshPhongMaterial({ color: 0x0b2518, specular: 0x6ab88b, shininess: 126, emissive: 0x06160d, emissiveIntensity: .12, side: T.DoubleSide });
-  var emeraldInlay = new T.MeshPhongMaterial({ color: 0x245a3c, specular: 0x9bffc1, shininess: 152, emissive: 0x0c2817, emissiveIntensity: .12, side: T.DoubleSide });
-  var reactorBezelMat = new T.MeshPhongMaterial({ color: 0x101e17, specular: 0xa4e9be, shininess: 170, side: T.DoubleSide });
-  var reactorMat = new T.MeshPhongMaterial({ color: 0x78ffad, specular: 0xf1fff6, emissive: 0x13894a, emissiveIntensity: .48, shininess: 190, transparent: true, opacity: .92 });
-  global.SightlineLegendaryGeometry.addBilateralArmorPlate(T, group, 'revenant-2-sculpted-receiver-scales', .0285, .0075, .0015,
-    [[.060,.006],[.039,.043],[-.025,.047],[-.091,.034],[-.126,.010],[-.102,-.014],[-.035,-.034],[.034,-.023]], emeraldArmor);
-  global.SightlineLegendaryGeometry.addBilateralArmorPlate(T, group, 'revenant-2-jade-inset-bevels', .0325, .0018, .00045,
-    [[.033,.008],[.013,.027],[-.031,.031],[-.081,.021],[-.100,.006],[-.076,-.009],[-.031,-.023],[.018,-.015]], emeraldInlay);
-  var reactorCrystals = [];
-  [-1, 1].forEach(function (side) {
-    var bezel = new T.Mesh(new T.CylinderGeometry(.014,.014,.008,8,1), reactorBezelMat);
-    bezel.name = 'revenant-2-reactor-collar-' + (side < 0 ? 'left' : 'right'); bezel.rotation.z = side * Math.PI / 2;
-    bezel.position.set(side * .033, .014, -.044); group.add(bezel);
-    var gem = new T.Mesh(new T.OctahedronGeometry(.010,0), reactorMat);
-    gem.name = 'revenant-2-faceted-reactor-core-' + (side < 0 ? 'left' : 'right');
-    gem.position.set(side * .039, .014, -.044); group.add(gem); reactorCrystals.push({ mesh: gem, side: side });
-  });
-
-  /* --- eyes ------------------------------------------------------------------------------- */
-  var eyes = [];
-  [-1, 1].forEach(function (side) {
-    var m = new T.Mesh(new T.PlaneGeometry(.052, .03), basic(0xffffff, .95, { map: eyeTex(T), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-    m.position.set(side * A.eye.x, A.eye.y, A.eye.z); m.rotation.y = side * Math.PI / 2; group.add(m); eyes.push(m);
-  });
-
-  /* --- spine fins on the top rail ------------------------------------------------------------ */
-  var fins = [], finMats = [];
-  var finGeo = new T.ConeGeometry(.0042, .018, 3, 1); finGeo.rotateZ(0); finGeo.translate(0, .009, 0);
-  for (var i = 0; i < A.spine.n; i++) {
-    var fm = new T.MeshBasicMaterial({ color: 0x39ff8a, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 1 }); finMats.push(fm);
-    var z = A.spine.z0 + (A.spine.z1 - A.spine.z0) * (i / (A.spine.n - 1));
-    var fin = new T.Mesh(finGeo, fm); fin.position.set(0, A.spine.y, z); fin.rotation.x = -.35; fin.scale.set(1, .7 + .5 * Math.sin(i * 1.3 + 1) * .5 + .3, 1); group.add(fin); fins.push(fin);
-  }
-
-  /* --- handguard slats (both sides) ----------------------------------------------------------- */
-  var slatMats = [];
-  for (var s = 0; s < A.slats.n; s++) {
-    var sm = new T.MeshBasicMaterial({ color: 0x30ff80, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 1 }); slatMats.push(sm);
-    var sz = A.slats.z0 + (A.slats.z1 - A.slats.z0) * (s / (A.slats.n - 1));
-    [-1, 1].forEach(function (side) { var b = new T.Mesh(new T.BoxGeometry(.0016, .02, .0085), sm); b.position.set(side * A.slats.x, A.slats.y, sz); group.add(b); });
-  }
-
-  /* --- muzzle ---------------------------------------------------------------------------------- */
-  var mz = new T.Group(); mz.position.set(A.muzzle[0], A.muzzle[1], A.muzzle[2]); group.add(mz);
-  var mzRing = new T.Mesh(new T.TorusGeometry(.0165, .0012, 6, 30), basic(0x4dff94, 0)); mz.add(mzRing);
-  var flare = new T.Mesh(new T.PlaneGeometry(.4, .4), basic(0xffffff, 0, { map: flareTex(T) })); flare.position.z = -.02; mz.add(flare);
-  var shock = [];
-  for (var r = 0; r < 3; r++) { var rm = new T.Mesh(new T.RingGeometry(.02, .027, 6), basic(0x6dff9e, 0, { side: T.DoubleSide })); rm.visible = false; mz.add(rm); shock.push({ m: rm, t: 9 }); }   // hexagonal "scale" rings
-  var shockNext = 0;
-
-  /* --- spores: one Points draw call, vertex-shader animated ----------------------------------- */
-  var NE = 52, seeds = new Float32Array(NE * 4), pos = new Float32Array(NE * 3), rs = 4242;
-  function rnd() { rs = (rs * 16807) % 2147483647; return rs / 2147483647; }
-  for (var e = 0; e < NE; e++) { seeds[e * 4] = rnd(); seeds[e * 4 + 1] = rnd(); seeds[e * 4 + 2] = .5 + rnd() * 1.2; seeds[e * 4 + 3] = .45 + rnd() * .9; }
-  var eg = new T.BufferGeometry(); eg.setAttribute('position', new T.BufferAttribute(pos, 3)); eg.setAttribute('aSeed', new T.BufferAttribute(seeds, 4));
-  var emU = { uT: U.uT, uBoost: { value: 0 }, uScale: { value: 520 }, uZ0: { value: A.spore.z0 }, uZ1: { value: A.spore.z1 }, uC: { value: new T.Vector2(A.spore.cx, A.spore.cy) } };
-  var emMat = new T.ShaderMaterial({
-    uniforms: emU, transparent: true, depthWrite: false, blending: T.AdditiveBlending,
-    vertexShader:
-      'attribute vec4 aSeed; uniform float uT,uBoost,uScale,uZ0,uZ1; uniform vec2 uC; varying float vA; varying float vH;\n' +
-      'void main(){ float u=fract(uT*.04*aSeed.z+aSeed.x); float ang=uT*aSeed.z*.8+aSeed.y*6.2832;\n' +
-      ' float rad=(.04+.06*aSeed.x)*(1.+uBoost*.6);\n' +
-      ' vec3 p=vec3(uC.x+cos(ang)*rad+sin(uT*1.3+aSeed.y*20.)*.012, uC.y-.02+u*.09+sin(ang*.7)*rad*.5, mix(uZ0,uZ1,u)+sin(uT*.9+aSeed.x*30.)*.02);\n' +
-      ' vA=sin(3.14159*u)*(.55+.45*sin(uT*3.+aSeed.y*40.)); vH=aSeed.x; vec4 mv=modelViewMatrix*vec4(p,1.);\n' +
-      ' gl_PointSize=clamp(aSeed.w*.016*uScale*(1.+uBoost*.8)/max(.05,-mv.z),1.,64.); gl_Position=projectionMatrix*mv; }',
-    fragmentShader:
-      'varying float vA; varying float vH;\n' +
-      'void main(){ vec2 c=gl_PointCoord-.5; float d=length(c); float a=smoothstep(.5,0.,d); a*=a;\n' +
-      ' vec3 col=mix(vec3(.2,1.,.45),vec3(.8,1.,.3),step(.7,vH)); col=mix(col,vec3(1.,.98,.85),smoothstep(.16,0.,d)); gl_FragColor=vec4(col,a*vA); }'
-  });
-  var spores = new T.Points(eg, emMat); spores.frustumCulled = false; group.add(spores);
-  var magArmor = global.SightlineLegendaryGeometry.buildLegendaryMagazineArmor(T, 'revenant-2', host,
-    [[-.055,-.055],[-.084,-.065],[-.104,-.091],[-.132,-.132],[-.164,-.174],[-.192,-.198],[-.220,-.203],[-.236,-.184],[-.211,-.151],[-.184,-.108],[-.156,-.073],[-.132,-.050],[-.087,-.044]],
-    .024, .0044, .0010, emeraldArmor, emeraldInlay, -.148);
-
-  /* ---------------- state machine ---------------- */
-  var mats = {};
-  function dress(g, on) {
-    if (!on) return;
-    group.updateWorldMatrix(true, false);
-    g.traverse(function (mesh) {
-      if (!mesh.isMesh || !mesh.userData.finishBase || mesh.userData.finishBadge) return;
-      var base = mesh.userData.finishBase, c = base.color, b = (c.r + c.g + c.b) / 3;
-      if (b < .004 || b > .75 || base.transparent) return;
-      var m = mats[base.uuid];
-      if (!m) {
-        var metal = b > .05;
-        m = new T.MeshPhongMaterial({
-          color: metal ? 0x0b1c13 : 0x050c08, specular: metal ? 0x5a9a70 : 0x2c4a38, shininess: metal ? 95 : 40,
-          map: base.map || null, bumpMap: base.bumpMap || null, bumpScale: base.bumpScale || 1, envMap: null,
-          reflectivity: metal ? .12 : .05, combine: T.MixOperation
-        });
-        patchMaterial(m, U, metal ? 1 : .65); mats[base.uuid] = m;
-      }
-      mesh.material = m;
+  function contourMaterial(THREE, base, scale, origin) {
+    const material = new THREE.MeshStandardMaterial({
+      name: 'Contour Relay · ' + base,
+      color: spec.metal,
+      roughness: spec.roughness,
+      metalness: spec.metalness
     });
+    material.extensions = {derivatives: true};
+    material.onBeforeCompile = function (shader) {
+      shader.uniforms.relayScale = {value: scale};
+      shader.uniforms.relayOrigin = {value: origin};
+      shader.uniforms.relayInk = {value: new THREE.Color(0x819095).convertSRGBToLinear()};
+      shader.uniforms.relayAmber = {value: new THREE.Color(0xc8873c).convertSRGBToLinear()};
+      shader.vertexShader = [
+        'uniform float relayScale;',
+        'uniform vec3 relayOrigin;',
+        'varying vec3 vRelayPosition;',
+        'varying float vRelayFlank;',
+        shader.vertexShader
+      ].join('\n').replace('#include <begin_vertex>', [
+        '#include <begin_vertex>',
+        'vRelayPosition = position / relayScale + relayOrigin;',
+        'vRelayFlank = abs(normal.x);'
+      ].join('\n'));
+      shader.fragmentShader = [
+        'uniform vec3 relayInk;',
+        'uniform vec3 relayAmber;',
+        'varying vec3 vRelayPosition;',
+        'varying float vRelayFlank;',
+        shader.fragmentShader
+      ].join('\n').replace('#include <color_fragment>', [
+        '#include <color_fragment>',
+        // An abstract heightfield, projected on the flanks in weapon space.
+        'vec2 grid = vec2((vRelayPosition.z + .57) / .67, (vRelayPosition.y + .050) / .13);',
+        'vec2 hill = (grid - vec2(.36, .58)) * vec2(1.12, .51);',
+        'float ridges = 9.5 * (length(hill) + .054 * sin(6.4 * grid.x + 3.1 * grid.y));',
+        'float feather = max(.045, .55 * fwidth(ridges));',
+        'float line = 1.0 - smoothstep(.082, .082 + feather, abs(fract(ridges) - .5));',
+        'float resolution = 1.0 - smoothstep(.29, .71, fwidth(ridges));',
+        'float panel = smoothstep(.025, .15, grid.x) * (1.0 - smoothstep(.85, .96, grid.x));',
+        'panel *= smoothstep(.01, .13, grid.y) * (1.0 - smoothstep(.72, .91, grid.y));',
+        'panel *= smoothstep(.25, .72, vRelayFlank);',
+        'float inset = grid.y - .34 + .68 * (grid.x - .71);',
+        'float stripe = (1.0 - smoothstep(.024, .046, abs(inset))) * smoothstep(.664, .676, grid.x) * (1.0 - smoothstep(.737, .751, grid.x));',
+        'float tick = (1.0 - smoothstep(.018, .040, abs(inset))) * smoothstep(.762, .770, grid.x) * (1.0 - smoothstep(.779, .793, grid.x));',
+        'diffuseColor.rgb *= mix(.84, 1.0, smoothstep(-.33, -.23, vRelayPosition.z));',
+        'diffuseColor.rgb = mix(diffuseColor.rgb, relayInk, panel * line * .58 * resolution);',
+        'diffuseColor.rgb = mix(diffuseColor.rgb, relayAmber, max(stripe, tick * .70) * panel);'
+      ].join('\n'));
+    };
+    material.customProgramCacheKey = () => 'sightline-contour-relay-v2';
+    return material;
   }
-  function fire() {
-    S.pulse = 0; S.boost = Math.min(1, S.boost + .6); S.flare = 1; S.heat = Math.min(1, S.heat + .07); S.chase = 0; S.blink = .0;
-    var sh = shock[shockNext]; shockNext = (shockNext + 1) % 3; sh.t = 0; sh.m.visible = !S.low;
-  }
-  function awaken() { S.awake = 0; S.flash = 1; S.boost = Math.max(S.boost, .9); }
-  function rearm() { S.rearmFx = 1; S.pulse = 0; S.boost = Math.max(S.boost, .7); S.flash = Math.max(S.flash, .6); }
-  function setReload(rf, is) { if (!S.reloading && is) S.pendingReload = true; if (S.reloading && !is) { S.pendingRearm = true; rearm(); } S.reloading = !!is; S.rf = rf || 0; }
-  function setDetail(level) {
-    var low = level === 'low'; if (low === S.low) return; S.low = low; U.uLow.value = low ? 1 : 0; eg.setDrawRange(0, low ? 18 : NE);
-  }
-  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
-  function update(dt, o) {
-    if (!group.visible || (group.parent && !group.parent.visible)) return;
-    if (dt > .1) dt = .1; S.t += dt; U.uT.value = S.t;
-    var dimT = S.reloading ? (S.rf < .72 ? .86 : .86 * (1 - clamp01((S.rf - .72) / .28))) : 0;
-    S.dim += (dimT - S.dim) * Math.min(1, dt * 7); U.uDim.value = S.dim;
-    if (S.pulse >= 0) { S.pulse += dt / .3; if (S.pulse > 1.15) S.pulse = -1; } U.uPulse.value = S.pulse;
-    if (S.awake >= 0) { S.awake += dt / 1.1; if (S.awake > 1.15) S.awake = -1; } U.uAwake.value = S.awake;
-    S.heat = Math.max(0, S.heat - dt * .3); U.uHeat.value = S.heat;
-    S.boost = Math.max(0, S.boost - dt * 1.3); emU.uBoost.value = S.boost;
-    S.flash = Math.max(0, S.flash - dt * 1.1); S.flare = Math.max(0, S.flare - dt * 9); S.rearmFx = Math.max(0, S.rearmFx - dt * 3);
-    U.uInv.value.copy(group.matrixWorld).invert();
-    emU.uScale.value = (global.innerHeight || 600) * .87 * (1 - ((o && o.ads) || 0) * .85);
-    var live = 1 - S.dim * .8, fl = S.flash, ads = (o && o.ads) || 0, af = 1 - ads;
-    for (var rc = 0; rc < reactorCrystals.length; rc++) {
-      var rv = S.low ? .22 : (.42 + .22 * Math.sin(S.t * 2.6 + rc * Math.PI) + S.boost * .34 + S.heat * .24 + fl * .20);
-      reactorCrystals[rc].mesh.rotation.y = reactorCrystals[rc].side * (S.t * .42 + S.boost * .22);
-      reactorCrystals[rc].mesh.rotation.z = Math.sin(S.t * 1.4 + rc) * .08;
-      reactorCrystals[rc].mesh.scale.setScalar(.92 + Math.max(0, rv) * .18);
-      reactorMat.emissiveIntensity = .18 + Math.max(0, rv) * .58;
-    }
-    // eyes: slow blink, narrow + brighten on fire, flare on awaken
-    S.nextBlink -= dt; if (S.nextBlink <= 0) { S.blink = .0001; S.nextBlink = 2.2 + (Math.sin(S.t * 12.9) * .5 + .5) * 3.2; }
-    var lid = 1; if (S.blink > 0) { S.blink += dt / .22; lid = Math.abs(1 - 2 * Math.min(1, S.blink)); lid = .08 + .92 * lid; if (S.blink >= 1) S.blink = 0; }
-    var narrow = 1 - S.boost * .35;
-    var eo = Math.min(1, (.7 + .25 * Math.sin(S.t * 1.8)) * live + fl * .4 + S.boost * .35 + S.heat * .2);
-    for (var q = 0; q < 2; q++) { eyes[q].scale.set(1 + fl * .25, lid * narrow * (1 + fl * .2), 1); eyes[q].material.opacity = eo; }
-    // spine fins: slow breathing ripple + chase after each shot
-    S.chase += dt * 30;
-    for (var k = 0; k < fins.length; k++) {
-      var ch = Math.exp(-Math.pow(S.chase - k * 1.1, 2) * .35) * (S.chase < 14 ? 1 : 0);
-      var idle = (.3 + .25 * Math.sin(S.t * 2.1 - k * .7)) * live, v = Math.min(1, idle + ch + S.heat * .4 + fl * .5);
-      finMats[k].color.setRGB(.15 + .5 * ch, .6 + .4 * v, .3 + .1 * ch); finMats[k].opacity = (.25 + .75 * v) * af * af; fins[k].visible = af > .03;
-      fins[k].rotation.x = -.35 + S.dim * 1.15 - S.boost * .25 * Math.sin(S.t * 18 + k);
-    }
-    for (var m = 0; m < slatMats.length; m++) {
-      var sv = Math.min(1, (.3 + .3 * Math.sin(S.t * 1.7 + m * 1.1)) * live + S.heat * .5 + S.boost * .35 + fl * .4);
-      slatMats[m].color.setRGB(.15 + .35 * S.boost, .6 + .4 * sv, .3 + .2 * S.boost); slatMats[m].opacity = .2 + .8 * sv;
-    }
-    // muzzle
-    mzRing.material.opacity = S.flare * .85 + S.heat * .3 * live; mzRing.visible = mzRing.material.opacity > .01;
-    var fs = .22 + S.flare * .6; flare.scale.set(fs, fs, 1); flare.material.opacity = S.flare; flare.visible = S.flare > .01; flare.rotation.z += dt * 3;
-    for (var z = 0; z < shock.length; z++) {
-      var sh = shock[z]; if (!sh.m.visible) continue; sh.t += dt / .24;
-      if (sh.t >= 1) { sh.m.visible = false; continue; }
-      var sc = 1 + sh.t * 6; sh.m.scale.set(sc, sc, 1); sh.m.rotation.z = sh.t * 1.2; var inv = 1 - sh.t; sh.m.material.opacity = inv * inv * .85;
-    }
-  }
-  function takeReload() { var p = S.pendingReload; S.pendingReload = false; return p; }
-  function takeRearm() { var p = S.pendingRearm; S.pendingRearm = false; return p; }
-  return {
-    kind: 'verdant', group: group, update: update, fire: fire, awaken: awaken, rearm: rearm,
-    setReload: setReload, setDetail: setDetail, dress: dress, takeRearm: takeRearm, takeReload: takeReload, state: S, uniforms: U,
-    mount: function (root) { root.add(group); if (magArmor && root.userData && root.userData.mag && magArmor.parent !== root.userData.mag) root.userData.mag.add(magArmor); },
-    setVisible: function (v) { group.visible = !!v; if (magArmor) magArmor.visible = !!v; },
-    dispose: function () { group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
-  };
-}
 
-/* ------------------------------------------------------------------ world effects */
-function createFx(T, scene) {
-  var NB = 6, beams = [], UT = { value: 0 }, clock = 0;
-  var bvs = 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }';
-  var bfs =
-    'varying vec2 vUv; uniform float uHead,uAlpha,uLen,uT;\n' +
-    'void main(){ float x=vUv.x, y=(vUv.y-.5)*2.; float L=uLen;\n' +
-    ' float d=x-uHead; float tail=smoothstep(-.4,0.,d)*step(d,0.); float head=exp(-d*d*1500.);\n' +
-    ' float fade=smoothstep(0.,.02,x)*uAlpha;\n' +
-    ' float core=exp(-y*y*30.); float body=exp(-y*y*5.5);\n' +
-    ' float w=sin(x*L*1.7-uT*38.)*.5; float s1=exp(-pow((y-w)*9.,2.)), s2=exp(-pow((y+w)*9.,2.));\n' +
-    ' vec3 em=vec3(.1,1.,.5), lime=vec3(.78,1.,.3), white=vec3(.92,1.,.88);\n' +
-    ' vec3 col=white*core*(.45+tail*1.2+head*1.6)+em*s1*(tail*.9+head)+lime*s2*(tail*.9+head)+em*body*.07*uAlpha;\n' +
-    ' float a=(core*(.45+tail+head)+s1*tail+s2*tail+body*.07)*fade; gl_FragColor=vec4(col*fade,clamp(a,0.,1.)); }';
-  var planeGeo = new T.PlaneGeometry(1, 1);
-  for (var i = 0; i < NB; i++) {
-    var U = { uHead: { value: 0 }, uAlpha: { value: 0 }, uLen: { value: 1 }, uT: UT };
-    var mat = new T.ShaderMaterial({ uniforms: U, vertexShader: bvs, fragmentShader: bfs, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide });
-    var g = new T.Group(), p1 = new T.Mesh(planeGeo, mat), p2 = new T.Mesh(planeGeo, mat); p2.rotation.x = Math.PI / 2;
-    g.add(p1, p2); g.visible = false; g.frustumCulled = false; p1.frustumCulled = p2.frustumCulled = false; scene.add(g);
-    beams.push({ g: g, U: U, t: 9, ttl: .16, amp: 1 });
+  function buildRig(THREE) {
+    const group = new THREE.Group();
+    group.name = 'contour-relay-finish';
+    const finishMaterials = {};
+    return {
+      group,
+      kind: 'contour-relay',
+      replacesBase: false,
+      update: noAnimation,
+      setDetail: noAnimation,
+      setReload: noAnimation,
+      fire: noAnimation,
+      hit: noAnimation,
+      kill: noAnimation,
+      awaken: noAnimation,
+      rearm: noAnimation,
+      dress(weapon, active) {
+        if (!active || weapon.userData.weaponKey !== 'rook117') return;
+        const chassis = weapon.getObjectByName('P1164-baked-rook117');
+        if (!chassis) throw new Error('Contour Relay requires the standard ROOK117 chassis');
+        for (const mesh of chassis.children) {
+          const slot = toMaterial[mesh.userData.finishZone];
+          if (!mesh.isMesh || !slot) continue;
+          if (!finishMaterials[slot]) {
+            finishMaterials[slot] = contourMaterial(THREE, slot, 1, new THREE.Vector3());
+          }
+          mesh.material = finishMaterials[slot];
+        }
+      }
+    };
   }
-  var nextBeam = 0, dir = new T.Vector3(), mid = new T.Vector3(), xAxis = new T.Vector3(1, 0, 0), qa = new T.Quaternion();
-  var NS = 80, sp = new Float32Array(NS * 3), sc = new Float32Array(NS * 3), sv = new Float32Array(NS * 3), sl = new Float32Array(NS), sm = new Float32Array(NS);
-  var sg = new T.BufferGeometry(); sg.setAttribute('position', new T.BufferAttribute(sp, 3)); sg.setAttribute('color', new T.BufferAttribute(sc, 3));
-  var sMat = new T.PointsMaterial({ size: .08, vertexColors: true, map: discTex(T), sizeAttenuation: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending });
-  var sparks = new T.Points(sg, sMat); sparks.frustumCulled = false; scene.add(sparks); sparks.visible = false; var sparkDirty = false;
-  for (var s = 0; s < NS; s++) sp[s * 3 + 1] = -999;
-  var sNext = 0, NR = 4, rings = [], killEnd = new T.Vector3(), killView = new T.Vector3();
-  for (var r = 0; r < NR; r++) {
-    var rm = new T.Mesh(new T.RingGeometry(.1, .135, 6), new T.MeshBasicMaterial({ color: 0x5dff9a, opacity: 0, side: T.DoubleSide, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
-    rm.visible = false; scene.add(rm); rings.push({ m: rm, t: 9 });
-  }
-  var rNext = 0, fMat = new T.SpriteMaterial({ map: flareTex(T), color: 0xc8ffd0, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0 });
-  var flash = new T.Sprite(fMat); flash.visible = false; scene.add(flash); var flashT = 9, low = false;
-  function spawn(a, end, o) {
-    o = o || {}; var b = beams[nextBeam]; nextBeam = (nextBeam + 1) % NB;
-    dir.subVectors(end, a); var L = dir.length(); if (L < .05) return; dir.multiplyScalar(1 / L);
-    mid.addVectors(a, end).multiplyScalar(.5); b.g.position.copy(mid); qa.setFromUnitVectors(xAxis, dir); b.g.quaternion.copy(qa);
-    var w = o.amp ? .08 : .16; b.g.children[0].scale.set(L, w, 1); b.g.children[1].scale.set(L, w, 1);
-    b.U.uLen.value = Math.min(L, 60); b.ttl = o.ttl || .16; b.t = 0; b.g.visible = true; b.amp = o.amp || 1;
-  }
-  function burst(p, from, big) { sparkDirty = true; sparks.visible = true;
-    var n = low ? 6 : (big ? 16 : 9), k; dir.subVectors(from, p).normalize();
-    for (k = 0; k < n; k++) {
-      var i = sNext; sNext = (sNext + 1) % NS;
-      sp[i * 3] = p.x; sp[i * 3 + 1] = p.y; sp[i * 3 + 2] = p.z;
-      var v = 1 + Math.random() * 4;   // spores drift up and slow, unlike hot sparks
-      sv[i * 3] = (dir.x * .6 + (Math.random() - .5) * 1.5) * v; sv[i * 3 + 1] = (dir.y * .6 + Math.random() * 1.3) * v; sv[i * 3 + 2] = (dir.z * .6 + (Math.random() - .5) * 1.5) * v;
-      sl[i] = sm[i] = .4 + Math.random() * .6;
+
+  function createWorldMaterial(THREE, presentation) {
+    if (!(presentation?.scale > 0) || !Array.isArray(presentation.rightAnchor)) {
+      throw new Error('Contour Relay requires the standard ROOK117 world grip metadata');
     }
-    var ring = rings[rNext]; rNext = (rNext + 1) % NR; ring.t = 0; ring.m.visible = true; ring.m.position.copy(p).addScaledVector(dir, .02); ring.m.lookAt(from);
-    flash.position.copy(p).addScaledVector(dir, .05); flashT = 0; flash.visible = true;
+    return contourMaterial(THREE, 'world', presentation.scale,
+      new THREE.Vector3().fromArray(presentation.rightAnchor));
   }
-  function eliminate(p, from) {
-    killView.copy(from || killEnd.set(p.x, p.y + 1, p.z + 1));
-    if (killView.distanceToSquared(p) < .01) killView.set(p.x, p.y + 1, p.z + 1);
-    burst(p, killView, true);
-    // Emerald Revenant sheds a short rotating halo of spores and jade arcs.
-    var helix = [[-.20,.10,.12],[.12,.20,.20],[.23,.30,-.04],[.02,.34,-.22],[-.22,.24,-.10],[.08,.12,.24]];
-    var count = low ? 3 : helix.length;
-    for (var k = 0; k < count; k++) {
-      var d = helix[k]; killEnd.set(p.x + d[0], p.y + d[1], p.z + d[2]);
-      spawn(p, killEnd, { ttl: .20, amp: .72 });
-    }
-  }
-  function tick(dt) {
-    clock += dt; UT.value = clock; var i;
-    for (i = 0; i < NB; i++) { var b = beams[i]; if (!b.g.visible) continue; b.t += dt; var u = b.t / b.ttl; if (u >= 1) { b.g.visible = false; continue; } b.U.uHead.value = Math.min(1.4, u * 2.4 - .1); b.U.uAlpha.value = (1 - u * u) * Math.min(1, b.amp); }
-    if (sparkDirty) { var anyLive = false; for (i = 0; i < NS; i++) {
-      if (sl[i] <= 0) { sp[i * 3 + 1] = -999; continue; } anyLive = true;
-      sl[i] -= dt; var f = Math.max(0, sl[i] / sm[i]);
-      sv[i * 3 + 1] -= 3.2 * dt; sv[i * 3] *= .985; sv[i * 3 + 2] *= .985;
-      sp[i * 3] += sv[i * 3] * dt; sp[i * 3 + 1] += sv[i * 3 + 1] * dt; sp[i * 3 + 2] += sv[i * 3 + 2] * dt;
-      sc[i * 3] = f * (.3 + .4 * f); sc[i * 3 + 1] = f; sc[i * 3 + 2] = f * .4;
-    }
-    sg.attributes.position.needsUpdate = true; sg.attributes.color.needsUpdate = true; if (!anyLive) { sparkDirty = false; sparks.visible = false; } }
-    for (i = 0; i < NR; i++) { var r = rings[i]; if (!r.m.visible) continue; r.t += dt / .3; if (r.t >= 1) { r.m.visible = false; continue; } var k2 = 1 + r.t * 5; r.m.scale.set(k2, k2, 1); r.m.rotation.z = r.t; r.m.material.opacity = (1 - r.t) * (1 - r.t) * .8; }
-    if (flash.visible) { flashT += dt / .14; if (flashT >= 1) flash.visible = false; else { var fs = .45 + flashT * .8; flash.scale.set(fs, fs, 1); fMat.opacity = (1 - flashT) * .85; } }
-  }
-  return { spawn: spawn, burst: burst, eliminate: eliminate, signature: 'revenant-jade-helix', tick: tick, setLow: function (v) { low = !!v; } };
-}
 
-/* ------------------------------------------------------------------ audio */
-function prng(seed) { var s = seed; return function () { s = (s * 16807) % 2147483647; return s / 2147483647 * 2 - 1; }; }
-function norm(d, peak) { var m = 0, i; for (i = 0; i < d.length; i++) { var a = Math.abs(d[i]); if (a > m) m = a; } if (m > 0) { var k = peak / m; for (i = 0; i < d.length; i++) d[i] *= k; } return d; }
-var TAU = Math.PI * 2;
-function equipSound(sr) {   // breathy growl swelling up, then a three-note jade bell
-  var n = Math.floor(sr * 1.4), d = new Float32Array(n), r = prng(31), lp = 0, lp2 = 0, i;
-  for (i = 0; i < n; i++) {
-    var t = i / sr, sw = Math.pow(Math.sin(Math.PI * Math.min(1, t / 1.0)), 1.4) * (t < 1 ? 1 : Math.exp(-(t - 1) * 6));
-    var v = Math.sin(TAU * (40 * t + 18 * t * t)) * sw * (.7 + .3 * Math.sin(TAU * 7 * t)) * .45;
-    lp += (r() - lp) * .06; lp2 += (lp - lp2) * .2; v += lp2 * sw * 1.1;
-    [[.7, 523], [.84, 659], [.98, 784]].forEach(function (nt) { var c = t - nt[0]; if (c > 0) v += (Math.sin(TAU * nt[1] * c) + .4 * Math.sin(TAU * nt[1] * 2.01 * c)) * Math.exp(-5.5 * c) * .15; });
-    d[i] = v;
-  }
-  return norm(d, .8);
-}
-function rearmSound(sr) {   // scale rattle + rising hiss
-  var n = Math.floor(sr * .5), d = new Float32Array(n), r = prng(37), prev = 0, i;
-  for (i = 0; i < n; i++) {
-    var t = i / sr, nz = r(), hp = nz - prev; prev = nz; var v = 0;
-    for (var c = 0; c < 6; c++) { var tt = t - (.02 + c * .045); if (tt > 0) v += hp * Math.exp(-tt * 140) * .45; }
-    v += Math.sin(TAU * (500 * t + 1500 * t * t)) * Math.sin(Math.PI * Math.min(1, t / .4)) * .18 * (t < .4 ? 1 : 0);
-    var cc = t - .3; if (cc > 0) v += Math.sin(TAU * 988 * cc) * Math.exp(-10 * cc) * .22;
-    d[i] = v;
-  }
-  return norm(d, .75);
-}
-function mixShot(sr, base) {   // short layer: the Stinger is full-auto, so it must not pile up
-  var n = Math.max(base ? base.length : 0, Math.floor(sr * .3)), d = new Float32Array(n), r = prng(41), prev = 0, i;
-  for (i = 0; i < n; i++) {
-    var t = i / sr, v = (base && i < base.length ? base[i] * .78 : 0);
-    v += Math.sin(TAU * (120 * t - 120 * t * t)) * Math.exp(-22 * t) * .45;
-    var nz = r(), hp = nz - prev; prev = nz; v += hp * Math.exp(-t * 55) * .32 + nz * Math.exp(-t * 160) * .3;
-    v += Math.sin(TAU * 1175 * t + 3 * Math.sin(TAU * 9 * t)) * Math.exp(-16 * t) * .1;
-    d[i] = Math.tanh(v * 1.2);
-  }
-  return norm(d, .85);
-}
-
-/* ------------------------------------------------------------------ picker card */
-var styled = false;
-function decorate(btn) {
-  if (!styled && document.head) {
-    var st = document.createElement('style');
-    st.textContent = '@keyframes wyrmPulse{0%,100%{box-shadow:0 0 6px #19e07a55,inset 0 0 8px #0a5a3022}50%{box-shadow:0 0 16px #3dff94cc,inset 0 0 14px #19e07a44}}@keyframes wyrmBlink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.1)}}' +
-      '.wyrm-card{background:linear-gradient(135deg,#050d09,#0d2a1c 55%,#17321a)!important;border:1px solid #3dff94!important;animation:wyrmPulse 2.4s ease-in-out infinite;position:relative;overflow:hidden}' +
-      '.wyrm-card .wyrm-eye{position:absolute;right:8px;top:9px;width:34px;height:18px;border-radius:50%;background:radial-gradient(ellipse at center,#f4ffc4 0 14%,#7dff8f 30%,#14b45a 62%,#04361c 100%);border:1px solid #c8ffb0;animation:wyrmBlink 4s infinite}' +
-      '.wyrm-card .wyrm-eye:after{content:"";position:absolute;left:50%;top:10%;width:4px;height:80%;margin-left:-2px;background:#020805;border-radius:50%}' +
-      '.wyrm-tag{display:inline-block;margin-top:5px;padding:1px 6px;font:700 9px system-ui;letter-spacing:1.5px;color:#00200e;background:linear-gradient(90deg,#9dffb8,#3dff94);border-radius:3px}';
-    document.head.appendChild(st); styled = true;
-  }
-  btn.classList.add('wyrm-card'); btn.style.color = '#e6ffee';
-  var eye = document.createElement('span'); eye.className = 'wyrm-eye'; btn.appendChild(eye);
-  var tag = document.createElement('span'); tag.className = 'wyrm-tag'; tag.textContent = 'LEGENDARY'; btn.appendChild(document.createElement('br')); btn.appendChild(tag);
-}
-
-function lpf(d, a) { var y = 0; for (var i = 0; i < d.length; i++) { y += (d[i] - y) * a; d[i] = y; } return d; }
-function reloadSound(sr) {   // serpent hiss + scale clatter + low growl
-  var n = Math.floor(sr * .8), d = new Float32Array(n), r = prng(41), i, prev = 0;
-  for (i = 0; i < n; i++) {
-    var t = i / sr, x = r(), hp = x - prev; prev = x;
-    var v = hp * Math.exp(-3.2 * t) * .32 + Math.sin(TAU * (92 - 40 * t) * t) * Math.exp(-2.5 * t) * .3;
-    [.08, .17, .28, .42].forEach(function (c) { var tt = t - c; if (tt > 0) v += r() * Math.exp(-tt * 220) * .4; });
-    d[i] = v;
-  }
-  return norm(d, .75);
-}
-function hitSound(sr) {   // chitin crack + short hiss
-  var n = Math.floor(sr * .3), d = new Float32Array(n), r = prng(43), i, prev = 0;
-  for (i = 0; i < n; i++) {
-    var t = i / sr, x = r(), hp = x - prev; prev = x;
-    d[i] = x * Math.exp(-t * 110) * .55 + Math.sin(TAU * (60 + 70 * Math.exp(-25 * t)) * t) * Math.exp(-t * 16) * .5 + hp * Math.exp(-t * 14) * .2;
-  }
-  return norm(d, .8);
-}
-
-global.SightlineEmeraldRevenant = {
-  version: 'G2.0-dev', weapon: 'rook117', finish: FINISH, anchors: ANCHOR,
-  buildRig: buildRig, createFx: createFx, decorate: decorate,
-  equipSound: equipSound, rearmSound: rearmSound, reloadSound: reloadSound, hitSound: hitSound, mixShot: mixShot
-};
-})(window);
+  global.SightlineContourRelay = Object.freeze({
+    weapon: 'rook117', version: 'candidate-2', finish, spec, buildRig, createWorldMaterial
+  });
+})(globalThis);
