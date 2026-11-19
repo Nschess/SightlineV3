@@ -1,0 +1,9 @@
+# DEV24.6 Competitive graphics
+
+DEV24.5 rollback is dbdeaa651b81fcdee8a51807ff08442a53679175. The earlier repository checkpoint cdf3b67 used an 850,000-pixel mobile high-refresh budget, a 1.5× mobile DPR cap and an 85% mobile render scale. The APK that achieved 120 FPS on the owner's phone has no verified link to that checkpoint. DEV24.5 increased the pixel workload, filtering and atlas size. At a detected high refresh rate, its Balanced ceiling was 950,000 pixels and High was 1,450,000 pixels.
+
+Competitive selects a 120 FPS limit with a fixed 850,000-pixel ceiling, 4× surface filtering where supported, low effects, and shadows off. It retains DEV24.5's existing atlas, sleeve and texture reuse policies, and the authored fog and lighting. The fixed ceiling avoids resizing the framebuffer when the cadence sampler first detects a fast display. The fallback keeps 87% of the selected linear resolution under sustained pressure, after the effects-first step. Balanced and High Quality keep the selected frame-rate limit. Low remains available.
+
+The Android WebView requests high refresh for foreground gameplay at the 120 limit. The setting is a window refresh preference and the system can choose another rate. Menus, backgrounding and retired pages release it. The diagnostics distinguish successfully submitted game frames, WebView callback cadence and whether the app sent the refresh hint. Android's display compositor and physical presentation remain outside the browser counter.
+
+The priority for physical acceptance is an A/B run against the earlier APK on the same phone and map. Record the earlier APK fingerprint and settings, the panel refresh rate, actual frame intervals, drawing-buffer size, memory, temperature and input feel over a sustained match. Check Competitive and the quality presets in every mode, including an active Outbreak wave, then repeat on Android↔Windows LAN.

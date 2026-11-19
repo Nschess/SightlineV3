@@ -3871,15 +3871,17 @@ function framePixelBudget() {
   var hz = Math.min(Number(G.fpsCap) || 60, Math.max(60, (typeof rafHzBest === 'number' && rafHzBest) || 60));
   if (touchMode) {
     if (G.mobileQuality === 'low') return 650000;
+    if (G.mobileQuality === 'competitive') return 850000;
     if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1450000 : 1850000;
     return Number(G.fpsCap) === 30 ? 1250000 : G.adaptive && hz > 75 ? 950000 : 1150000;
   }
   return !G.adaptive || Number(G.fpsCap) === 30 ? 3600000 : hz > 75 ? 1800000 : 2400000;
 }
 function mobileDprLimit() {
+  if (G.mobileQuality === 'competitive') return 2.15;
   return G.mobileQuality === 'low' ? 1.5 : G.mobileQuality === 'high' ? 2.75 : 2.35;
 }
-var MOBILE_CLARITY_SCALE = [1, 1, 0.96, 0.90];
+var MOBILE_CLARITY_SCALE = [1, 1, 0.96, 0.90], MOBILE_COMPETITIVE_SCALE = [1, 1, 0.94, 0.87];
 function mobileClarityEnabled() {
   return touchMode && G.mobileQuality !== 'low' && !G.fastMode;
 }
@@ -3887,7 +3889,8 @@ function effectiveAdaptiveScale() {
   if (!touchMode) return perfScale;
   if (!G.adaptive) return 1;
   // First reduce shadow and effect costs. Only sustained pressure reduces pixels.
-  return mobileClarityEnabled() ? MOBILE_CLARITY_SCALE[perfLvl] : perfScale;
+  if (!mobileClarityEnabled()) return perfScale;
+  return (G.mobileQuality === 'competitive' ? MOBILE_COMPETITIVE_SCALE : MOBILE_CLARITY_SCALE)[perfLvl];
 }
 function pixelRatio() {
   var w = Math.max(1, stage.clientWidth || window.innerWidth || 640);
@@ -12010,6 +12013,7 @@ function applyG() {
 function markerColor() { return { team: foeTeam().color, amber: '#ffb000', lime: '#9dff3a', magenta: '#ff4fd8' }[G.marker] || foeTeam().color; }
 function uiTick(ok) { if (!G.uiSound || !AC) return; sfxTone(ok ? 880 : 640, ok ? 1250 : 480, 0.04, 0.18, 'square', busUi); }
 var QUALITY = touchMode ? {
+  competitive: { mobileQuality: 'competitive', fpsCap: 120, renderScale: 100, adaptive: true, shadows: 'off', drawDist: 100, fx: 'low', fastMode: false },
   low: { mobileQuality: 'low', renderScale: 85, shadows: 'off', drawDist: 100, fx: 'low', fastMode: false },
   medium: { mobileQuality: 'balanced', renderScale: 90, shadows: 'off', drawDist: 100, fx: 'low', fastMode: false },
   high: { mobileQuality: 'high', renderScale: 100, shadows: 'off', drawDist: 100, fx: 'low', fastMode: false }
@@ -12020,7 +12024,7 @@ function qualityNow() { var r = 'custom'; Object.keys(QUALITY).forEach(function 
 var pc = function (v) { return Math.round(v) + '%'; };
 var SPEC = {
   video: [
-    { t: 'preset', l: 'Quality preset', h: touchMode ? 'Low reduces GPU workload. Balanced prioritizes clarity within a smaller pixel budget. High uses a larger budget and stronger texture filtering when supported.' : 'Sets render scale, shadows and fog horizon. The pixel budget can cap the actual internal resolution on high-DPI screens.' },
+    { t: 'preset', l: 'Quality preset', h: touchMode ? 'Competitive selects up to 120 FPS and limits framebuffer cost. Balanced and High Quality keep your frame rate setting. Low reduces GPU workload.' : 'Sets render scale, shadows and fog horizon. The pixel budget can cap the actual internal resolution on high-DPI screens.' },
     touchMode ? { t: 'range', k: 'mobileFov', l: 'Mobile field of view', h: 'Horizontal degrees. Lower values make distant enemies larger; ADS keeps its relative magnification.', min: 65, max: 95, step: 1, f: function (v) { return Math.round(v) + '° horizontal'; } } :
     { t: 'range', o: 'S', k: 'fov', l: 'Field of view', min: 65, max: 100, step: 1, f: function (v) { return Math.round(v) + '°'; } },
     { t: 'range', k: 'renderScale', l: 'Render scale', h: touchMode ? 'Scales the device resolution. The preset caps the final pixel count. Lower this setting if the game stutters.' : 'Lower this first if the game stutters.', min: 50, max: 100, step: 5, f: pc },
@@ -12209,7 +12213,13 @@ function rowHtml(it) {
   if (it.t === 'check') return '<div class="srow chk"><label for="' + id + '">' + it.l + hint + '</label><input id="' + id + '" type="checkbox" ' + da + (v ? ' checked' : '') + '></div>';
   if (it.t === 'seg') return '<div class="srow"><span class="lb">' + it.l + hint + '</span><div class="seg" role="group" aria-label="' + it.l + '">' + it.opts.map(function (p) { return '<button type="button" ' + da + ' data-v="' + p[0] + '" aria-pressed="' + (String(p[0]) === String(v)) + '">' + p[1] + '</button>'; }).join('') + '</div></div>';
   if (it.t === 'sw') return '<div class="srow"><span class="lb">' + it.l + '</span><div class="seg sw" role="group" aria-label="' + it.l + '">' + it.opts.map(function (c) { return '<button type="button" ' + da + ' data-v="' + c + '" style="--c:' + c + '" aria-label="' + c + '" aria-pressed="' + (c === v) + '"></button>'; }).join('') + '</div></div>';
-  if (it.t === 'preset') { var q = qualityNow(); return '<div class="srow"><span class="lb">' + it.l + '<small>' + it.h + '</small></span><div class="seg" role="group">' + ['low', 'medium', 'high'].map(function (n) { return '<button type="button" data-q="' + n + '" aria-pressed="' + (q === n) + '">' + (touchMode && n === 'medium' ? 'balanced' : n) + '</button>'; }).join('') + '<button type="button" disabled aria-pressed="' + (q === 'custom') + '">Custom</button></div></div>'; }
+  if (it.t === 'preset') {
+    var q = qualityNow(), labels = touchMode ? { competitive: 'Competitive', medium: 'Balanced', high: 'High Quality', low: 'Low' } : { low: 'low', medium: 'medium', high: 'high' };
+    var buttons = Object.keys(labels).map(function (n) { return '<button type="button" data-q="' + n + '" aria-pressed="' + (q === n) + '">' + labels[n] + '</button>'; }).join('');
+    var custom = touchMode ? (q === 'custom' ? ' · Custom' : '') : '';
+    if (!touchMode) buttons += '<button type="button" disabled aria-pressed="' + (q === 'custom') + '">Custom</button>';
+    return '<div class="srow"><span class="lb">' + it.l + custom + '<small>' + it.h + '</small></span><div class="seg" role="group">' + buttons + '</div></div>';
+  }
   if (it.t === 'xhprev') { var e = '<i></i><i></i><i></i><i></i><b></b><s></s>'; return '<div class="xhrow"><div class="xhbox"><span>Standing</span><div class="xh" data-prev="still">' + e + '</div></div><div class="xhbox"><span>Moving or firing</span><div class="xh" data-prev="move">' + e + '</div></div></div>'; }
   return '';
 }
@@ -12738,7 +12748,12 @@ $('.mn-main').addEventListener('click', function (e) {
   if (t.closest('#btn-start,#btn-restart,#btn-quit')) return;
   if ((b = t.closest('[data-go]'))) { if (!menuLocked(b.getAttribute('data-go'))) goTab(b.getAttribute('data-go')); return; }
   if ((b = t.closest('[data-sub]'))) { setTab = b.getAttribute('data-sub'); SL82_SETTINGS_SUBROUTE='settings'; renderBody(false); renderNav(); var chosen = $('.subtabs [data-sub="' + setTab + '"]'); if (chosen) chosen.focus({preventScroll:true}); uiTick(true); return; }
-  if ((b = t.closest('[data-q]'))) { var q = QUALITY[b.getAttribute('data-q')]; Object.keys(q).forEach(function (k) { G[k] = q[k]; }); saveObj(G_KEY, G); applyG(); renderBody(true); uiTick(true); return; }
+  if ((b = t.closest('[data-q]'))) {
+    var q = QUALITY[b.getAttribute('data-q')], previousCap = G.fpsCap;
+    Object.assign(G, q);
+    if (G.fpsCap !== previousCap) { renderNextDue = 0; renderCap = -1; resetFpsWindow(); }
+    saveObj(G_KEY, G); applyG(); renderBody(true); uiTick(true); return;
+  }
   if ((b = t.closest('button[data-o][data-k][data-v]'))) {
     if (b.disabled) return;
     var o = b.getAttribute('data-o'), k = b.getAttribute('data-k'), cur = objOf(o)[k], v = b.getAttribute('data-v');
@@ -14268,7 +14283,7 @@ function updateLobbyPreviewForFrame(active){if(lobbyPreviewFrameFault)return;try
 function idleCamera(dt){orbit+=dt*.08;if(state==='idle'&&menuOpen()&&LOBBY_PREVIEW&&LOBBY_PREVIEW.g){var a=LOBBY_PREVIEW.g.position,angle=.38+(SL_SWAY?Math.sin(orbit*5)*.09:0),d=4.2;camera.position.set(a.x+Math.sin(angle)*d,2.05,a.z+Math.cos(angle)*d);var rx=Math.cos(angle),rz=-Math.sin(angle),off=0;camera.lookAt(a.x-rx*off,1.38,a.z-rz*off);if(camera.fov!==50){camera.fov=50;camera.updateProjectionMatrix();}camera.rotation.z=0;return;}camera.position.set(Math.cos(orbit)*CURMAP.view.r*.6,CURMAP.view.h,Math.sin(orbit)*CURMAP.view.r);camera.lookAt(0,1.5,0);if(camera.fov!==baseFov){camera.fov=baseFov;camera.updateProjectionMatrix();}camera.rotation.z=0;}
 var last = performance.now();
 /* Bounded, real rendered-frame samples; hidden/resume discontinuities are excluded. */
-var frameSamples = new Float32Array(600), frameCount = 0, frameCursor = 0, frameSkipNext = false, frameStats = { samples: 0, p50: 0, p95: 0, p99: 0, max: 0, renderCpuMs: 0, drawCalls: 0, triangles: 0 };
+var frameSamples = new Float32Array(600), frameSortScratch = new Float32Array(frameSamples.length), frameCount = 0, frameCursor = 0, frameSkipNext = false, frameStats = { samples: 0, p50: 0, p95: 0, p99: 0, max: 0, renderCpuMs: 0, drawCalls: 0, triangles: 0 };
 function sampleFrame(ms) {
   if (document.hidden) return;
   if (frameSkipNext) { frameSkipNext = false; return; }
@@ -14276,7 +14291,9 @@ function sampleFrame(ms) {
   frameSamples[frameCursor] = ms; frameCursor = (frameCursor + 1) % frameSamples.length; frameCount = Math.min(frameSamples.length, frameCount + 1);
 }
 function readFrameStats() {
-  var a = Array.from(frameSamples.subarray(0, frameCount)).sort(function (x, y) { return x - y; });
+  var a = frameSortScratch.subarray(0, frameCount);
+  a.set(frameSamples.subarray(0, frameCount));
+  a.sort();
   function q(p) { return a.length ? Math.round(a[Math.ceil(a.length * p) - 1] * 100) / 100 : 0; }
   frameStats.samples = frameCount; frameStats.p50 = q(.5); frameStats.p95 = q(.95); frameStats.p99 = q(.99); frameStats.max = a.length ? a[a.length - 1] : 0; return frameStats;
 }
@@ -14287,7 +14304,7 @@ var fpsN = 0, fpsT = 0, radarT = 0, hudFrameT = 0, scoreT = 0, scoreEl = $('#sco
    The cadence sampler runs on every callback, even when a game frame is capped. */
 var fpsMeasured = 0, fpsWasPlaying = false, rafLast = 0, rafCount = 0, rafIndex = 0;
 var lastLivePerf = null;
-var rafIntervals = new Float32Array(96), rafHz = 0, rafHzBest = 0, rafReportT = 0;
+var rafIntervals = new Float32Array(96), rafSortScratch = new Float32Array(rafIntervals.length), rafHz = 0, rafHzBest = 0, rafReportT = 0;
 function sampleRafCadence(now) {
   if (rafLast) {
     var ms = now - rafLast;
@@ -14300,7 +14317,9 @@ function sampleRafCadence(now) {
   rafLast = now;
   if (now - rafReportT < 900 || rafCount < 12) return;
   rafReportT = now;
-  var sorted = Array.from(rafIntervals.subarray(0, rafCount)).sort(function(a,b){return a-b;});
+  var sorted = rafSortScratch.subarray(0, rafCount);
+  sorted.set(rafIntervals.subarray(0, rafCount));
+  sorted.sort();
   var med = sorted[Math.floor(sorted.length / 2)];
   if (med > 0) {
     rafHz = Math.round(1000 / med);
@@ -14310,9 +14329,18 @@ function sampleRafCadence(now) {
     rafHzBest = Math.max(rafHzBest, rafHz);
     // A 120 Hz screen can be discovered after the first framebuffer allocation.
     // Rebudget once, not every frame, when the high-refresh tier becomes known.
-    if (!wasHighRefresh && rafHzBest > 75 && G.adaptive && Number(G.fpsCap) > 75) resize();
+    if (!wasHighRefresh && rafHzBest > 75 && G.adaptive && Number(G.fpsCap) > 75 && !(touchMode && G.mobileQuality === 'competitive')) resize();
   }
 }
+var androidRefreshBridge = window.SightlineDisplay, androidRefreshHint = null;
+function updateAndroidRefreshHint(inPlay) {
+  if (!androidRefreshBridge || typeof androidRefreshBridge.postMessage !== 'function') return;
+  var wanted = inPlay && !document.hidden && !gameContextLost && Number(G.fpsCap) === 120;
+  if (wanted === androidRefreshHint) return;
+  androidRefreshBridge.postMessage(wanted ? '120' : 'auto');
+  androidRefreshHint = wanted;
+}
+window.addEventListener('sightline-display-resume', function () { androidRefreshHint = null; });
 function frameBudgetMs(cap, callbackBestHz) {
   // A rendered workload can hold requestAnimationFrame at 30 callbacks/s on
   // a 60 Hz monitor. NEVER infer a 30 Hz panel from an overloaded callback
@@ -14368,6 +14396,7 @@ function performanceInfo() {
     adaptiveBudgetMs: Math.round(frameBudgetMs(G.fpsCap,rafHzBest)*100)/100,
     sceneState: state, browserEngine: navigator.userAgent,
     estimatedRafCallbacksPerSecond: rafHz, bestObservedRafCallbacksPerSecond: rafHzBest,
+    androidHighRefreshHintSent: androidRefreshHint === true,
     frameP95Ms: frameStats.p95, frameP99Ms: frameStats.p99,
     simulationCpuMs: Math.round(simCpuEma * 100) / 100,
     botSimulationCpuMs: Math.round(botCpuEma * 100) / 100,
@@ -14417,6 +14446,8 @@ document.addEventListener('visibilitychange', function() {
   // Refresh rate may change while Android backgrounds the WebView. Re-sample
   // callback cadence after resume instead of retaining the old display's peak.
   rafLast = 0; rafCount = 0; rafIndex = 0; rafHz = 0; rafHzBest = 0; rafReportT = 0;
+  androidRefreshHint = null;
+  if (document.hidden) updateAndroidRefreshHint(false);
   renderNextDue = 0; renderCap = -1; last = performance.now(); resetFpsWindow();
 });
 window.addEventListener('orientationchange', function() {
@@ -14438,8 +14469,11 @@ function perfTick(raw) {
   // 120 on a 60 Hz browser targets 60, while callbacks stuck at 30 on a
   // 60 Hz display must still trigger recovery. A deliberate 30 cap does not.
   var budget = frameBudgetMs(G.fpsCap, rafHzBest);
-  var degradeAt = Math.max(13.5, budget * 1.28);
-  var restoreAt = Math.max(11, budget * 1.06);
+  // The legacy 13.5 ms floor misses sustained loss of 120 Hz frames.
+  // Apply a tighter trigger only to the opt-in Competitive profile.
+  var competitive = G.mobileQuality === 'competitive' && touchMode && Number(G.fpsCap) === 120;
+  var degradeAt = competitive ? budget * 1.24 : Math.max(13.5, budget * 1.28);
+  var restoreAt = competitive ? budget * 1.08 : Math.max(11, budget * 1.06);
   if (perfEma > degradeAt) { perfBad++; perfGood = 0; }
   else if (perfEma < restoreAt) { perfGood++; perfBad = 0; }
   else { perfBad = 0; perfGood = 0; }
@@ -14532,42 +14566,42 @@ var P0FrameDiag = (function () {
 /* P0 FRAME DIAGNOSTICS END */
 var menuBotLast = 0;
 var simCpuEma = 0;
+var gameContextLost = false;
+canvas.addEventListener('webglcontextlost', function () { gameContextLost = true; resetFpsWindow(); updateAndroidRefreshHint(false); if (G.fps) fpsEl.textContent = 'FPS unavailable'; });
+canvas.addEventListener('webglcontextrestored', function () { gameContextLost = false; last = performance.now(); pausedDrawn = false; resetFpsWindow(); });
 var lastRender = 0, pausedDrawn = false;
 function frame(now) {
   requestAnimationFrame(frame);
   sampleRafCadence(now);
   var inPlay = state === 'live' || state === 'roundend', cap = inPlay ? (Number(G.fpsCap) || 0) : menuFrameCap(G.fpsCap);
-  updateLobbyPreviewForFrame(state==='idle'&&menuOpen());
+  updateAndroidRefreshHint(inPlay);
   if (inPlay !== fpsWasPlaying) {
     fpsWasPlaying = inPlay; resetFpsWindow(); last = now; renderNextDue = 0;
   }
   if (!renderCapAllows(now, effectiveRenderCap(cap, rafHzBest, rafCount))) return;
   if (state === 'paused') { if (pausedDrawn) return; pausedDrawn = true; } else pausedDrawn = false;
+  updateLobbyPreviewForFrame(state==='idle'&&menuOpen());
   lastRender = now;
   var p0Frame = inPlay ? P0FrameDiag.begin() : null;
   if (LAN_DIAG) { LAN_DIAG.frame(now, MP.on && (state === 'live' || state === 'roundend')); LAN_DIAG.lobbyFrame(now, mpConnected() && state === 'idle' && menuOpen()); }
   var raw = Math.max(0, now - last), dt = Math.min(0.05, raw / 1000); last = now;
-  sampleFrame(raw); if (inPlay) { fpsN++; fpsT += raw / 1000; }
-  if (fpsT >= 0.5) readFrameStats();
+  var reportFps = inPlay && !gameContextLost && fpsT + raw / 1000 >= 0.5;
   if (M && (state === 'live' || state === 'buy')) mpSupplyTick(now, false);
-  if (fpsT >= 0.5) netEl.hidden = !(G.showNet && MP.on);
-  if (fpsT >= 0.5 && MP.on) {
+  if (reportFps) netEl.hidden = !(G.showNet && MP.on);
+  if (reportFps && MP.on) {
     var nstat=MP.net,actorMs=nstat.poseActorMs||0;
-    nstat.rate=Math.round(nstat.rn/fpsT);nstat.rn=0;nstat.maxShow=Math.round(Math.max(nstat.gapMax,nstat.last?now-nstat.last:0));nstat.gapMax=0;
+    nstat.rate=Math.round(nstat.rn/(fpsT + raw / 1000));nstat.rn=0;nstat.maxShow=Math.round(Math.max(nstat.gapMax,nstat.last?now-nstat.last:0));nstat.gapMax=0;
     nstat.poseWaitPct=actorMs?Math.round((nstat.poseWaitActorMs||0)*100/actorMs):0;
     nstat.posePredictPct=actorMs?Math.round((nstat.posePredictActorMs||0)*100/actorMs):0;
     nstat.poseCapPct=actorMs?Math.round((nstat.poseCapActorMs||0)*100/actorMs):0;
     nstat.poseSeqMissedShow=nstat.poseSeqMissed||0;nstat.poseHostGapMaxShow=Math.round(nstat.poseHostGapMax||0);
     nstat.poseActorMs=nstat.poseWaitActorMs=nstat.posePredictActorMs=nstat.poseCapActorMs=nstat.poseSeqMissed=nstat.poseHostGapMax=0;
   }
-  if (fpsT >= 0.5 && G.showNet && MP.on) {
+  if (reportFps && G.showNet && MP.on) {
     var nt = MP.net, me = null; if (MP.sc) MP.sc.players.forEach(function (p) { if (p.id === MP.id) me = p; });
     var bad = (me && me.ping > 120) || nt.maxShow > 250 || nt.rate < 14; netEl.className = bad ? 'bad' : '';
     netEl.textContent = 'ping ' + (me ? me.ping : '--') + 'ms · snaps ' + nt.rate + '/s · gap ' + nt.maxShow + 'ms · lerp ' + Math.round(interpMs()) + 'ms · corrections ' + nt.corrCount + '\nframe ' + frameStats.p95 + '/' + frameStats.p99 + 'ms · pose W/P/T ' + (nt.poseWaitPct||0) + '/' + (nt.posePredictPct||0) + '/' + (nt.poseCapPct||0) + '% · seq +' + (nt.poseSeqMissedShow||0) + ' · host ' + (nt.poseHostGapMaxShow||0) + 'ms' + (nt.lastCorr ? '\nlast correction: ' + nt.lastCorr : '');
   }
-  if (fpsT >= 0.5) { fpsMeasured = Math.round(fpsN / fpsT);
-    if (inPlay) lastLivePerf = { fps: fpsMeasured, rAF: rafHz, p95ms: frameStats.p95, simCpuMs: Math.round(simCpuEma*100)/100, botCpuMs: Math.round(botCpuEma*100)/100, playerCpuMs: Math.round(playerCpuEma*100)/100, effectsCpuMs: Math.round(effectsCpuEma*100)/100, webglSubmissionMs: Math.round(frameStats.renderCpuMs*100)/100, renderCalls: frameStats.drawCalls, triangles: frameStats.triangles, effectivePixelRatio: Math.round(pixelRatio()*100)/100, adaptiveLevel: perfLvl };
-    if (G.fps) fpsEl.textContent = fpsMeasured + ' FPS' + (G.fpsCap ? ' · limit ' + G.fpsCap : ' · uncapped') + (perfLvl ? ' · adaptive ' + Math.round(effectiveAdaptiveScale() * 100) + '% detail' : '') + (!SL_PLAY_BUILD && location.search.indexOf('debug') >= 0 ? ' · rAF ' + (rafHz || '?') + ' · sim ' + simCpuEma.toFixed(1) + 'ms (bots ' + botCpuEma.toFixed(1) + ') · WebGL submit ' + frameStats.renderCpuMs.toFixed(1) + 'ms' : ''); fpsN = 0; fpsT = 0; }
   var simStarted = performance.now();
   if (state === 'live' || state === 'roundend') {
     T += dt;
@@ -14617,6 +14651,15 @@ function frame(now) {
   try { renderer.render(scene, camera); if (p0Frame) p0Frame.webglSubmitMs = performance.now() - p0SubmitStarted; }
   finally { if (botVisuals) restoreOfflineBots(); }
   frameStats.renderCpuMs = performance.now() - renderStarted; frameStats.drawCalls=renderer.info.render.calls; frameStats.triangles=renderer.info.render.triangles;
+  if (!gameContextLost) {
+    sampleFrame(raw);
+    if (inPlay) { fpsT += raw / 1000; if (raw > 0) fpsN++; }
+  }
+  if (reportFps) {
+    readFrameStats();
+    fpsMeasured = Math.round(fpsN / fpsT);
+    if (inPlay) lastLivePerf = { fps: fpsMeasured, rAF: rafHz, p95ms: frameStats.p95, simCpuMs: Math.round(simCpuEma*100)/100, botCpuMs: Math.round(botCpuEma*100)/100, playerCpuMs: Math.round(playerCpuEma*100)/100, effectsCpuMs: Math.round(effectsCpuEma*100)/100, webglSubmissionMs: Math.round(frameStats.renderCpuMs*100)/100, renderCalls: frameStats.drawCalls, triangles: frameStats.triangles, effectivePixelRatio: Math.round(pixelRatio()*100)/100, adaptiveLevel: perfLvl };
+    if (G.fps) fpsEl.textContent = fpsMeasured + ' FPS' + (G.fpsCap ? ' · limit ' + G.fpsCap : ' · uncapped') + (perfLvl ? ' · adaptive ' + Math.round(effectiveAdaptiveScale() * 100) + '% detail' : '') + (!SL_PLAY_BUILD && location.search.indexOf('debug') >= 0 ? ' · rAF ' + (rafHz || '?') + ' · sim ' + simCpuEma.toFixed(1) + 'ms (bots ' + botCpuEma.toFixed(1) + ') · WebGL submit ' + frameStats.renderCpuMs.toFixed(1) + 'ms' : ''); fpsN = 0; fpsT = 0; }
   if (p0Frame) P0FrameDiag.finish(p0Frame, raw, frameStats.drawCalls, frameStats.triangles);
 }
 var slFinishTags=function(){return '';};

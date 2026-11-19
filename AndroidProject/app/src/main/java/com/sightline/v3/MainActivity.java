@@ -16,6 +16,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,11 +52,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-/** Simple isolated game WebView. No JS bridge, tracking, server, or external browser intents. */
+/** Isolated game WebView and its native launcher. */
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "6ad344fb1836b4bf39198cb8c130a34575ed36305e3f3a119898c584e90fe86e";
+    private static final String HOST_BUNDLE_SHA256 = "4efb1a8c5f2af764310c7411bd44056693441f5b4a16bfbc9ae377182ea3a91b";
     private static final String DEV20_HOST_BUNDLE_SHA256 = "88e15be18fde11843d72b6905be41d30bf277e11fae81d479a25c677ae2b5b3d";
     private static final String DEV18_2_HOST_BUNDLE_SHA256 = "9bcc0b6245a6934508c9fed3315a231625eff1b8a5d2a62b96bb96cc9b7544cc";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";
@@ -787,6 +788,43 @@ public final class MainActivity extends Activity {
     private static final int MAX_LAN_DIAGNOSTIC_BYTES = 256 * 1024;
     private byte[] pendingLanDiagnostics;
 
+    private void installDisplayHint(WebView gameView, String host) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
+        Uri page = Uri.parse(host == null ? OFFLINE_URL : LanPagePolicy.pageUrl(host, BuildConfig.SECURE_LAN_RELEASE, false));
+        String origin = page.getScheme() + "://" + page.getEncodedAuthority();
+        WebViewCompat.addWebMessageListener(gameView, "SightlineDisplay",
+                java.util.Collections.singleton(origin), (view, message, sourceOrigin, mainFrame, reply) -> {
+            if (!mainFrame || view != web || !foreground.isResumed() || isFinishing() || isDestroyed()
+                    || !page.getScheme().equals(sourceOrigin.getScheme())
+                    || !page.getEncodedAuthority().equals(sourceOrigin.getEncodedAuthority())
+                    || message.getType() != WebMessageCompat.TYPE_STRING) return;
+            String command = message.getData();
+            if ("120".equals(command)) {
+                Display display = view.getDisplay();
+                if (Build.VERSION.SDK_INT >= 34) setWindowRefreshHint(120f);
+                else if (display != null) setWindowRefreshHint(chooseGameRefreshRate(display.getSupportedRefreshRates()));
+            } else if ("auto".equals(command)) setWindowRefreshHint(0f);
+        });
+    }
+
+    static float chooseGameRefreshRate(float[] supported) {
+        float best = 0f, aboveTarget = Float.POSITIVE_INFINITY;
+        for (float rate : supported) {
+            if (rate > 120.5f) aboveTarget = Math.min(aboveTarget, rate);
+            else if (rate > 60.5f && rate > best) best = rate;
+        }
+        // Some panels expose only 60 Hz and a mode above 120 Hz.
+        // The game scheduler still caps its own submissions at 120.
+        return best == 0f && Float.isFinite(aboveTarget) ? aboveTarget : best;
+    }
+
+    private void setWindowRefreshHint(float rate) {
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        if (params.preferredRefreshRate == rate) return;
+        params.preferredRefreshRate = rate;
+        getWindow().setAttributes(params);
+    }
+
     private void installLanDiagnosticExport(String host) {
         if (!"diagnostic".equals(BuildConfig.BUILD_TYPE) || host == null
                 || !WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
@@ -857,6 +895,7 @@ public final class MainActivity extends Activity {
         web = new WebView(this);
         final WebView gameView = web;
         installLanDiagnosticExport(lanHost);
+        installDisplayHint(gameView, lanHost);
         web.setBackgroundColor(0xff111a1c);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setHapticFeedbackEnabled(false);
@@ -898,6 +937,10 @@ public final class MainActivity extends Activity {
             }
         });
         web.setWebViewClient(new WebViewClientCompat() {
+            @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap icon) {
+                super.onPageStarted(v, url, icon);
+                if (v == web) setWindowRefreshHint(0f);
+            }
             @Override public void onPageFinished(WebView v, String url) {
                 super.onPageFinished(v, url);
                 if (!BuildConfig.DEBUG || v != web) return;
@@ -966,6 +1009,7 @@ public final class MainActivity extends Activity {
             @Override public boolean onRenderProcessGone(WebView v, android.webkit.RenderProcessGoneDetail detail) {
                 if (BuildConfig.DEBUG) Log.e("SightlineV6", "WebView renderer process gone; crashed=" + detail.didCrash());
                 if (v == web) {
+                    setWindowRefreshHint(0f);
                     web = null;
                     detachAndDestroy(v);
                     cancelLanJoin();
@@ -992,6 +1036,7 @@ public final class MainActivity extends Activity {
     private void toast(String message) { Toast.makeText(this, message, Toast.LENGTH_LONG).show(); }
     private void disposeWeb() {
         if (web != null) {
+            setWindowRefreshHint(0f);
             WebView old = web;
             web = null;
             detachAndDestroy(old);
@@ -1013,6 +1058,7 @@ public final class MainActivity extends Activity {
     @Override public void onBackPressed() { handleBack(); }
     @Override protected void onPause() {
         foreground.pause();
+        setWindowRefreshHint(0f);
         cancelLanDiscovery();
         lanWatchGeneration++;lanWatchHandler.removeCallbacksAndMessages(null);
         if (web!=null) {
@@ -1025,6 +1071,7 @@ public final class MainActivity extends Activity {
         super.onResume(); immersive(); startLanWatch();
         if (web!=null) web.onResume();
         foreground.resume();
+        if (web != null) web.evaluateJavascript("window.dispatchEvent(new Event('sightline-display-resume'));", null);
         if (returnedFromInstallSettings && !showingGame && root != null) {
             returnedFromInstallSettings=false;
             showHome(); // Re-expose an explicit install button, never auto-launch installer.
