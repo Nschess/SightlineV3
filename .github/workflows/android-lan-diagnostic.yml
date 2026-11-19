@@ -7,6 +7,12 @@ on:
     paths:
       - '.github/workflows/android-lan-diagnostic.yml'
   workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Exact acceptance source commit
+        required: true
+        default: '2b96f8e0af0d0af610e84c6b6ece5a6e0e911ae1'
+        type: string
 
 permissions:
   contents: read
@@ -19,12 +25,21 @@ jobs:
   diagnostic-apk:
     runs-on: windows-latest
     timeout-minutes: 50
+    env:
+      # The packaging-only push uses the approved DEV24.1 game source.
+      SIGHTLINE_SOURCE_COMMIT: ${{ inputs.source_commit || '2b96f8e0af0d0af610e84c6b6ece5a6e0e911ae1' }}
     steps:
       - name: Check out feature checkpoint
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.SIGHTLINE_SOURCE_COMMIT }}
 
       - name: Verify Android asset parity
-        run: node tests/phase2-android-asset-parity.mjs
+        shell: pwsh
+        run: |
+          if ((git rev-parse HEAD) -ne $env:SIGHTLINE_SOURCE_COMMIT) { throw 'Checked-out source differs from the requested full commit SHA.' }
+          node tests/phase2-android-asset-parity.mjs
+          exit $LASTEXITCODE
 
       - name: Set up JDK 17
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
@@ -104,7 +119,12 @@ jobs:
           }
           $signerHash = [regex]::Match($certificate, '(?m)^Signer #1 certificate SHA-256 digest: ([a-fA-F0-9]{64})\s*$').Groups[1].Value
           if (-not $signerHash) { throw 'Missing diagnostic signing certificate SHA-256.' }
-          if ((git rev-parse HEAD) -ne $env:GITHUB_SHA) { throw 'Runner checkout differs from the workflow source commit.' }
+          $sourceCommit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $sourceCommit -ne $env:SIGHTLINE_SOURCE_COMMIT) { throw 'Runner checkout differs from the requested source commit.' }
+          $versionCode = [regex]::Match($badging, "versionCode='(\d+)'").Groups[1].Value
+          if (-not $versionCode) { throw 'Missing diagnostic APK version code.' }
+          $previousSigner = '6558b1ab0edf277ed804c7733dd6f7bf2d57da167599ba15767883c48e580117'
+          $upgradeCompatible = $signerHash -eq $previousSigner -and [int]$versionCode -ge 18
           $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
           $hostPaths = Get-Content -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') | ForEach-Object { $_.Substring(66) }
           $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
@@ -129,13 +149,13 @@ jobs:
               throw 'Packaged Android page differs from the generated diagnostics page.'
             }
             $pageText = Get-Content -LiteralPath $generated -Raw
-            foreach ($marker in @('sightline-lan-diag-v1', 'hostFingerprints', 'clientSnapshotReceiveGapMs', 'totalInterval>0', 'Start / stop frame diagnostics')) {
+            foreach ($marker in @('sightline-lan-diag-v1', 'hostFingerprints', 'clientSnapshotReceiveGapMs', 'totalInterval>0', 'Start / stop frame diagnostics', 'drawingBufferDeviceScalePercent', 'MOBILE_CLARITY_SCALE')) {
               if (-not $pageText.Contains($marker)) { throw "Missing packaged capture marker: $marker" }
             }
           } finally { $archive.Dispose() }
           $deliverables = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'sightline-acceptance')
           $hostArchive = Join-Path $deliverables.FullName 'sightline-windows-host.zip'
-          git archive --format=zip --output=$hostArchive $env:GITHUB_SHA -- AGENTS.md START-HOST.bat SIGHTLINE.bat docs/DEV20-LAN-ACCEPTANCE.md docs/DEV24-DEVICE-ACCEPTANCE.md AndroidProject/app/src/main/assets/phone-host
+          git archive --format=zip --output=$hostArchive $sourceCommit -- AGENTS.md START-HOST.bat SIGHTLINE.bat docs/DEV20-LAN-ACCEPTANCE.md docs/DEV24-DEVICE-ACCEPTANCE.md AndroidProject/app/src/main/assets/phone-host
           if ($LASTEXITCODE -ne 0) { throw 'Matching Windows host archive failed.' }
           Copy-Item -LiteralPath $apks[0].FullName -Destination (Join-Path $deliverables.FullName 'sightline-lan-acceptance.apk')
           $hostBundle = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'index.html') -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -145,10 +165,14 @@ jobs:
           $report = @(
             'variant=diagnostic'
             'package=com.sightline.v3.diagnostic.visibility'
+            "version_code=$versionCode"
             'apk=sightline-lan-acceptance.apk'
             "sha256=$sha256"
             "signing_certificate_sha256=$signerHash"
-            "source_commit=$env:GITHUB_SHA"
+            "dev24_0_signing_certificate_sha256=$previousSigner"
+            "dev24_0_update_compatible=$($upgradeCompatible.ToString().ToLowerInvariant())"
+            "source_commit=$sourceCommit"
+            "workflow_commit=$env:GITHUB_SHA"
             "windows_host_sha256=$windowsSha"
             "host_bundle_sha256=$hostBundle"
             "host_inventory_sha256=$hostInventory"
@@ -156,13 +180,31 @@ jobs:
           ) -join "`n"
           $reportPath = Join-Path $deliverables.FullName 'diagnostic-build.txt'
           [IO.File]::WriteAllText($reportPath, $report, [Text.UTF8Encoding]::new($false))
+          $install = if ($upgradeCompatible) {
+            'The signer matches the DEV24.0 Actions diagnostic. Install over that app using Android Update or, if ADB is already authorized, adb install -r sightline-lan-acceptance.apk. Keep app data and verify settings and progress afterward.'
+          } else {
+            'Android cannot update the DEV24.0 Actions diagnostic with this APK. Keep that installation and its data. Use a separate ARM64 device without this package to test this build. Updating the existing install requires the original diagnostic signer.'
+          }
+          $instructions = @(
+            '# Sightline V3 DEV24.1 diagnostic'
+            ''
+            'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-lan-acceptance.apk SHA256'
+            ''
+            $install
+            ''
+            'Acceptance: use the same Infection map, viewpoint, weapon and FPS cap as DEV24.0. Compare Balanced and High. In Settings > Video > Show performance report, save stage and drawing-buffer sizes, FPS and P95 frame interval. Use frame diagnostics during play and check touch response, sustained performance, memory and thermal behavior.'
+            ''
+            'Windows LAN: extract sightline-windows-host.zip, run START-HOST.bat in CMD, and open http://WINDOWS_LAN_IP:8080/?lanDiag=1 using the bound private IPv4 address.'
+            'Physical-device acceptance: UNVERIFIED.'
+          ) -join "`n"
+          [IO.File]::WriteAllText((Join-Path $deliverables.FullName 'INSTALL.txt'), $instructions, [Text.UTF8Encoding]::new($false))
           Write-Output $report
           @('## Android diagnostic build', '', $report) -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
       - name: Upload private diagnostic artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: sightline-lan-diagnostic-${{ github.sha }}
+          name: sightline-dev24.1-diagnostic-${{ env.SIGHTLINE_SOURCE_COMMIT }}
           path: ${{ runner.temp }}/sightline-acceptance/*
           if-no-files-found: error
           retention-days: 14
