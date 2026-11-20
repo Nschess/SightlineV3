@@ -3702,6 +3702,29 @@ function autoObst(m) {
   return a;
 }
 var CURMAP = MAPS[0], AREA, OBST, CALLOUTS, BOXES, MAPD, NAV = null;
+var radarObstacleGrid;
+// A radar cell covers its exact draw window plus the distance to either cell edge.
+function buildRadarObstacleGrid(obstacles, area) {
+  var minX = Math.floor(area.x0 / 8), maxX = Math.floor(area.x1 / 8);
+  var minZ = Math.floor(area.z0 / 8), maxZ = Math.floor(area.z1 / 8);
+  var width = maxX - minX + 1, height = maxZ - minZ + 1;
+  var cells = new Array(width * height);
+  for (var i = 0; i < obstacles.length; i++) {
+    var o = obstacles[i], reachX = 40.000001 + o.w / 2, reachZ = 40.000001 + o.d / 2;
+    var firstX = Math.max(minX, Math.ceil((o.x - reachX - 4) / 8));
+    var lastX = Math.min(maxX, Math.floor((o.x + reachX - 4) / 8));
+    var firstZ = Math.max(minZ, Math.ceil((o.z - reachZ - 4) / 8));
+    var lastZ = Math.min(maxZ, Math.floor((o.z + reachZ - 4) / 8));
+    for (var z = firstZ; z <= lastZ; z++) {
+      for (var x = firstX; x <= lastX; x++) {
+        var index = (z - minZ) * width + x - minX;
+        if (!cells[index]) cells[index] = [];
+        cells[index].push(o);
+      }
+    }
+  }
+  return { minX: minX, minZ: minZ, width: width, height: height, cells: cells };
+}
 var MAP_KEY = 'sightline-map';
 function loadMapId() { try { return localStorage.getItem(MAP_KEY) || 'courtyard'; } catch (e) { return 'courtyard'; } }
 function saveMapId(id) { try { localStorage.setItem(MAP_KEY, id); } catch (e) {} }
@@ -3711,6 +3734,7 @@ function applyMapData(m) {
   var perimeter = [O(cx, m.area.z0 - 0.5, w + 2, 1, 6, 'wall'), O(cx, m.area.z1 + 0.5, w + 2, 1, 6, 'wall'), O(m.area.x0 - 0.5, cz, 1, d + 2, 6, 'wall'), O(m.area.x1 + 0.5, cz, 1, d + 2, 6, 'wall')];
   perimeter.forEach(function (o, i) { o.worldEdge = ['north', 'south', 'west', 'east'][i]; });
   OBST = perimeter.concat(m.obst, autoObst(m));
+  radarObstacleGrid = buildRadarObstacleGrid(OBST, AREA);
   CALLOUTS = m.callouts;
   BOXES = OBST.map(function (o) { return { minx: o.x - o.w / 2, maxx: o.x + o.w / 2, minz: o.z - o.d / 2, maxz: o.z + o.d / 2, bottom: o.bottom || 0, top: o.h }; });
   buildNav();
@@ -10671,20 +10695,14 @@ function addFeed(text, dead) {
   el.feed.appendChild(d); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 4200);
   while (el.feed.children.length > 4) el.feed.removeChild(el.feed.firstChild);
 }
-// OBST is replaced on map changes. Cache a conservative ordered set per
-// eight-unit cell; drawRadar still applies its original exact visibility test.
-var radarNearbyCache = { source: null, x: 0, z: 0, items: [] };
+// The map owns the bins; crossing a cell during play only changes the lookup.
+var emptyRadarObstacles = [];
 function radarNearbyObstacles(px, pz) {
-  var cellX = Math.floor(px / 8), cellZ = Math.floor(pz / 8), cache = radarNearbyCache;
-  if (cache.source === OBST && cache.x === cellX && cache.z === cellZ) return cache.items;
-  var centerX = cellX * 8 + 4, centerZ = cellZ * 8 + 4, items = [];
-  for (var i = 0; i < OBST.length; i++) {
-    var o = OBST[i];
-    if (Math.abs(o.x - centerX) > 40.000001 + o.w / 2 || Math.abs(o.z - centerZ) > 40.000001 + o.d / 2) continue;
-    items.push(o);
-  }
-  cache.source = OBST; cache.x = cellX; cache.z = cellZ; cache.items = items;
-  return items;
+  var grid = radarObstacleGrid;
+  var x = Math.floor(px / 8) - grid.minX, z = Math.floor(pz / 8) - grid.minZ;
+  // A spectator outside normal map bounds still gets the exact draw filter.
+  if (!(x >= 0 && x < grid.width && z >= 0 && z < grid.height)) return OBST;
+  return grid.cells[z * grid.width + x] || emptyRadarObstacles;
 }
 function drawRadar() {
   var W = el.radar.width, c = W / 2, s = 3.6, px = P.x, pz = P.z, py = P.yaw, i;

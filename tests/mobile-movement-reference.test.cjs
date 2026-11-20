@@ -182,3 +182,64 @@ test('capped walking keeps movement, combat, camera and LAN input on the accepte
     }
   }
 });
+
+test('walking across radar cells keeps map scans off the render path and preserves the radar view', () => {
+  for (const tree of trees) {
+    const page = fs.readFileSync(path.join(root, assetRoot, tree, 'index.html'), 'utf8');
+    const ctx = movementContext(page);
+    const rects = [];
+    const noOp = () => {};
+    ctx.el = { radar: { width: 128 } };
+    ctx.rctx = { setTransform: noOp, clearRect: noOp, save: noOp, restore: noOp, beginPath: noOp,
+      arc: noOp, clip: noOp, fill: noOp, moveTo: noOp, lineTo: noOp, closePath: noOp,
+      fillRect: (...rect) => rects.push(rect) };
+    Object.assign(ctx, { ME: { team: 0 }, TEAMS: [{ color: 'blue' }], mates: [], bots: [],
+      specCur: null, markerColor: () => 'red' });
+    const radarStart = page.includes('var emptyRadarObstacles') ? 'var emptyRadarObstacles' : 'var radarNearbyCache';
+    vm.runInContext(section(page, radarStart, '/* ---------- weapons ---------- */'), ctx);
+
+    function drawAt(obstacles, x, z, yaw) {
+      ctx.P.x = x; ctx.P.z = z; ctx.P.yaw = yaw;
+      rects.length = 0;
+      ctx.drawRadar();
+      const expected = Array.from(obstacles).filter(o =>
+        Math.abs(o.x - x) <= 36 + o.w / 2 && Math.abs(o.z - z) <= 36 + o.d / 2
+      ).map(o => [o.x - o.w / 2, o.z - o.d / 2, o.w, o.d]);
+      assert.deepEqual(rects, expected, tree + ' ' + ctx.MAPD.id);
+    }
+
+    for (const map of ctx.MAPS) {
+      ctx.applyMapData(map);
+      const obstacles = ctx.OBST;
+      const { x0, x1, z0, z1 } = ctx.AREA;
+      ctx.P = { alive: true };
+      for (const x of [x0, x1, map.spawn.x, (x0 + x1) / 2, x1 + 9]) {
+        for (const z of [z0, z1, map.spawn.z, (z0 + z1) / 2]) drawAt(obstacles, x, z, .6);
+      }
+    }
+
+    for (const mapId of ['courtyard', 'horror_city']) {
+      const map = ctx.MAPS.find(m => m.id === mapId);
+      ctx.applyMapData(map);
+      const obstacles = ctx.OBST;
+      let liveWideReads = 0;
+      ctx.OBST = new Proxy(obstacles, { get(target, key) {
+        if (key === 'length') liveWideReads++;
+        return Reflect.get(target, key);
+      } });
+      const midZ = (ctx.AREA.z0 + ctx.AREA.z1) / 2;
+      drawAt(obstacles, map.spawn.x, midZ, 0);
+      liveWideReads = 0;
+      for (let i = 0; i <= 32; i++) drawAt(obstacles, map.spawn.x, midZ, i * .08);
+      assert.equal(liveWideReads, 0, tree + ' stationary map scans');
+      const cells = new Set();
+      for (let i = 0; i <= 32; i++) {
+        const x = ctx.AREA.x0 + (ctx.AREA.x1 - ctx.AREA.x0) * i / 32;
+        cells.add(Math.floor(x / 8));
+        drawAt(obstacles, x, midZ, i * .08);
+      }
+      assert.ok(cells.size > 3, tree + ' test crosses multiple radar cells');
+      assert.equal(liveWideReads, 0, tree + ' walking map scans');
+    }
+  }
+});
