@@ -1,3 +1,7 @@
+import com.android.build.api.artifact.SingleArtifact
+import java.security.MessageDigest
+import javax.inject.Inject
+
 plugins { id 'com.android.application' }
 
 def versionProperties = new Properties()
@@ -252,4 +256,78 @@ gradle.taskGraph.whenReady { graph ->
 dependencies {
     implementation 'androidx.webkit:webkit:1.15.0'
     implementation 'androidx.core:core:1.16.0'
+}
+
+abstract class PreparePlayAssets extends DefaultTask {
+    @InputDirectory @PathSensitive(PathSensitivity.RELATIVE)
+    abstract DirectoryProperty getMergedAssets()
+
+    @OutputDirectory
+    abstract DirectoryProperty getPlayAssets()
+
+    @InputFile @PathSensitive(PathSensitivity.NONE)
+    abstract RegularFileProperty getExclusionList()
+
+    @InputDirectory @PathSensitive(PathSensitivity.RELATIVE)
+    abstract DirectoryProperty getThirdPartyNotices()
+
+    @Input
+    abstract ListProperty<String> getRuntimeArtifactInventory()
+
+    @Inject
+    abstract FileSystemOperations getFileOperations()
+
+    @TaskAction
+    void prepare() {
+        def notices = thirdPartyNotices.get().asFile
+        def noticeNames = ['APACHE-2.0.txt', 'RUNTIME-DEPENDENCIES.txt']
+        for (def name : noticeNames) {
+            def notice = new File(notices, name)
+            if (!notice.isFile() || notice.length() == 0) {
+                throw new GradleException("Required Play license or dependency evidence missing: ${name}")
+            }
+        }
+        def approved = new File(notices, 'RUNTIME-DEPENDENCIES.txt').readLines('UTF-8')
+            .findAll { it && !it.startsWith('#') }.sort()
+        def resolved = runtimeArtifactInventory.get()
+        if (approved != resolved) {
+            throw new GradleException("Play runtime inputs lack matching reviewed license evidence. " +
+                "Unreviewed inputs: ${resolved - approved}. Missing or changed inputs: ${approved - resolved}.")
+        }
+        def excluded = exclusionList.get().asFile.readLines('UTF-8').findAll { it }
+        fileOperations.sync {
+            into(playAssets.get().asFile)
+            from(mergedAssets.get().asFile) { exclude(excluded) }
+            from(notices) {
+                include(noticeNames)
+                into('third-party')
+            }
+        }
+    }
+}
+
+def playPackaging = layout.projectDirectory.dir('play-packaging')
+androidComponents.onVariants(androidComponents.selector().withBuildType('release')) { variant ->
+    def runtimeInventory = configurations.named("${variant.name}RuntimeClasspath").flatMap { runtime ->
+        runtime.incoming.artifacts.resolvedArtifacts
+    }.map { artifacts ->
+        artifacts.collect { artifact ->
+            def sha = MessageDigest.getInstance('SHA-256')
+            artifact.file.withInputStream { input ->
+                byte[] buffer = new byte[65536]
+                int count
+                while ((count = input.read(buffer)) != -1) sha.update(buffer, 0, count)
+            }
+            def hex = HexFormat.of().formatHex(sha.digest())
+            "${artifact.id.componentIdentifier.displayName}  ${artifact.file.name}  ${hex}".toString()
+        }.sort()
+    }
+    def stage = tasks.register('preparePlayAssets', PreparePlayAssets) {
+        exclusionList.set(playPackaging.file('EXCLUDED-ASSETS.txt'))
+        thirdPartyNotices.set(playPackaging)
+        runtimeArtifactInventory.set(runtimeInventory)
+    }
+    variant.artifacts.use(stage)
+        .wiredWithDirectories({ it.mergedAssets }, { it.playAssets })
+        .toTransform(SingleArtifact.ASSETS.INSTANCE)
 }

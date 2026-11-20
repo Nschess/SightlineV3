@@ -1,0 +1,8 @@
+www/fps-lab.html
+www/weapon-qa.html
+phone-host/fps-lab.html
+phone-host/server.js
+phone-host/data.json
+phone-host/host-transport-config.js
+phone-host/lan-discovery.cjs
+phone-host/SHA256SUMS
