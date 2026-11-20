@@ -6,7 +6,13 @@ const {LocalLanHost}=require('../tools/local-lan-host.cjs');
 let PORT;
 test.before(async()=>{PORT=await new Promise((resolve,reject)=>{const socket=require('node:net').createServer();socket.on('error',reject);socket.listen(0,'127.0.0.1',()=>{const port=socket.address().port;socket.close(()=>resolve(port));});});});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
-async function until(f){for(let i=0;i<400;i++){if(f())return;await delay(25);}throw Error('LAN event timeout');}
+async function until(f, timeoutMs = 10000, event = 'LAN event') {
+    const deadline = Date.now() + timeoutMs;
+    while (!f()) {
+        if (Date.now() >= deadline) throw new Error(event + ' timeout');
+        await delay(25);
+    }
+}
 const javaHome=process.env.SIGHTLINE_TEST_JAVA_HOME;
 const classes=path.join(root,'AndroidProject/app/build/verification/lan-policy');
 function java(...args){return cp.execFileSync(path.join(javaHome,'bin/java.exe'),['-cp',classes,'LanJoinPolicyProbe',...args],{encoding:'utf8'}).trim();}
@@ -116,7 +122,12 @@ test('real host HTTP, browser-origin upgrade, v2 join, gameplay exchange and res
         sendProtocolV2(peers[1],{t:'team',team:oppositeTeam});
         await until(()=>peers[0].events.filter(m=>m.t==='lobby').at(-1).players.find(p=>p.id===guestId).team===oppositeTeam);
         sendProtocolV2(peers[0],{t:'start'});
-        await until(()=>peers.every(p=>p.spawn)&&peers[0].events.some(m=>m.t==='ph'&&m.ph==='live'));
+        let buyPhase;
+        await until(() => peers.every(p => p.spawn) &&
+            (buyPhase = peers[0].events.find(m => m.t === 'ph' && m.ph === 'buy')), 10000, 'LAN spawn and buy phase');
+        assert.ok(Number.isFinite(buyPhase.ms) && buyPhase.ms > 0 && buyPhase.ms <= 12000, buyPhase);
+        await until(() => peers[0].events.some(m => m.t === 'ph' && m.ph === 'live'),
+            buyPhase.ms + 2000, 'LAN live phase after buy');
         for(const p of peers) {const q=p.spawn;sendProtocolV2(p,{t:'in',x:q.x+.02,y:q.y,z:q.z,yaw:q.yaw,pitch:0,cr:0,pr:0});sendProtocolV2(p,{t:'shot',w:q.cur,d:[[0,0,-1]]});}
         await delay(120);
         const active=await(await fetch('http://127.0.0.1:'+PORT+'/status')).json();assert(active.stats.shots>=2);assert.equal(active.players,2);
