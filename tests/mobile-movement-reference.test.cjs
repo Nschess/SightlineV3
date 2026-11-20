@@ -114,3 +114,71 @@ test('movement through representative maps stays bounded and consistent across d
     }
   }
 });
+
+test('capped walking keeps movement, combat, camera and LAN input on the accepted frame pose', () => {
+  for (const tree of trees) {
+    const page = fs.readFileSync(path.join(root, assetRoot, tree, 'index.html'), 'utf8').replace(/\r\n/g, '\n');
+    const ctx = movementContext(page);
+    const map = ctx.MAPS.find(entry => entry.id === 'courtyard');
+    ctx.applyMapData(map);
+    const { x, z } = map.spawn;
+    ctx.P = { x, z, y: ctx.groundAt(x, z, 0), vx: 0, vy: 0, vz: 0, yaw: .2, pitch: .1,
+      punch: 0, crouch: 0, prone: 0, bob: 0, alive: true, onGround: true };
+    ctx.scoped = true;
+    ctx.fireHeld = true;
+    ctx.setStick({ clientX: 0, clientY: -16 });
+    const integrate = ctx.updatePlayer;
+    let now = 1000, fires = 0, reloads = 0, scheduled = 0;
+    const frames = [], packets = [], cameraPose = [];
+    const noOp = () => {};
+    Object.assign(ctx, {
+      MP: { on: true, mode: 'tactical', puppets: {}, ep: 7, lastSend: 0 },
+      T: 0, last: now, fpsT: 0, fpsWasPlaying: true, rafHzBest: 60, rafCount: 96, playerCpuEma: 0,
+      androidRefreshBridge: {}, androidPerf: { pendingQuality: false }, LAN_DIAG: null, M: null,
+      gameContextLost: false, frameSkipNext: false, document: { hidden: false },
+      performance: { now: () => now }, P0FrameDiag: { begin: () => null, current: () => null },
+      requestAnimationFrame: () => { scheduled++; }, sampleRafCadence: noOp,
+      syncAndroidGameTarget: () => 30, updateAndroidRefreshHint: noOp,
+      updateLobbyPreviewForFrame: noOp, updateMobileAim: noOp,
+      camera: { position: { set: (...position) => { cameraPose.push(position); } }, rotation: {} },
+      vb: 0, adsT: 1, SEND_MS: 20, interpMs: () => 65, r4: round, mpSend: packet => packets.push(packet),
+      tryFire: () => { fires++; }, finishReload: () => { reloads++; }, reloading: .045,
+      updatePlayer(dt) {
+        frames.push({ now, dt });
+        integrate(dt);
+        ctx.syncCamera(dt);
+        ctx.mpUpdate(dt);
+      }
+    });
+    vm.runInContext(section(page, 'function effectiveRenderCap(', 'function resetFpsWindow()'), ctx);
+    vm.runInContext(section(page, 'function mpUpdate(dt)', '/* ---- combat events ---- */'), ctx);
+    vm.runInContext('function syncCamera(dt) {\n' +
+      section(page, '  /* camera */\n  var eyeY', '  if (!P.alive && state !==') + '\n}', ctx);
+    const frame = section(page, 'function frame(now)', '\nvar slFinishTags');
+    assert.match(frame, /updatePlayer\(dt\)[\s\S]*runOfflineBots\(dt\)[\s\S]*renderer\.render\(scene, camera\)/);
+    assert.match(section(page, 'function runOfflineBots(dt)', 'function renderOfflineBots('),
+      /if \(MP\.on\) \{\s*botStepAcc = 0; botTickRate = 1; updateBots\(dt\); return;/);
+    assert.match(page, /function updateBots\(dt\) \{\s*if \(MP\.on\) \{ mpUpdate\(dt\); return; \}/);
+    vm.runInContext(frame.slice(0, frame.indexOf('    var botStarted =')) + '\n  }\n}', ctx);
+    const callbacks = [1000, 1016.667, 1033.333, 1100, 1116.667, 1133.333];
+    for (const time of callbacks) {
+      now = time;
+      ctx.frame(time);
+    }
+    assert.equal(scheduled, callbacks.length);
+    assert.deepEqual(frames.map(frame => frame.now), [1000, 1033.333, 1100, 1133.333]);
+    assert.deepEqual(frames.map(frame => round(frame.dt)), [0, .0333, .05, .0333]);
+    assert.equal(fires, frames.length);
+    assert.equal(reloads, 1);
+    assert.ok(ctx.P.z < z, tree);
+    assert.equal(ctx.camera.rotation.y, ctx.P.yaw);
+    assert.equal(ctx.camera.rotation.x, ctx.P.pitch + ctx.P.punch);
+    assert.equal(cameraPose.length, frames.length);
+    assert.deepEqual(packets.map(({x,z}) => [x,z]), cameraPose.map(([x,,z]) => [round(x),round(z)]));
+    for (const packet of packets) {
+      assert.equal(packet.t, 'in');
+      assert.equal(packet.ep, 7);
+      assert.equal(packet.wk, 1);
+    }
+  }
+});

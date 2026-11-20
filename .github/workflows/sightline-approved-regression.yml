@@ -20,7 +20,7 @@ jobs:
       - name: Verify Android assets
         run: node tests/phase2-android-asset-parity.mjs
       - name: Verify approved gameplay, input and render behavior
-        run: node --test tests/mobile-movement-reference.test.cjs tests/mobile-movement-bootstrap.test.cjs tests/mobile-hud-interruptions.test.cjs tests/mobile-smart-setup.test.cjs tests/android-refresh-lifecycle.test.cjs tests/mobile-render-clarity.test.cjs tests/lobby10-match-rules-back.test.mjs tests/phase3-outbreak-integration.test.cjs
+        run: node --test tests/mobile-movement-reference.test.cjs tests/mobile-movement-bootstrap.test.cjs tests/mobile-hud-interruptions.test.cjs tests/mobile-smart-setup.test.cjs tests/android-refresh-lifecycle.test.cjs tests/mobile-render-clarity.test.cjs tests/mp-jitter-interpolation.test.cjs tests/lobby10-match-rules-back.test.mjs tests/phase3-outbreak-integration.test.cjs
       - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
           distribution: temurin
@@ -29,5 +29,5 @@ jobs:
         shell: pwsh
         run: |
           $env:SIGHTLINE_TEST_JAVA_HOME = $env:JAVA_HOME
-          node --test --test-name-pattern='bundled Android manual Connect|execute the native Java|real host HTTP' tests/lan-join-recovery.test.cjs
+          node --test --test-name-pattern='bundled Android manual Connect|disabling automatic reconnect|execute the native Java|real host HTTP' tests/lan-join-recovery.test.cjs
           exit $LASTEXITCODE
