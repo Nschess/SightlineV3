@@ -200,8 +200,8 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("release
 // Advance the persistent acceptance package independently of the Play release.
 androidComponents.onVariants(androidComponents.selector().withBuildType("diagnostic")) { variant ->
     variant.outputs.each { output ->
-        output.versionCode.set(Math.max(code, 23))
-        output.versionName.set(playName + '-dev25.5-diagnostic')
+        output.versionCode.set(Math.max(code, 24))
+        output.versionName.set(playName + '-p0-walk-diagnostic')
     }
 }
 

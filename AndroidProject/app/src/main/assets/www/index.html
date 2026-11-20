@@ -11874,7 +11874,10 @@ function touchMoveGain() {
   if (touchRun && magnitude > 0) return 1 + (1 / magnitude - 1) * Math.min(1, magnitude * 4);
   if (magnitude > 0 && magnitude < .5) {
     // Match the accepted walk response, then blend into full analog input before the walk flag changes.
-    var precision = Math.min(magnitude, (TOUCH_STICK_DEAD_ZONE + (TOUCH_STICK_RADIUS - TOUCH_STICK_DEAD_ZONE) * magnitude) / (2 * TOUCH_STICK_RADIUS));
+    var travel = (TOUCH_STICK_RADIUS - TOUCH_STICK_DEAD_ZONE) * magnitude;
+    // Fade in the original low-travel walk curve over the first 3 CSS pixels.
+    var onset = Math.min(1, travel / 3);
+    var precision = (TOUCH_STICK_DEAD_ZONE + travel) / (2 * TOUCH_STICK_RADIUS) * onset * (2 - onset);
     var blendWalk = Math.max(0, (magnitude - .34) / .16);
     blendWalk *= blendWalk * (3 - 2 * blendWalk);
     return (precision + (magnitude - precision) * blendWalk) / magnitude;

@@ -115,6 +115,27 @@ test('movement through representative maps stays bounded and consistent across d
   }
 });
 
+test('low-travel walking reaches the accepted speed without a dead-zone jump', () => {
+  for (const tree of trees) {
+    const ctx = movementContext(fs.readFileSync(path.join(root, assetRoot, tree, 'index.html'), 'utf8'));
+    const steadySpeed = travel => {
+      ctx.setStick({ clientX: 0, clientY: -travel });
+      return -ctx.stick.y * ctx.touchMoveGain() * 5.2;
+    };
+    assert.equal(steadySpeed(5) || 0, 0, tree);
+    assert.ok(steadySpeed(5.01) < .003, tree + ' dead-zone continuity');
+    assert.ok(steadySpeed(6) > .19, tree + ' responds to a small walking drag');
+    for (const travel of [8, 9, 10, 16]) {
+      assert.ok(Math.abs(steadySpeed(travel) - travel * 5.2 / 88) < 1e-9, tree + ' DEV24.9 walk speed at ' + travel);
+    }
+    for (let travel = 5.02; travel <= 10; travel += .01) {
+      const change = steadySpeed(travel) - steadySpeed(travel - .01);
+      assert.ok(change >= 0 && change < .003, tree + ' bounded walk response at ' + travel);
+    }
+    assert.ok(Math.abs(steadySpeed(50) - 5.2) < 1e-9, tree + ' full-stick speed');
+  }
+});
+
 test('capped walking keeps movement, combat, camera and LAN input on the accepted frame pose', () => {
   for (const tree of trees) {
     const page = fs.readFileSync(path.join(root, assetRoot, tree, 'index.html'), 'utf8').replace(/\r\n/g, '\n');

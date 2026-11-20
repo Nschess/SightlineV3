@@ -145,7 +145,7 @@ jobs:
           $sourceCommit = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0 -or $sourceCommit -ne $env:GITHUB_SHA) { throw 'Runner checkout differs from the workflow commit.' }
           $versionCode = [regex]::Match($badging, "versionCode='(\d+)'").Groups[1].Value
-          if ([int]$versionCode -le 22 -or $badging -notmatch "versionName='[^']+-dev25\.5-diagnostic'") { throw 'Expected an update-compatible DEV25.5 diagnostic version.' }
+          if ([int]$versionCode -le 23 -or $badging -notmatch "versionName='[^']+-p0-walk-diagnostic'") { throw 'Expected an update-compatible P0 walking diagnostic version.' }
           $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
           $hostPaths = Get-Content -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') | ForEach-Object { $_.Substring(66) }
           $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
@@ -224,7 +224,7 @@ jobs:
           Copy-Item -LiteralPath 'docs/DEV24-DEVICE-ACCEPTANCE.md' -Destination (Join-Path $deliverables.FullName 'DEVICE-ACCEPTANCE.md')
           Copy-Item -LiteralPath 'docs/ANDROID-DEVICE-FPS.md','tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
           $instructions = @(
-            '# Sightline V3 DEV25.5 mobile acceptance diagnostic'
+            '# Sightline V3 P0 walking acceptance diagnostic'
             ''
             'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-lan-acceptance.apk SHA256'
             ''
@@ -248,7 +248,7 @@ jobs:
       - name: Upload private diagnostic artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: sightline-acceptance-${{ github.sha }}
+          name: sightline-walking-acceptance-${{ github.sha }}
           path: ${{ runner.temp }}/sightline-acceptance/*
           if-no-files-found: error
           retention-days: 14
