@@ -205,6 +205,9 @@ public final class MainActivity extends Activity {
         if (BuildConfig.SECURE_LAN_RELEASE) {
             layout.addView(label("Release LAN joins use HTTPS/WSS to the approved host and Android's normal certificate validation.", 14));
             layout.addView(button("Join Secure LAN Game", this::askForHost));
+            if (BuildConfig.PLAY_DISTRIBUTION) {
+                layout.addView(button("Privacy Policy", this::openPrivacyPolicy));
+            }
         } else {
             layout.addView(label("Development LAN uses unencrypted HTTP/WS. Use only an isolated trusted Wi-Fi or hotspot with no internet exposure or sensitive data.", 14));
             layout.addView(button("FIND LAN MATCH", this::discoverLanHosts));
@@ -232,6 +235,15 @@ public final class MainActivity extends Activity {
         immersive();
         if (updater != null && updater.enabled() && getPreferences(Context.MODE_PRIVATE).getBoolean("optional-update-checks",false))
             checkForUpdates(false);
+    }
+
+    private void openPrivacyPolicy() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.PRIVACY_POLICY_URL))
+                .addCategory(Intent.CATEGORY_BROWSABLE));
+        } catch (ActivityNotFoundException e) {
+            toast("No browser found. Use the privacy policy link on the Google Play listing.");
+        }
     }
 
     private void checkForUpdates(boolean manual) {
@@ -495,7 +507,7 @@ public final class MainActivity extends Activity {
             if (host == null || host.isEmpty()) { toast("This release has no approved secure host configuration"); return; }
             new AlertDialog.Builder(this)
                 .setTitle("Join approved secure LAN host")
-                .setMessage("Connect to " + host + ":8080 over HTTPS/WSS. Android will validate the host certificate normally; no override is available.")
+                .setMessage("Connect to " + host + ":8080 over HTTPS/WSS. The host receives your IP address and match data. Your nickname and match activity are visible to other players. Offline play remains available.")
                 .setPositiveButton("Connect", (d, w) -> openGame(host))
                 .setNegativeButton("Cancel", null).show();
             return;
@@ -739,7 +751,7 @@ public final class MainActivity extends Activity {
             String failure=null;
             try { readLanStatus(target,generation); }
             catch (Exception e) {
-                Log.e("SightlineLAN","Host readiness failed before opening bundled LAN client",e);
+                if (!BuildConfig.PLAY_DISTRIBUTION) Log.e("SightlineLAN","Host readiness failed before opening bundled LAN client",e);
                 if (e instanceof java.net.ConnectException) failure="Host unavailable — try again.";
                 else if (e instanceof java.net.SocketTimeoutException) failure="Connection timed out — check that both devices use the same Wi-Fi.";
                 else if ("MATCH_FULL".equals(e.getMessage())) failure="Match is full. Choose another room.";
@@ -1031,6 +1043,7 @@ public final class MainActivity extends Activity {
                     discoverLanHosts();
                     return true;
                 }
+                if (BuildConfig.PLAY_DISTRIBUTION) return true;
                 if (BuildConfig.DEBUG && message != null) {
                     String text = message.message() + " @ " + message.sourceId() + ":" + message.lineNumber();
                     if (message.messageLevel() == ConsoleMessage.MessageLevel.ERROR ||

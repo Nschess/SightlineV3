@@ -1,13 +1,13 @@
 4f546d4c6e060f93ca5a7cd15fcb675248db5778772ea82e150c70684f576da7  ANDROID-DEVICE-QA.md
 f5f0c4fd7fbb46156930016017390da715ab2743a9906be21799ebf07f6ba64b  ANDROID-SECURITY-REVIEW.md
-9a159883c2abd473b597b092ed98e185673f5615f33c100cf0de38d0078c4240  app/build.gradle
+7865ad9c5854bbc16aa2e7bc884c0ed252b388dc8b3ef758f997289b8bf1629c  app/build.gradle
 fca9a7d1d04b9d68f812873a442379888fc1aefa909fab5971b7b43c11030edf  app/src/main/AndroidManifest.xml
 47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11  app/src/main/assets/phone-host/character-realism.js
 e9fae9d67ebb606dfb90edb0db1006a344aa4b4c0181f7a126a6e84a3e8e06db  app/src/main/assets/phone-host/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/phone-host/infection-evasion.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/phone-host/navigation.js
-72dc3139c286af6f18645b7ee470d368cd3e37475d5913be2b6030b281acaf8d  app/src/main/assets/phone-host/server.js
-6dad254c0902c16fa5100d8b35a45349a9d62f01c1fef1505959c38b37f36160  app/src/main/assets/phone-host/SHA256SUMS
+dfbfddf7297713058d9f10dc75ab0e58146945eab81b72609603ab894427daee  app/src/main/assets/phone-host/server.js
+8b40496527c1e6c3daf16783cc26d4822cacdb1ccf28d5990cad8773adeea130  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js
@@ -30,7 +30,7 @@ f02d1fdaa261f2db760de0d45ffc71f18125c894b5f106146b31901be8c45493  app/src/main/a
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/www/zombie-hunt.js
 d09efef6cf313ff9df10fdd49307a1006d2139bd2d80b9e456c83fbf47db5937  app/src/main/java/com/sightline/v3/HostPolicy.java
 3ff3b6ee6b693d7fa30f405ea17ab7ce2012613f0b4b7020348d73357e570c99  app/src/main/java/com/sightline/v3/LanHostService.java
-921096a09b36e1aaffabb89f7182e03ac8b7117183b761e3b96cc70a72bd14ce  app/src/main/java/com/sightline/v3/MainActivity.java
+0dac77e40631bc72c570511dad41bbca5e72c936e467b9f51cc9b7d89f64e2ff  app/src/main/java/com/sightline/v3/MainActivity.java
 8f010cdfea8ff723672eb33c22ea2a5d86f0892600a4ab390b27c48767d2b914  app/src/main/java/com/sightline/v3/UpdateManager.java
 bdcf6b4a260bf2517d77b83e967e8abaa48171f11e0de305daff2585cc642028  app/src/main/java/com/sightline/v3/UpdatePolicy.java
 ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847  app/src/main/res/drawable-nodpi/ic_sightline_foreground.png

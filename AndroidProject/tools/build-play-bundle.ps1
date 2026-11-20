@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$TlsHost,
+    [Parameter(Mandatory=$true)][string]$PrivacyPolicyUrl,
     [Parameter(Mandatory=$true)][string]$BundletoolJar,
     [Parameter(Mandatory=$true)][ValidatePattern('^[a-fA-F0-9]{64}$')][string]$BundletoolSha256,
     [Parameter(Mandatory=$true)][ValidatePattern('^[a-fA-F0-9]{64}$')][string]$UploadCertificateSha256
@@ -29,7 +30,7 @@ if (-not $env:SIGHTLINE_KEYSTORE_PATH -or -not $env:SIGHTLINE_KEYSTORE_PASSWORD 
 
 Push-Location -LiteralPath $android
 try {
-    & .\gradlew.bat --no-daemon '-PenableLanHost=false' "-PsightlineLanTlsHost=$TlsHost" :app:bundleRelease
+    & .\gradlew.bat --no-daemon '-PenableLanHost=false' "-PsightlineLanTlsHost=$TlsHost" "-PsightlinePrivacyPolicyUrl=$PrivacyPolicyUrl" :app:bundleRelease
     if ($LASTEXITCODE -ne 0) { throw 'The production bundle task failed.' }
     $bundle = (Resolve-Path -LiteralPath 'app/build/outputs/bundle/release/app-release.aab').Path
     & $java (Join-Path $PSScriptRoot 'VerifyPlayBundleSigning.java') $bundle $UploadCertificateSha256

@@ -117,6 +117,10 @@ const TICK_MS = opt('tick-ms', 20, 10, 50), SNAP_EVERY = Math.round(opt('snapsho
 const HIST_MS = 600, EYE = 1.65, HALF_W = 0.38, BODY_H = 1.8;
 const MAX_SPEED = 9.6;           /* fastest legal horizontal speed (slide) plus slack, m/s */
 const log = (...a) => console.log(new Date().toLocaleTimeString(), ...a);
+function logPlayerConnection(event, player, ...details) {
+  if (RELEASE_TLS) log(event, ...details);
+  else log(event, player.name, ...details);
+}
 /* The circle resolver must keep the ordered full scan when it touches a solid:
    its recovery pass deliberately reasons about a combined footprint.  This
    cache is therefore only an empty-contact proof for open ground, never a
@@ -2246,7 +2250,7 @@ function removePlayer(p) {
   if (!players.delete(p.id)) return;
   DM.respawns.delete(p.id);
   FFA.respawns.delete(p.id);
-  log('left:', p.name, '(' + humanCount() + ' players connected)');
+  logPlayerConnection('left:', p, '(' + humanCount() + ' players connected)');
   const wasHost = p.host; if (wasHost) ensureHost();
   bcast({ t: 'left', id: p.id });
   if (!humanCount()) { players.forEach(q => { if (q.bot) { q.alive = false; } }); G.phase = 'lobby'; G.round = 0; G.score = [0, 0]; syncBots(); pushLobby(); return; }
@@ -2520,7 +2524,7 @@ if (require.main === module) {
     const t = now(); let n = 0;
     players.forEach(p => {
       if (p.bot) return;
-      if (t - p.c.lastRx > 20000) { log('timeout:', p.name); p.c.kill(); return; }
+      if (t - p.c.lastRx > 20000) { logPlayerConnection('timeout:', p); p.c.kill(); return; }
       p.pingSent = now();
       const ping = { t: 'ping', s: p.pingSent };
       const probeQueue = p.c.backlog;
@@ -2653,7 +2657,7 @@ server.on('upgrade', (req, sock) => {
       if (!negotiation.ok) return c.closeAfterMessage({ t: 'err', code: negotiation.code, requiredProtocol: MULTIPLAYER_PROTOCOL, msg: negotiation.message });
       if (humanCount() >= MAX_PLAYERS) { c.text(JSON.stringify({ t: 'err', msg: 'Server is full.' })); return c.kill(); }
       if (players.size >= MAX_TOTAL) { const victim = [...players.values()].filter(p => p.bot).sort((a,b) => (a.alive-b.alive) || (b.id-a.id))[0]; if (victim) removeBot(victim); else { c.text(JSON.stringify({t:'err',msg:'Server is full.'})); return c.kill(); } }
-      me = addPlayer(c, m.name); releaseHelloSlot(); ROOM_OPENED=true; log('joined:', me.name, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
+      me = addPlayer(c, m.name); releaseHelloSlot(); ROOM_OPENED=true; logPlayerConnection('joined:', me, '(' + humanCount() + '/' + MAX_PLAYERS + ' players, ' + (players.size - humanCount()) + ' bots)');
       me.diagnostics = !RELEASE_TLS && m.diagnostics === true;
       me.lobbyPingUpdates = m.lobbyPingUpdates === true;
       me.protocol = MULTIPLAYER_PROTOCOL; me.session = crypto.randomBytes(16).toString('hex'); me.lastActionSeq = 0;

@@ -26,20 +26,37 @@ def diagnosticKeyPath = providers.environmentVariable('SIGHTLINE_DIAGNOSTIC_KEYS
 def diagnosticKeyPassword = providers.environmentVariable('SIGHTLINE_DIAGNOSTIC_KEYSTORE_PASSWORD').orNull
 def diagnosticSigningProvided = diagnosticKeyPath && diagnosticKeyPassword
 def releaseTlsHost = providers.gradleProperty('sightlineLanTlsHost').getOrElse('').trim().toLowerCase(Locale.ROOT)
-def validReleaseTlsHost = {
-    if (!releaseTlsHost || releaseTlsHost.length() > 253 || releaseTlsHost.contains(':') ||
-        releaseTlsHost.startsWith('.') || releaseTlsHost.endsWith('.') ||
-        !(releaseTlsHost ==~ /[a-z0-9.-]+/) || !releaseTlsHost.contains('.')) return false
-    if (releaseTlsHost ==~ /(?i)(?:(?:0x[0-9a-f]+|[0-9]+)\.)+(?:0x[0-9a-f]+|[0-9]+)/) return false
-    if (releaseTlsHost == 'localhost' || releaseTlsHost.endsWith('.localhost') ||
-        releaseTlsHost.endsWith('.local') || releaseTlsHost.endsWith('.test') ||
-        releaseTlsHost.endsWith('.invalid') || releaseTlsHost.endsWith('.example') ||
+def validReleaseDnsHost = { String dnsHost ->
+    if (!dnsHost || dnsHost.length() > 253 || dnsHost.contains(':') ||
+        dnsHost.startsWith('.') || dnsHost.endsWith('.') ||
+        !(dnsHost ==~ /[a-z0-9.-]+/) || !dnsHost.contains('.')) return false
+    if (dnsHost ==~ /(?i)(?:(?:0x[0-9a-f]+|[0-9]+)\.)+(?:0x[0-9a-f]+|[0-9]+)/) return false
+    if (dnsHost == 'localhost' || dnsHost.endsWith('.localhost') ||
+        dnsHost.endsWith('.local') || dnsHost.endsWith('.test') ||
+        dnsHost.endsWith('.invalid') || dnsHost.endsWith('.example') ||
         ['example.com','example.net','example.org','example.edu','example.gov','example.mil'].any { host ->
-            releaseTlsHost == host || releaseTlsHost.endsWith('.' + host)
+            dnsHost == host || dnsHost.endsWith('.' + host)
         }) return false
-    def labels = releaseTlsHost.split('\\.', -1)
+    def labels = dnsHost.split('\\.', -1)
     return labels.every { label -> label.length() >= 1 && label.length() <= 63 &&
         label ==~ /[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/ }
+}
+def privacyPolicyInput = providers.gradleProperty('sightlinePrivacyPolicyUrl')
+    .orElse(providers.environmentVariable('SIGHTLINE_PRIVACY_POLICY_URL')).getOrElse('').trim()
+def privacyPolicyUrl = ''
+if (privacyPolicyInput) {
+    URI policy
+    try {
+        policy = new URI(privacyPolicyInput)
+    } catch (URISyntaxException ignored) {
+        throw new GradleException('Set a valid public HTTPS privacy policy URL.')
+    }
+    if (policy.scheme != 'https' || !validReleaseDnsHost(policy.host?.toLowerCase(Locale.ROOT)) ||
+        !(policy.port in [-1, 443]) || policy.rawUserInfo != null || policy.rawQuery != null ||
+        policy.rawFragment != null) {
+        throw new GradleException('Use a public HTTPS privacy policy URL without credentials, query or fragment.')
+    }
+    privacyPolicyUrl = policy.toASCIIString()
 }
 
 def hostRequested = providers.gradleProperty('enableLanHost').orElse('true').get().toBoolean()
@@ -120,6 +137,7 @@ android {
         buildConfigField 'boolean', 'SECURE_LAN_RELEASE', 'false'
         buildConfigField 'String', 'LAN_TLS_HOST', '""'
         buildConfigField 'String', 'UPDATE_MANIFEST_URL', '"' + manifestUrl + '"'
+        buildConfigField 'String', 'PRIVACY_POLICY_URL', '""'
     }
     buildFeatures { buildConfig true }
     if (hostRequested) {
@@ -160,6 +178,7 @@ android {
             buildConfigField 'String', 'UPDATE_MANIFEST_URL', '""'
             buildConfigField 'boolean', 'SECURE_LAN_RELEASE', 'true'
             buildConfigField 'String', 'LAN_TLS_HOST', '"' + releaseTlsHost + '"'
+            buildConfigField 'String', 'PRIVACY_POLICY_URL', groovy.json.JsonOutput.toJson(privacyPolicyUrl)
             if (releaseSigningProvided) signingConfig signingConfigs.sightlineRelease
         }
     }
@@ -215,8 +234,11 @@ gradle.taskGraph.whenReady { graph ->
         if (!releaseSigningProvided || !file(releaseKeyPath).isFile()) {
             throw new GradleException('Release signing key missing. Run tools/provision-signing-key.ps1 locally and set SIGHTLINE_KEYSTORE_* environment values. Never use debug signing for release.')
         }
-        if (!validReleaseTlsHost()) {
+        if (!validReleaseDnsHost(releaseTlsHost)) {
             throw new GradleException('Secure LAN release requires -PsightlineLanTlsHost=<approved non-reserved FQDN>.')
+        }
+        if (!privacyPolicyUrl) {
+            throw new GradleException('Android production release requires the approved public HTTPS privacy policy URL.')
         }
         if (hostRequested) {
             throw new GradleException('The native phone-host service uses development HTTP/WS and cannot be packaged in a release build.')
