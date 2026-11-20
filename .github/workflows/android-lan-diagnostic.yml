@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - codex/sightline-dev19-mobile-polish
+      - codex/sightline-p0-emergency-recovery
     paths:
       - '.github/workflows/android-lan-diagnostic.yml'
   workflow_dispatch:
@@ -17,15 +18,16 @@ concurrency:
 
 jobs:
   diagnostic-apk:
-    if: github.repository == 'Nschess/SightlineV3' && github.ref == 'refs/heads/codex/sightline-dev19-mobile-polish'
+    if: github.repository == 'Nschess/SightlineV3' && (github.ref == 'refs/heads/codex/sightline-dev19-mobile-polish' || github.ref == 'refs/heads/codex/sightline-p0-emergency-recovery')
     runs-on: windows-latest
     timeout-minutes: 50
     env:
       SIGHTLINE_DIAGNOSTIC_CERT_SHA256: '772e5f251ec7eae3d2ece447869be0bd9e28e2a79f947befa1c226aa4fd7acc3'
     steps:
-      - name: Check out feature checkpoint
+      - name: Check out isolated recovery checkpoint
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Verify Android asset parity
@@ -36,7 +38,12 @@ jobs:
           exit $LASTEXITCODE
 
       - name: Verify critical mobile regressions
-        run: node --test tests/mobile-render-clarity.test.cjs tests/android-refresh-lifecycle.test.cjs tests/phase3-outbreak-integration.test.cjs tests/lobby10-match-rules-back.test.mjs tests/mobile-hud-interruptions.test.cjs tests/mobile-smart-setup.test.cjs tests/mobile-movement-bootstrap.test.cjs
+        shell: pwsh
+        env:
+          SIGHTLINE_MOVEMENT_REFERENCE: 24c9034ae5f1a92e90491d5c9a7aa4b37b9acb6a
+        run: |
+          node --test tests/mobile-movement-reference.test.cjs tests/mobile-movement-bootstrap.test.cjs tests/mobile-render-clarity.test.cjs tests/android-refresh-lifecycle.test.cjs tests/phase3-outbreak-integration.test.cjs tests/lobby10-match-rules-back.test.mjs tests/mobile-hud-interruptions.test.cjs tests/mobile-smart-setup.test.cjs
+          exit $LASTEXITCODE
 
       - name: Set up JDK 17
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
@@ -145,7 +152,7 @@ jobs:
           $sourceCommit = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0 -or $sourceCommit -ne $env:GITHUB_SHA) { throw 'Runner checkout differs from the workflow commit.' }
           $versionCode = [regex]::Match($badging, "versionCode='(\d+)'").Groups[1].Value
-          if ([int]$versionCode -le 23 -or $badging -notmatch "versionName='[^']+-p0-walk-diagnostic'") { throw 'Expected an update-compatible P0 walking diagnostic version.' }
+          if ([int]$versionCode -le 24 -or $badging -notmatch "versionName='[^']+-p0-emergency-recovery'") { throw 'Expected an update-compatible P0 emergency recovery diagnostic version.' }
           $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
           $hostPaths = Get-Content -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') | ForEach-Object { $_.Substring(66) }
           $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
@@ -192,7 +199,7 @@ jobs:
             }
           } finally { $archive.Dispose() }
           $deliverables = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'sightline-acceptance')
-          Copy-Item -LiteralPath $apks[0].FullName -Destination (Join-Path $deliverables.FullName 'sightline-lan-acceptance.apk')
+          Copy-Item -LiteralPath $apks[0].FullName -Destination (Join-Path $deliverables.FullName 'sightline-p0-emergency-recovery.apk')
           $hostBundle = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'index.html') -Algorithm SHA256).Hash.ToLowerInvariant()
           $hostInventory = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') -Algorithm SHA256).Hash.ToLowerInvariant()
           $windowsArtifact = 'sightline-windows-host.zip'
@@ -205,7 +212,7 @@ jobs:
             'variant=diagnostic'
             'package=com.sightline.v3.diagnostic.acceptance'
             "version_code=$versionCode"
-            'apk=sightline-lan-acceptance.apk'
+            'apk=sightline-p0-emergency-recovery.apk'
             "sha256=$sha256"
             "signing_certificate_sha256=$signerHash"
             'dev24_0_installation=side-by-side'
@@ -216,6 +223,9 @@ jobs:
             "windows_host_sha256=$windowsSha"
             "host_bundle_sha256=$hostBundle"
             "host_inventory_sha256=$hostInventory"
+            'source_movement_comparison=DEV24.9 deterministic simulation PASS'
+            'source_movement_reference=24c9034ae5f1a92e90491d5c9a7aa4b37b9acb6a'
+            'device_movement_acceptance=UNVERIFIED'
             'runtime_acceptance=UNVERIFIED'
           ) -join "`n"
           $reportPath = Join-Path $deliverables.FullName 'diagnostic-build.txt'
@@ -224,17 +234,17 @@ jobs:
           Copy-Item -LiteralPath 'docs/DEV24-DEVICE-ACCEPTANCE.md' -Destination (Join-Path $deliverables.FullName 'DEVICE-ACCEPTANCE.md')
           Copy-Item -LiteralPath 'docs/ANDROID-DEVICE-FPS.md','tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
           $instructions = @(
-            '# Sightline V3 P0 walking acceptance diagnostic'
+            '# Sightline V3 P0 emergency gameplay recovery diagnostic'
             ''
-            'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-lan-acceptance.apk SHA256'
+            'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-p0-emergency-recovery.apk SHA256'
             ''
             'Leave DEV24.0 installed. It uses a separate package and its data is independent.'
             'Use a separate compatible phone to keep the prior Sightline Acceptance APK installed exactly as it is. Keep the previous artifact for comparison.'
-            'For an in-place update on the same phone, confirm the Sightline Acceptance update prompt or run adb install -r sightline-lan-acceptance.apk using an already authorized connection. Android replaces the installed Sightline Acceptance APK and retains its app data. Never uninstall either app or clear app data.'
+            'For an in-place update on the same phone, confirm the Sightline Acceptance update prompt or run adb install -r sightline-p0-emergency-recovery.apk using an already authorized connection. Android replaces the installed Sightline Acceptance APK and retains its app data. Never uninstall either app or clear app data.'
             'See MIGRATION.md for optional transfer of offline settings and records.'
             ''
             'Follow DEVICE-ACCEPTANCE.md for the physical-device checks and Windows CMD commands.'
-            'Check cold and warm startup. Compare standing aim, walking, strafing, sprinting and moving while aiming and firing. Try the compact stance control and the optional advanced layout.'
+            'Check cold and warm startup. On the same map, mode, graphics settings and refresh rate, compare stationary camera swipes with continuous walking; then walk while swiping, ADS aiming, firing and reloading. Also check strafing and sprinting.'
             'In Settings, apply each Smart Setup profile, restart and confirm the saved settings, then restore the previous setup.'
             'In offline bot practice, select Training Aim Lock, use ADS and swipe near a visible opponent. You still fire each shot. Leave the setting enabled and verify that there is no assistance in LAN play, including after reconnecting.'
             ''
@@ -248,7 +258,7 @@ jobs:
       - name: Upload private diagnostic artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: sightline-walking-acceptance-${{ github.sha }}
+          name: sightline-p0-emergency-recovery-${{ github.sha }}
           path: ${{ runner.temp }}/sightline-acceptance/*
           if-no-files-found: error
           retention-days: 14

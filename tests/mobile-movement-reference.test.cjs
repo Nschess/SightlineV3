@@ -49,7 +49,10 @@ const courses = [
   { map: 'courtyard', name: 'backward', drag: [0, 50] },
   { map: 'courtyard', name: 'strafe', drag: [50, 0] },
   { map: 'courtyard', name: 'diagonal', drag: [40, -40] },
+  { map: 'courtyard', name: 'partial-stick threshold', drag: [0, -22] },
+  { map: 'courtyard', name: 'mid-stick traversal', drag: [0, -30] },
   { map: 'horror_city', name: 'turn and fire', drag: [0, -50], turn: true, fire: true, ads: true },
+  { map: 'horror_city', name: 'partial-stick turn and fire', drag: [0, -22], turn: true, fire: true, ads: true },
   { map: 'horror_city', name: 'precision walk', drag: [0, -16] }
 ];
 const rates = [60, 90, 120];
@@ -60,7 +63,10 @@ const acceptedAt60 = {
   backward: [0, 3.6, 3.6, 5.2],
   strafe: [10.0139, 0, 10.0139, 5.2],
   diagonal: [7.0809, -7.0809, 10.0139, 5.2],
+  'partial-stick threshold': [0, -5.007, 5.007, 2.6],
+  'mid-stick traversal': [0, -6.8277, 6.8277, 3.5455],
   'turn and fire': [-2.6653, -4.95, 6.3858, 3.6378],
+  'partial-stick turn and fire': [-1.3327, -3.1379, 3.503, 1.8189],
   'precision walk': [0, -1.8207, 1.8207, .9455]
 };
 
@@ -100,7 +106,7 @@ test('movement through representative maps stays bounded and consistent across d
       const read = ({ x, z, distance, speed }) => [x, z, distance, speed];
       const compare = (sample, expected) => read(sample).forEach((value, i) =>
         assert.ok(Math.abs(value - expected[i]) <= .025, `${tree} ${sample.course} ${sample.hz}Hz: ${read(sample)} vs ${expected}`));
-      compare(samples[0], acceptedAt60[course.name]);
+      if (acceptedAt60[course.name]) compare(samples[0], acceptedAt60[course.name]);
       if (baseline) {
         const comparisons = rates.map(hz => trace(baseline, course, hz));
         samples.forEach((sample, i) => compare(sample, read(comparisons[i])));
@@ -124,14 +130,36 @@ test('low-travel walking reaches the accepted speed without a dead-zone jump', (
     };
     assert.equal(steadySpeed(5) || 0, 0, tree);
     assert.ok(steadySpeed(5.01) < .003, tree + ' dead-zone continuity');
-    assert.ok(steadySpeed(6) > .19, tree + ' responds to a small walking drag');
+    assert.ok(steadySpeed(6) > .17, tree + ' responds to a small walking drag');
     for (const travel of [8, 9, 10, 16]) {
       assert.ok(Math.abs(steadySpeed(travel) - travel * 5.2 / 88) < 1e-9, tree + ' DEV24.9 walk speed at ' + travel);
     }
     for (let travel = 5.02; travel <= 10; travel += .01) {
       const change = steadySpeed(travel) - steadySpeed(travel - .01);
-      assert.ok(change >= 0 && change < .003, tree + ' bounded walk response at ' + travel);
+      assert.ok(change >= 0 && change < .0031, tree + ' bounded walk response at ' + travel);
     }
+    for (const travel of [18, 19, 20, 21, 21.9, 21.99, 22.01, 23, 24, 30, 35, 44]) {
+      ctx.setStick({ clientX: 0, clientY: -travel });
+      const referenceMagnitude = Math.min(1, travel / 44);
+      const blendStart = 18.26 / 44;
+      let blend = Math.max(0, Math.min(1, (referenceMagnitude - blendStart) / (.5 - blendStart)));
+      blend *= blend * (3 - 2 * blend);
+      let expected = referenceMagnitude;
+      if (referenceMagnitude < .5) expected *= .5 + .5 * blend;
+      const onsetX = Math.min(1, Math.max(0, (travel - 5) / 2));
+      expected *= onsetX * onsetX * (3 - 2 * onsetX);
+      assert.ok(Math.abs(steadySpeed(travel) - expected * 5.2) < 1e-9,
+        tree + ' DEV24.9-scaled movement at ' + travel + 'px');
+    }
+    ctx.setStick({ clientX: 0, clientY: -21.99 });
+    assert.equal(ctx.touchQuietWalk(), true, tree + ' original quiet-walk boundary');
+    ctx.setStick({ clientX: 0, clientY: -22.01 });
+    assert.equal(ctx.touchQuietWalk(), false, tree + ' original full-speed boundary');
+    assert.ok(Math.abs(steadySpeed(22.01) - steadySpeed(21.99)) < .0025, tree + ' blended walk threshold');
+    ctx.setStick({ clientX: 0, clientY: -35.19 });
+    assert.equal(ctx.touchForwardSprint(), false, tree + ' original auto-sprint boundary');
+    ctx.setStick({ clientX: 0, clientY: -35.21 });
+    assert.equal(ctx.touchForwardSprint(), true, tree + ' original auto-sprint boundary');
     assert.ok(Math.abs(steadySpeed(50) - 5.2) < 1e-9, tree + ' full-stick speed');
   }
 });

@@ -11859,34 +11859,48 @@ function resetTouchMotion() {
   fireHeld = false; touchFireOwners.clear();
 }
 var TOUCH_STICK_DEAD_ZONE = 5, TOUCH_STICK_RADIUS = 44;
-// Keep analog velocity continuous when crossing the quiet-walk threshold.
+// Translate the current soft-dead-zone axis back to DEV24.9's physical-drag scale.
+function touchReferenceStickMagnitude(magnitude) {
+  return Math.min(1, (TOUCH_STICK_DEAD_ZONE + (TOUCH_STICK_RADIUS - TOUCH_STICK_DEAD_ZONE) * magnitude) / TOUCH_STICK_RADIUS);
+}
+// Keep the accepted quiet-walk and sprint thresholds tied to physical joystick travel.
 function touchQuietWalk() {
   if (!touchMode || touchRun) return false;
   var magnitude = Math.hypot(stick.x, stick.y);
-  return magnitude > 0 && magnitude < .5;
+  if (magnitude <= 0) return false;
+  var referenceMagnitude = touchReferenceStickMagnitude(magnitude);
+  return referenceMagnitude > .05 && referenceMagnitude < .5;
 }
-function touchForwardSprint() {
-  return touchMode && G.touchAutoSprint && -stick.y > .80 && -stick.y > Math.abs(stick.x) * 1.25;
+function touchForwardSprint(magnitude) {
+  if (!touchMode || !G.touchAutoSprint) return false;
+  if (!Number.isFinite(magnitude)) magnitude = Math.hypot(stick.x, stick.y);
+  return touchReferenceStickMagnitude(magnitude) > .80 && -stick.y > Math.abs(stick.x) * 1.25;
 }
 function touchMoveGain() {
   if (!touchMode) return 1;
   var magnitude = Math.hypot(stick.x, stick.y);
+  if (magnitude <= 0) return 1;
   if (touchRun && magnitude > 0) return 1 + (1 / magnitude - 1) * Math.min(1, magnitude * 4);
-  if (magnitude > 0 && magnitude < .5) {
-    // Match the accepted walk response, then blend into full analog input before the walk flag changes.
-    var travel = (TOUCH_STICK_RADIUS - TOUCH_STICK_DEAD_ZONE) * magnitude;
-    // Fade in the original low-travel walk curve over the first 3 CSS pixels.
-    var onset = Math.min(1, travel / 3);
-    var precision = (TOUCH_STICK_DEAD_ZONE + travel) / (2 * TOUCH_STICK_RADIUS) * onset * (2 - onset);
-    var blendWalk = Math.max(0, (magnitude - .34) / .16);
+  var travel = (TOUCH_STICK_RADIUS - TOUCH_STICK_DEAD_ZONE) * magnitude;
+  var referenceMagnitude = touchReferenceStickMagnitude(magnitude);
+  // Preserve DEV24.9's first half-speed walk range, then smoothly reach full
+  // analog speed at the original 22px threshold instead of 24.5px.
+  var effectiveMagnitude = referenceMagnitude;
+  if (referenceMagnitude < .5) {
+    var blendStart = (TOUCH_STICK_DEAD_ZONE + (TOUCH_STICK_RADIUS - TOUCH_STICK_DEAD_ZONE) * .34) / TOUCH_STICK_RADIUS;
+    var blendWalk = Math.max(0, Math.min(1, (referenceMagnitude - blendStart) / (.5 - blendStart)));
     blendWalk *= blendWalk * (3 - 2 * blendWalk);
-    return (precision + (magnitude - precision) * blendWalk) / magnitude;
+    effectiveMagnitude *= .5 + .5 * blendWalk;
   }
-  if (touchForwardSprint()) {
+  // Ease out of the 5px dead zone over 2px without a first-input velocity step.
+  var onset = Math.min(1, travel / 2);
+  onset *= onset * (3 - 2 * onset);
+  effectiveMagnitude *= onset;
+  if (touchForwardSprint(magnitude)) {
     var blend = Math.min(1, (-stick.y - .8) / .2) * Math.min(1, (-stick.y - Math.abs(stick.x) * 1.25) / .20);
-    return 1 + (1 / magnitude - 1) * blend;
+    effectiveMagnitude += (1 - effectiveMagnitude) * blend;
   }
-  return 1;
+  return effectiveMagnitude / magnitude;
 }
 function setStick(t) {
   var dx = t.clientX - stick.ox, dy = t.clientY - stick.oy;

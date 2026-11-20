@@ -27,13 +27,13 @@ test('joystick speed stays continuous at dead zone, quiet walk and forward sprin
     assert.ok(command(0, -5.1) < .004);
     assert.ok(Math.abs(command(0, -16) - 16 / 88) < 1e-12);
     for (let d = 6; d < 44; d++) assert.ok(command(0, -d) >= command(0, 1 - d), String(d));
-    const quiet = command(0, -24.49);
+    const quiet = command(0, -21.99);
     assert.equal(ctx.touchQuietWalk(), true);
-    const normal = command(0, -24.51);
+    const normal = command(0, -22.01);
     assert.equal(ctx.touchQuietWalk(), false);
     assert.ok(normal - quiet < .001);
-    const beforeSprint = command(0, -36.19);
-    const afterSprint = command(0, -36.21);
+    const beforeSprint = command(0, -35.19);
+    const afterSprint = command(0, -35.21);
     assert.equal(ctx.touchForwardSprint(), true);
     assert.ok(afterSprint - beforeSprint < .002);
     assert.equal(command(0, -50), 1);
