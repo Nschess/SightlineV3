@@ -2,6 +2,27 @@
 
 DEV25.9 evidence refreshed on 2026-11-20 for source `d07afb3c467c9389d3fd6a902b546991b4e44d8f`. The underlying inventory dates to the 2026-11-19 review of `a222f1483a2210e370f81fbce885517398e4ba6d`. **CLEAR** applies to the specific licensed component or verified exclusion. **REVIEW REQUIRED** needs contributor, owner or specialist evidence. **BLOCKED** identifies a release-critical gap. Both unresolved statuses prevent clearance of the affected asset.
 
+## DEV26.1 rights close-out
+
+**Lobby master · BLOCKED.** Request one evidence package from the supplying contributor for the two byte-identical MP3s with SHA-256 `76745c37a6183c826a2e844225cdfc07fce8fb5ad46322c903565e0d27f89e90`.
+
+1. Identify the composer or publisher, recording owner and relevant performers. Supply the source delivery or session and a master hash or export record that ties those parties to the packaged bytes.
+2. Provide signed ownership or license evidence for both the composition and recording. It must cover in-game synchronization, reproduction, commercial distribution in the planned territories, permitted loop/edit use, term and attribution. Confirm promo and trailer rights if those uses are planned.
+3. List every third-party sample, loop, preset, SoundFont or voice baked into that master with its source and applicable grant. Record independent creation evidence where applicable. The earlier Signal Ready metadata does not establish this master’s lineage. [Existing provenance and commission brief](docs/SIGNATURE-THEME-PRODUCTION-BLOCKER.md)
+
+**Replacement handoff if evidence cannot be recovered.** Send the existing original composition brief to an owner-approved composer and producer. Confirm deliverables and commercial terms in writing before work starts. Require an independent composition and recording, session and stems, ingredient register, loop and audition masters, credits, and signed grants. Review the exact mastered WAV and proposed game export with the owner, record both hashes and the listening decision, then schedule a separately approved audio-only integration of both packaged copies. No purchase, commission or asset swap has been authorized in this checkpoint. [Production requirements](docs/SIGNATURE-THEME-PRODUCTION-BLOCKER.md#original-commission-brief-for-owner-approval)
+
+**Contributor rights · REVIEW REQUIRED.** Record the legal publisher, contributor identity, source file or in-game ID, dated contribution and references, imported dependencies, commercial distribution and edit grants, territories, term and required attribution. Keep signed records privately and record a traceable reference in the register. A source commit documents a contribution. The agreement or license establishes its allowed uses.
+
+| Asset family | Evidence to request |
+| --- | --- |
+| Maps | Per-arena source and contributor record. Include layouts, architecture, procedural textures, signs, vehicles and reference photos or scans. Verify rights to any referenced or embedded third-party branding or artwork that survives in the final renders. |
+| Characters | Source and contributor grants for models, rigs, animations, faces, uniforms, insignia and textures. Tie legacy archive material and any imports to the active versions. |
+| Weapons | Model, finish, optic, effects and audio provenance by family. Keep the procedural ROOK117 and approved Contour Relay intact while documenting inherited dependencies and contributor grants. |
+| Promotional artwork | Author and source layers for each icon, feature graphic, screenshot, trailer and localized export. Reconcile embedded fonts, logos, images, music and other materials against the exact listing files. Clear both in-app and promotional uses where relevant. |
+
+Packaging and listing evidence remain subject to the [Play IP release gate](PLAY-STORE-IP-RELEASE-GATE.md). Naming clearance and asset permissions are separate gates.
+
 ## Distribution scope
 
 The intended Play build is `com.sightline.v3`, version 0.3.4 / code 18 in source, minimum API 26 and target API 36. The [production manifest](AndroidProject/app/src/release/AndroidManifest.xml) removes the native host service, sideload permission, installer provider and host-only permissions. The [bundle checker](AndroidProject/tools/build-play-bundle.ps1) requires both asset trees byte for byte and rejects native libraries. The source reconciliation verified SHA-256 for all 66 main asset files and all 21 native resource files against the package manifest. The release configuration uses the main assets. The final signed AAB entry list, merged resources, resolved dependencies and listing exports still require reconciliation.
