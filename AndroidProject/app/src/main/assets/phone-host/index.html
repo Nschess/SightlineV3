@@ -14546,9 +14546,10 @@ function syncAndroidGameTarget(now) {
   var active = androidEffectiveHz();
   var next = Math.min(Math.round(active), androidSelectedCap(), androidPowerCap);
   if (G.adaptive && androidAdaptiveLimit && next > androidAdaptiveLimit) {
-    // If Android changes the refresh rate after settling on a lower cap,
-    // keep the pace aligned to an even divisor of the new display cadence.
-    next = Math.round(active / Math.ceil(active / (androidAdaptiveLimit + .5)));
+    // Keep the selected cap while Android applies the matching supported
+    // display mode. Quantizing against the old mode can turn 60 into 45 on
+    // a 90 Hz panel and then keep that unnecessary half-refresh cap forever.
+    next = Math.min(next, androidAdaptiveLimit);
   }
   next = Math.max(1, next);
   if (next !== androidPendingTarget) { androidPendingTarget = next; androidTargetSince = now; }
@@ -14729,6 +14730,22 @@ function nextAndroidRecoveryTarget() {
   }
   return Number.isFinite(next) ? next : 0;
 }
+function nextAndroidLoadLimit() {
+  if (!androidDisplay) return Math.max(30, Math.round(androidGameTarget * .82));
+  var active = androidEffectiveHz();
+  var ceiling = Math.min(androidSelectedCap(), androidPowerCap, androidDisplay.maxHz, active);
+  var current = Math.min(androidGameTarget, ceiling);
+  var lowerMode = 0;
+  for (var i = 0; i < androidDisplay.supportedHz.length; i++) {
+    var rate = Math.round(Number(androidDisplay.supportedHz[i]));
+    if (rate >= 30 && rate < current - .5 && rate <= ceiling + .5 && rate > lowerMode) lowerMode = rate;
+  }
+  if (lowerMode) return lowerMode;
+  // If no lower display mode is reported, retain a cadence aligned to the
+  // active panel as the last-resort sustainable target.
+  var desired = Math.max(30, current * .82);
+  return Math.max(30, Math.round(active / Math.ceil(active / desired)));
+}
 function tickAndroidPerformance(raw, busyMs) {
   if (!G.adaptive) {
     if (perfLvl) { perfLvl = 0; androidPerf.pendingQuality = true; }
@@ -14778,8 +14795,7 @@ function tickAndroidPerformance(raw, busyMs) {
     p.pendingQuality = true;
     resetAndroidPerfEvidence();
   } else if (p.bad >= 6000 && androidGameTarget > 30) {
-    var hz = androidEffectiveHz();
-    androidAdaptiveLimit = Math.max(30, Math.round(hz / Math.ceil(hz / (androidGameTarget * .82))));
+    androidAdaptiveLimit = nextAndroidLoadLimit();
     p.cooldown = 12000;
     resetAndroidPerfEvidence();
   } else if (p.good >= 18000) {

@@ -182,7 +182,7 @@ test('refresh decrease and battery saver are immediate, increases need stability
   assert.deepEqual(messages,['auto','120','auto','auto']);
 });
 
-test('Auto profiles differ and sustained overload lowers the cap only at the graphics floor', () => {
+test('Auto profiles differ and sustained overload steps to a supported refresh mode at the graphics floor', () => {
   const balanced=androidFixture(0,'balanced'), high=androidFixture(0,'high');
   for (const instance of [balanced,high]) {
     instance.report(120,[60,90,120]);
@@ -190,7 +190,7 @@ test('Auto profiles differ and sustained overload lowers the cap only at the gra
   }
   assert.equal(balanced.ctx.syncAndroidGameTarget(1800),90);
   assert.equal(high.ctx.syncAndroidGameTarget(1800),60);
-  const {ctx,report}=androidFixture();
+  const {ctx,report,messages}=androidFixture();
   report(90,[60,90]);
   ctx.syncAndroidGameTarget(0);
   assert.equal(ctx.syncAndroidGameTarget(1800),90);
@@ -207,30 +207,22 @@ test('Auto profiles differ and sustained overload lowers the cap only at the gra
   assert.equal(ctx.androidAdaptiveLimit,0);
   frames(15000,1000/60);
   assert.equal(ctx.perfLvl,3);
-  assert.equal(ctx.androidAdaptiveLimit,45);
-  assert.equal(ctx.androidGameTarget,45);
-  frames(19000,1000/45,13); // CPU alone rules out a 60 Hz recovery trial.
-  assert.equal(ctx.androidPerf.probe,null);
-  frames(19500,1000/45);
-  assert.equal(ctx.androidPerf.probe.target,60);
-  report(60,[60,90]);
-  frames(3500,1000/45); // Reopening the target exposes the sustained pressure.
-  assert.equal(ctx.androidPerf.probe,null);
-  assert.equal(ctx.androidAdaptiveLimit,45);
-  report(90,[60,90]);
-  frames(12000,1000/45);
-  assert.equal(ctx.androidPerf.probe,null,'failed probes enforce a cooldown');
-  frames(10000,1000/45);
-  assert.equal(ctx.androidPerf.probe.target,60);
-  report(60,[60,90]);
-  frames(7000,1000/60);
   assert.equal(ctx.androidAdaptiveLimit,60);
-  frames(19000,1000/60);
-  assert.equal(ctx.androidPerf.probe.target,90);
-  report(90,[60,90]);
-  frames(7000,1000/90);
-  assert.equal(ctx.androidAdaptiveLimit,0);
-  assert.equal(ctx.androidGameTarget,90);
+  assert.equal(ctx.syncAndroidGameTarget(now+20),60);
+  ctx.updateAndroidRefreshHint(true);
+  assert.deepEqual(messages,['60'],'request the available 60 Hz mode instead of forcing 45 FPS');
+  report(60,[60,90]); // Android has applied the requested panel mode.
+  assert.equal(ctx.syncAndroidGameTarget(now+40),60);
+});
+
+test('aligned half-refresh fallback is used only when no lower supported mode is reported', () => {
+  const {ctx,report}=androidFixture();
+  report(90,[90]);
+  ctx.syncAndroidGameTarget(0);
+  assert.equal(ctx.syncAndroidGameTarget(1800),90);
+  assert.equal(ctx.nextAndroidLoadLimit(),45);
+  ctx.androidAdaptiveLimit=ctx.nextAndroidLoadLimit();
+  assert.equal(ctx.syncAndroidGameTarget(1810),45);
 });
 
 test('thermal caps cancel rate probes and protect upward recovery', () => {

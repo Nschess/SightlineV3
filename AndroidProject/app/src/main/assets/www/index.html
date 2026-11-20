@@ -14795,9 +14795,10 @@ function syncAndroidGameTarget(now) {
   var active = androidEffectiveHz();
   var next = Math.min(Math.round(active), androidSelectedCap(), androidPowerCap);
   if (G.adaptive && androidAdaptiveLimit && next > androidAdaptiveLimit) {
-    // If Android changes the refresh rate after settling on a lower cap,
-    // keep the pace aligned to an even divisor of the new display cadence.
-    next = Math.round(active / Math.ceil(active / (androidAdaptiveLimit + .5)));
+    // Keep the selected cap while Android applies the matching supported
+    // display mode. Quantizing against the old mode can turn 60 into 45 on
+    // a 90 Hz panel and then keep that unnecessary half-refresh cap forever.
+    next = Math.min(next, androidAdaptiveLimit);
   }
   next = Math.max(1, next);
   if (next !== androidPendingTarget) { androidPendingTarget = next; androidTargetSince = now; }
@@ -14981,6 +14982,22 @@ function nextAndroidRecoveryTarget() {
   }
   return Number.isFinite(next) ? next : 0;
 }
+function nextAndroidLoadLimit() {
+  if (!androidDisplay) return Math.max(30, Math.round(androidGameTarget * .82));
+  var active = androidEffectiveHz();
+  var ceiling = Math.min(androidSelectedCap(), androidPowerCap, androidDisplay.maxHz, active);
+  var current = Math.min(androidGameTarget, ceiling);
+  var lowerMode = 0;
+  for (var i = 0; i < androidDisplay.supportedHz.length; i++) {
+    var rate = Math.round(Number(androidDisplay.supportedHz[i]));
+    if (rate >= 30 && rate < current - .5 && rate <= ceiling + .5 && rate > lowerMode) lowerMode = rate;
+  }
+  if (lowerMode) return lowerMode;
+  // If no lower display mode is reported, retain a cadence aligned to the
+  // active panel as the last-resort sustainable target.
+  var desired = Math.max(30, current * .82);
+  return Math.max(30, Math.round(active / Math.ceil(active / desired)));
+}
 function tickAndroidPerformance(raw, busyMs) {
   if (!G.adaptive) {
     if (perfLvl) { perfLvl = 0; androidPerf.pendingQuality = true; }
@@ -15030,8 +15047,7 @@ function tickAndroidPerformance(raw, busyMs) {
     p.pendingQuality = true;
     resetAndroidPerfEvidence();
   } else if (p.bad >= 6000 && androidGameTarget > 30) {
-    var hz = androidEffectiveHz();
-    androidAdaptiveLimit = Math.max(30, Math.round(hz / Math.ceil(hz / (androidGameTarget * .82))));
+    androidAdaptiveLimit = nextAndroidLoadLimit();
     p.cooldown = 12000;
     resetAndroidPerfEvidence();
   } else if (p.good >= 18000) {
@@ -15138,19 +15154,85 @@ function restoreOfflineBots() {
 /* P0 FRAME DIAGNOSTICS BEGIN: opt-in, bounded, CPU timings are inclusive. */
 var P0FrameDiag = (function () {
   var active = false, current = null, originals = null, limit = 300, buckets, startContext = null, lastSampleYaw = null;
-  function context() { var dom=typeof renderer!=='undefined'&&renderer.domElement?renderer.domElement:null, settings=typeof G!=='undefined'?G:{}, network=typeof MP!=='undefined'?MP:null; return {map:typeof CURMAP!=='undefined'&&CURMAP?CURMAP.id:null,mode:network&&network.on?network.mode:(typeof R!=='undefined'?R.mode:null),multiplayer:!!(network&&network.on),canvasWidth:dom?dom.width:null,canvasHeight:dom?dom.height:null,devicePixelRatio:typeof window!=='undefined'?window.devicePixelRatio||1:null,fpsCap:settings.fpsCap,renderScale:settings.renderScale}; }
+  var gpuGl = null, gpuTimerExt = null, gpuTimerApi = 0, gpuPending = [], gpuCurrent = null, gpuTimerStatus = 'not started', gpuDisjointCount = 0;
+  function context() { var dom=typeof renderer!=='undefined'&&renderer.domElement?renderer.domElement:null, settings=typeof G!=='undefined'?G:{}, network=typeof MP!=='undefined'?MP:null, display=typeof androidDisplay!=='undefined'?androidDisplay:null; return {map:typeof CURMAP!=='undefined'&&CURMAP?CURMAP.id:null,mode:network&&network.on?network.mode:(typeof R!=='undefined'?R.mode:null),multiplayer:!!(network&&network.on),activeUnits:typeof units!=='undefined'?units.length:null,canvasWidth:dom?dom.width:null,canvasHeight:dom?dom.height:null,devicePixelRatio:typeof window!=='undefined'?window.devicePixelRatio||1:null,mobileQuality:settings.mobileQuality||null,fpsCap:settings.fpsCap,effectiveFpsTarget:typeof androidGameTarget!=='undefined'&&display?androidGameTarget:(Number(settings.fpsCap)||0),activeRefreshHz:display?display.activeHz:null,supportedRefreshHz:display?display.supportedHz:null,adaptiveLevel:typeof perfLvl!=='undefined'?perfLvl:null,renderScale:settings.renderScale}; }
   function reset() { buckets = {}; lastSampleYaw = null; ['stationary','forward','blocked','turning','other'].forEach(function(k){buckets[k]={samples:new Array(limit),count:0,next:0};}); }
   reset();
+  function initGpuTimer() {
+    gpuGl = gpuTimerExt = null; gpuTimerApi = 0; gpuCurrent = null; gpuPending = []; gpuDisjointCount = 0;
+    try {
+      gpuGl = renderer.getContext();
+      if (gpuGl && typeof gpuGl.createQuery === 'function' && typeof gpuGl.beginQuery === 'function' && typeof gpuGl.getQueryParameter === 'function') {
+        gpuTimerExt = gpuGl.getExtension('EXT_disjoint_timer_query_webgl2');
+        if (gpuTimerExt) { gpuTimerApi = 2; gpuTimerStatus = 'supported: EXT_disjoint_timer_query_webgl2'; }
+      } else if (gpuGl) {
+        gpuTimerExt = gpuGl.getExtension('EXT_disjoint_timer_query');
+        if (gpuTimerExt && typeof gpuTimerExt.createQueryEXT === 'function' && typeof gpuTimerExt.beginQueryEXT === 'function') {
+          gpuTimerApi = 1; gpuTimerStatus = 'supported: EXT_disjoint_timer_query';
+        }
+      }
+    } catch (_) { gpuTimerApi = 0; gpuTimerExt = null; }
+    if (!gpuTimerApi) gpuTimerStatus = 'unsupported';
+  }
+  function deleteGpuQuery(query) { try { if (gpuTimerApi === 2) gpuGl.deleteQuery(query); else if (gpuTimerApi === 1) gpuTimerExt.deleteQueryEXT(query); } catch (_) {} }
+  function pollGpuQueries() {
+    if (!gpuTimerApi || !gpuPending.length) return;
+    try {
+      if (gpuGl.getParameter(gpuTimerExt.GPU_DISJOINT_EXT)) {
+        gpuDisjointCount += gpuPending.length;
+        for (var d = 0; d < gpuPending.length; d++) deleteGpuQuery(gpuPending[d].query);
+        gpuPending.length = 0;
+        return;
+      }
+      while (gpuPending.length) {
+        var entry = gpuPending[0], available = gpuTimerApi === 2
+          ? gpuGl.getQueryParameter(entry.query, gpuGl.QUERY_RESULT_AVAILABLE)
+          : gpuTimerExt.getQueryObjectEXT(entry.query, gpuTimerExt.QUERY_RESULT_AVAILABLE_EXT);
+        if (!available) {
+          if (++entry.waitFrames > 120) { deleteGpuQuery(entry.query); gpuPending.shift(); }
+          else break;
+          continue;
+        }
+        var nanoseconds = gpuTimerApi === 2
+          ? gpuGl.getQueryParameter(entry.query, gpuGl.QUERY_RESULT)
+          : gpuTimerExt.getQueryObjectEXT(entry.query, gpuTimerExt.QUERY_RESULT_EXT);
+        if (Number.isFinite(nanoseconds) && nanoseconds >= 0) entry.frame.gpuElapsedMs = nanoseconds / 1000000;
+        deleteGpuQuery(entry.query); gpuPending.shift();
+      }
+    } catch (_) { gpuTimerStatus = 'unavailable after context error'; gpuTimerApi = 0; gpuCurrent = null; gpuPending.length = 0; }
+  }
+  function gpuBegin(frame) {
+    if (!active || !frame || !gpuTimerApi || gpuCurrent) return;
+    pollGpuQueries();
+    if (gpuPending.length >= 8) return;
+    try {
+      var query = gpuTimerApi === 2 ? gpuGl.createQuery() : gpuTimerExt.createQueryEXT();
+      if (!query) return;
+      if (gpuTimerApi === 2) gpuGl.beginQuery(gpuTimerExt.TIME_ELAPSED_EXT, query);
+      else gpuTimerExt.beginQueryEXT(gpuTimerExt.TIME_ELAPSED_EXT, query);
+      gpuCurrent = {frame:frame,query:query};
+    } catch (_) { gpuTimerStatus = 'unavailable after query error'; gpuTimerApi = 0; gpuCurrent = null; }
+  }
+  function gpuEnd(frame) {
+    var entry = gpuCurrent;
+    if (!entry || entry.frame !== frame) return;
+    gpuCurrent = null;
+    try {
+      if (gpuTimerApi === 2) gpuGl.endQuery(gpuTimerExt.TIME_ELAPSED_EXT);
+      else gpuTimerExt.endQueryEXT(gpuTimerExt.TIME_ELAPSED_EXT);
+      gpuPending.push({frame:frame,query:entry.query,waitFrames:0});
+    } catch (_) { deleteGpuQuery(entry.query); gpuTimerStatus = 'unavailable after query error'; gpuTimerApi = 0; }
+  }
   function wrap(fn, metric) { return function () { if (!current) return fn.apply(this, arguments); var t=performance.now(); try { return fn.apply(this,arguments); } finally { current[metric+'Ms'] += performance.now()-t; current[metric+'Calls']++; } }; }
   function start() {
-    if(active)return; reset(); startContext=context();
+    if(active)return; reset(); startContext=context(); initGpuTimer();
     originals={resolve:resolve,groundAt:groundAt,ceilingAt:ceilingAt,navLine:navLine,findPath:findPath,hearPlayer:hearPlayer,updateHud:updateHud,drawRadar:drawRadar,renderScore:renderScore};
     resolve=wrap(resolve,'collision'); groundAt=wrap(groundAt,'collision'); ceilingAt=wrap(ceilingAt,'collision');
     navLine=wrap(navLine,'navigation'); findPath=wrap(findPath,'navigation'); hearPlayer=wrap(hearPlayer,'hearing');
     updateHud=wrap(updateHud,'hud'); drawRadar=wrap(drawRadar,'hud'); renderScore=wrap(renderScore,'hud'); active=true;
   }
   function stop() { if(!active)return; resolve=originals.resolve;groundAt=originals.groundAt;ceilingAt=originals.ceilingAt;navLine=originals.navLine;findPath=originals.findPath;hearPlayer=originals.hearPlayer;updateHud=originals.updateHud;drawRadar=originals.drawRadar;renderScore=originals.renderScore; originals=null;active=false;current=null; }
-  function begin() { if(!active)return null; current={started:performance.now(),startX:P.x,startZ:P.z,startYaw:lastSampleYaw===null?P.yaw:lastSampleYaw,collisionMs:0,collisionCalls:0,navigationMs:0,navigationCalls:0,hearingMs:0,hearingCalls:0,hudMs:0,hudCalls:0,footstepMs:0,footsteps:0,playerMs:0,botsMs:0,renderPrepMs:0,webglSubmitMs:0};return current; }
+  function begin() { if(!active)return null; current={started:performance.now(),startX:P.x,startZ:P.z,startYaw:lastSampleYaw===null?P.yaw:lastSampleYaw,collisionMs:0,collisionCalls:0,navigationMs:0,navigationCalls:0,hearingMs:0,hearingCalls:0,hudMs:0,hudCalls:0,footstepMs:0,footsteps:0,playerMs:0,botsMs:0,effectsMs:0,renderPrepMs:0,webglSubmitMs:0};return current; }
   function finish(q,interval,calls,triangles) {
     if(!q||current!==q)return; q.frameCpuMs=performance.now()-q.started;q.intervalMs=interval;q.drawCalls=calls;q.triangles=triangles;
     var dx=P.x-q.startX,dz=P.z-q.startZ, distance=Math.hypot(dx,dz), speed=Math.hypot(P.vx,P.vz);
@@ -15161,8 +15243,8 @@ var P0FrameDiag = (function () {
     var b=buckets[key];b.samples[b.next]=q;b.next=(b.next+1)%limit;b.count=Math.min(limit,b.count+1);lastSampleYaw=P.yaw;current=null;
   }
   function stats(xs){xs.sort(function(a,b){return a-b});if(!xs.length)return null;function pct(p){return +xs[Math.ceil((xs.length-1)*p)].toFixed(3)}return {p50:pct(.5),p95:pct(.95),p99:pct(.99),worst:pct(1)};}
-  function report(){var out={active:active,capacityPerScenario:limit,startContext:startContext,currentContext:context(),units:'milliseconds except counts, distance and yaw',caveats:'Compare scenarios only when map, mode, canvas size and graphics settings match. Scenarios use horizontal displacement within the rendered callback and yaw change since the prior captured frame; blocked and turning frames are separate. CPU categories are inclusive and overlap; do not add them. Frame interval includes waiting and stalls; WebGL submission is CPU time, not GPU time. Input callbacks, asynchronous GPU work and map-load world construction are not isolated. Instrumentation itself adds overhead.',scenarios:{}};Object.keys(buckets).forEach(function(k){var b=buckets[k],a=b.samples.filter(Boolean),r={frames:b.count};var totalInterval=a.reduce(function(sum,q){return sum+q.intervalMs},0);r.fps=totalInterval>0?+(1000*a.length/totalInterval).toFixed(1):null;r.intervalsOver50ms=a.reduce(function(n,q){return n+(q.intervalMs>50?1:0)},0);['intervalMs','frameCpuMs','playerMs','botsMs','collisionMs','navigationMs','hearingMs','footstepMs','hudMs','renderPrepMs','webglSubmitMs','collisionCalls','navigationCalls','hearingCalls','footsteps','drawCalls','triangles','distance','yawDelta'].forEach(function(n){r[n]=stats(a.map(function(q){return q[n]||0}));});out.scenarios[k]=r;});return out;}
-  return {start:start,stop:stop,begin:begin,finish:finish,report:report,isActive:function(){return active},current:function(){return current}};
+  function report(){pollGpuQueries();var out={active:active,capacityPerScenario:limit,startContext:startContext,currentContext:context(),units:'milliseconds except counts, distance and yaw',gpuTimer:{status:gpuTimerStatus,extension:gpuTimerApi===2?'EXT_disjoint_timer_query_webgl2':gpuTimerApi===1?'EXT_disjoint_timer_query':null,pending:gpuPending.length,disjointDiscarded:gpuDisjointCount},caveats:'Compare scenarios only when map, mode, canvas size and graphics settings match. Scenarios use horizontal displacement within the rendered callback and yaw change since the prior captured frame; blocked and turning frames are separate. CPU categories are inclusive and overlap; do not add them. Frame interval includes waiting and stalls; WebGL submission is CPU time, not GPU time. gpuElapsedMs is asynchronous WebGL timer-query time around renderer.render only, when supported; unavailable/disjoint samples are omitted and it excludes display composition. Input callbacks and map-load world construction are not isolated. Instrumentation itself adds overhead.',scenarios:{}};Object.keys(buckets).forEach(function(k){var b=buckets[k],a=b.samples.filter(Boolean),r={frames:b.count};var totalInterval=a.reduce(function(sum,q){return sum+q.intervalMs},0);r.fps=totalInterval>0?+(1000*a.length/totalInterval).toFixed(1):null;r.intervalsOver50ms=a.reduce(function(n,q){return n+(q.intervalMs>50?1:0)},0);['intervalMs','frameCpuMs','playerMs','botsMs','effectsMs','collisionMs','navigationMs','hearingMs','footstepMs','hudMs','renderPrepMs','webglSubmitMs','gpuElapsedMs','collisionCalls','navigationCalls','hearingCalls','footsteps','drawCalls','triangles','distance','yawDelta'].forEach(function(n){r[n]=stats(a.map(function(q){return q[n]}).filter(Number.isFinite));});out.scenarios[k]=r;});return out;}
+  return {start:start,stop:stop,begin:begin,finish:finish,report:report,gpuBegin:gpuBegin,gpuEnd:gpuEnd,isActive:function(){return active},current:function(){return current}};
 })();
 /* P0 FRAME DIAGNOSTICS END */
 var menuBotLast = 0;
@@ -15233,7 +15315,9 @@ function frame(now) {
       endT -= dt; if (endT <= 0 && !MP.on) finishRoundEnd();
     }
     var effectsStarted = performance.now(); updateEffects(dt);
-    effectsCpuEma += ((performance.now() - effectsStarted) - effectsCpuEma) * 0.07;
+    var p0EffectsElapsed = performance.now() - effectsStarted;
+    effectsCpuEma += (p0EffectsElapsed - effectsCpuEma) * 0.07;
+    if (p0Frame) p0Frame.effectsMs = p0EffectsElapsed;
     // Gameplay/UI events still call updateHud() synchronously; avoid DOM work
     // every rendered frame for otherwise unchanged health, ammo and scores.
     hudFrameT -= dt; if (hudFrameT <= 0) { hudFrameT = 0.05; updateHud(); }
@@ -15253,8 +15337,9 @@ function frame(now) {
   syncBombWorldVisuals(now);
   if (p0Frame) p0Frame.renderPrepMs = performance.now() - p0PrepStarted;
   var p0SubmitStarted = p0Frame ? performance.now() : 0;
+  if (p0Frame) P0FrameDiag.gpuBegin(p0Frame);
   try { renderer.render(scene, camera); if (p0Frame) p0Frame.webglSubmitMs = performance.now() - p0SubmitStarted; }
-  finally { if (botVisuals) restoreOfflineBots(); }
+  finally { if (p0Frame) P0FrameDiag.gpuEnd(p0Frame); if (botVisuals) restoreOfflineBots(); }
   frameStats.renderCpuMs = performance.now() - renderStarted; frameStats.drawCalls=renderer.info.render.calls; frameStats.triangles=renderer.info.render.triangles;
   if (!gameContextLost) {
     if (androidRefreshBridge && measureLiveFrame && state === 'live')
