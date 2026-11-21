@@ -11612,7 +11612,7 @@ function endMatch() {
     $('#end-title').textContent=ffaWinner===-1?'Free-for-all won':ffaWinner==null?'Free-for-all draw':'Free-for-all complete';
     $('#end-text').textContent='Your placement: '+ffaPlacement+' of '+ffaRows.length+' · '+soloFFAScore(-1)+' eliminations. '+(ffaWinner===-1?'You reached the kill target.':ffaWinner==null?'The match ended tied.':'The match ended before you reached the lead.');
     $('#end-res').innerHTML=[['Placement',ffaPlacement+' / '+ffaRows.length],['Your kills',soloFFAScore(-1)],['Top score',ffaRows.length?ffaRows[0].score:0],['Deaths',s.deaths],['Headshots',s.hs],['Accuracy',acc+'%']].map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
-    recordMatch(ffaWinner===-1,s);showOptionalGoalSummary(ffaWinner===-1,s,'ffa');showOverlay('#ov-end');return;
+    var ffaPersonal = recordMatch(ffaWinner===-1,s);showOptionalGoalSummary(ffaWinner===-1,s,'ffa',ffaPersonal);showOverlay('#ov-end');return;
   }
   if (OB.inf) {
     var bst = loadObj('sightline.best.v1', { wave: 0, kills: 0 }), nb = OB.wave > bst.wave; if (nb) { bst.wave = OB.wave; bst.kills = OB.total; saveObj('sightline.best.v1', bst); }
@@ -11624,7 +11624,7 @@ function endMatch() {
   $('#end-title').textContent = won ? 'Match won' : 'Match lost';
   $('#end-text').textContent = 'Final score: ' + TEAMS[ME.team].name + ' ' + M.you + ', ' + foeTeam().name + ' ' + M.bots + '.';
   $('#end-res').innerHTML = [['Kills', s.kills], ['Deaths', s.deaths], ['Headshots', s.hs], ['Accuracy', acc + '%'], ['Shots', s.shots], ['Rounds', M.round]].map(function (r) { return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('');
-  recordMatch(won, s); showOptionalGoalSummary(won,s,R.mode);
+  var personal = recordMatch(won, s); showOptionalGoalSummary(won,s,R.mode,personal);
   showOverlay('#ov-end');
 }
 function pause() {
@@ -13417,22 +13417,28 @@ function showScore(on) {
 /* ---------- records ---------- */
 function recordMatch(won, s) {
   var b = recObj(), acc = s.shots ? Math.round(100 * s.hits / s.shots) : 0;
+  var personal = window.SightlineEngagement.comparePersonalRecords(b, s);
   b.matches++; b.kills = Math.max(b.kills, s.kills); b.acc = Math.max(b.acc, acc);
   b.wins += won ? 1 : 0; b.tk += s.kills; b.td += s.deaths; b.ths += s.hs; b.tsh += s.shots; b.thi += s.hits; b.rounds += M.round;
   b.hist.unshift({ m: CURMAP.name, o: ME.name, w: won, y: M.you, b: M.bots, k: s.kills, d: s.deaths, f: DIFF[R.diff].name }); b.hist = b.hist.slice(0, 6);
   saveBest(b); renderBest();
+  return personal;
 }
 function hideOptionalGoalSummary() { var card = $('#optional-goal-summary'); if (card) card.hidden = true; }
-function showOptionalGoalSummary(won, s, mode) {
+function showOptionalGoalSummary(won, s, mode, personal) {
   var card = $('#optional-goal-summary');
   if (!card || MP.on || beginnerRun) { hideOptionalGoalSummary(); return; }
   var records = recObj(), result = window.SightlineEngagement.resolveOptionalGoal(window.localStorage, {
     won: !!won, kills: s.kills, hs: s.hs, shots: s.shots, hits: s.hits, mode: mode || R.mode
   }, Math.max(0, records.matches - 1));
-  $('#optional-goal-title').textContent = result.completed ? 'Optional goal complete · ' + result.goal.title : 'Optional goal · ' + result.goal.title;
-  $('#optional-goal-detail').textContent = result.completed
+  var hasRecord = !!(personal && (personal.newKillsBest || personal.newAccuracyBest));
+  $('#optional-goal-title').textContent = hasRecord
+    ? 'Personal best · ' + [personal.newKillsBest ? personal.kills + ' eliminations' : '', personal.newAccuracyBest ? personal.accuracy + '% accuracy' : ''].filter(Boolean).join(' / ')
+    : (result.completed ? 'Optional goal complete · ' + result.goal.title : 'Optional goal · ' + result.goal.title);
+  var goalDetail = result.completed
     ? result.goal.detail + ' Next: ' + result.next.title + ' · ' + result.next.detail
     : result.goal.detail + ' This match: ' + result.value + ' / ' + result.goal.target + '. Keep it optional.';
+  $('#optional-goal-detail').textContent = hasRecord ? 'New browser record. ' + goalDetail : goalDetail;
   card.hidden = false;
 }
 

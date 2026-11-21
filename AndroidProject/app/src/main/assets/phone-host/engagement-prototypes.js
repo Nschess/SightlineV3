@@ -28,6 +28,14 @@
     return isFinite(value) && value > 0 ? value : 0;
   }
 
+  function comparePersonalRecords(records, summary) {
+    records = records || {};
+    summary = summary || {};
+    var shots = number(summary.shots), accuracy = shots ? Math.round(100 * number(summary.hits) / shots) : 0;
+    var kills = number(summary.kills), bestKills = number(records.kills), bestAccuracy = number(records.acc);
+    return { kills: kills, accuracy: accuracy, newKillsBest: kills > bestKills, newAccuracyBest: shots > 0 && accuracy > bestAccuracy };
+  }
+
   function createOperation() {
     var active = false, complete = false, index = 0, destination = null, lookOrigin = null, cachedSnapshot = null;
 
@@ -96,5 +104,5 @@
     };
   }
 
-  return { createOperation: createOperation, resolveOptionalGoal: resolveOptionalGoal, goalKey: GOAL_KEY, goals: GOALS.map(function (g) { return { id: g.id, title: g.title, detail: g.detail, target: g.target }; }) };
+  return { createOperation: createOperation, resolveOptionalGoal: resolveOptionalGoal, comparePersonalRecords: comparePersonalRecords, goalKey: GOAL_KEY, goals: GOALS.map(function (g) { return { id: g.id, title: g.title, detail: g.detail, target: g.target }; }) };
 });

@@ -103,6 +103,31 @@ test('optional goals rotate and persist without altering match-record storage', 
   assert.equal(incomplete.value, 2);
 });
 
+test('post-match feedback identifies new personal kill and accuracy records', () => {
+  const prior = { kills: 5, acc: 72 };
+  assert.deepEqual(shared.comparePersonalRecords(prior, { kills: 7, shots: 10, hits: 8 }), {
+    kills: 7, accuracy: 80, newKillsBest: true, newAccuracyBest: true
+  });
+  assert.deepEqual(shared.comparePersonalRecords(prior, { kills: 5, shots: 10, hits: 7 }), {
+    kills: 5, accuracy: 70, newKillsBest: false, newAccuracyBest: false
+  });
+  assert.deepEqual(shared.comparePersonalRecords(prior, { kills: 6, shots: 0, hits: 0 }), {
+    kills: 6, accuracy: 0, newKillsBest: true, newAccuracyBest: false
+  });
+  assert.deepEqual(prior, { kills: 5, acc: 72 }, 'record comparison does not mutate saved state');
+  for (const asset of assets) {
+    const html = fs.readFileSync(asset.htmlPath, 'utf8');
+    assert.match(html, /var personal = window\.SightlineEngagement\.comparePersonalRecords\(b, s\)/,
+      `${asset.tree} compares the match against existing browser records`);
+    assert.match(html, /Personal best · /,
+      `${asset.tree} announces new records in the existing result summary`);
+    assert.match(html, /var personal = recordMatch\(won, s\); showOptionalGoalSummary\(won,s,R\.mode,personal\)/,
+      `${asset.tree} connects new records to the existing post-match panel`);
+  }
+  assert.match(fs.readFileSync(assets[0].htmlPath, 'utf8'), /showOptionalGoalSummary\(ffaWinner===-1,s,'ffa',ffaPersonal\)/,
+    'offline FFA results also show new personal records');
+});
+
 test('beginner operation replay returns from match end to idle before starting again', () => {
   for (const asset of assets) {
     const html = fs.readFileSync(asset.htmlPath, 'utf8');
@@ -128,7 +153,7 @@ test('Android offline and phone-host HTML share the prototype and protect normal
     assert.match(html, /function tryFire\(edge\)[\s\S]*?beginnerRun && !beginnerOperation\.canFire\(\)/);
     assert.match(html, /function endMatch\(\)[\s\S]*?if \(beginnerRun\) \{ finishBeginnerOperation\(\); return; \}/);
     assert.match(html, /function quitToMenu\(\)[\s\S]*?beginnerOperation\.cancel\(\)[\s\S]*?restoreBeginnerRules\(\)/);
-    assert.match(html, /function showOptionalGoalSummary\(won, s, mode\)[\s\S]*?resolveOptionalGoal/);
+    assert.match(html, /function showOptionalGoalSummary\(won, s, mode, personal\)[\s\S]*?resolveOptionalGoal/);
     assert.match(html, /\['tactical'.*?'ffa'.*?'bomb'.*?'outbreak'.*?'infection'/s);
     assert.equal(module, fs.readFileSync(assets[0].modulePath, 'utf8'), 'both runtime copies use identical helper code');
     const modulePos = html.indexOf('<script src="engagement-prototypes.js"></script>');
