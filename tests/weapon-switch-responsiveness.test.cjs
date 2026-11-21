@@ -111,6 +111,29 @@ for (const [label, relative] of pages) {
     assert.deepEqual(firedEdges, [true, true], 'release then re-press creates exactly one fresh fire edge');
     assert.deepEqual(actions, ['fire', 'fire', 'fire']);
   });
+
+  test(`${label} lifecycle blur releases every held touch-fire owner`, () => {
+    const source = fs.readFileSync(path.join(root, relative), 'utf8');
+    const reset = source.match(/function resetTouchMotion\(\)\s*\{[\s\S]*?\n\}/);
+    assert.ok(reset, `${label} production touch reset is present`);
+    assert.match(source, /window\.addEventListener\('blur',\s*resetTouchMotion\);/,
+      `${label} releases touch controls when Android pauses or backgrounds the WebView`);
+    const activity = fs.readFileSync(path.join(root, 'AndroidProject/app/src/main/java/com/sightline/v3/MainActivity.java'), 'utf8');
+    assert.match(activity, /web\.evaluateJavascript\("window\.dispatchEvent\(new Event\('blur'\)\);", null\);/,
+      'Android lifecycle dispatches the blur event to the game WebView');
+    const context = {
+      touchMode: false, fireHeld: true, touchFireOwners: new Set([7, 8]),
+      clearMobileAim() {}, clearTimeout() {}, stick: { id: 2, x: 1, y: 1 }, lookTouch: { id: 3 },
+      joy: { classList: { remove() {} } }, joyKnob: { style: {}, _stickX: 1, _stickY: 1 },
+      touchButtonResets: []
+    };
+    vm.runInNewContext(`${reset[0]}\nthis.resetTouchMotion = resetTouchMotion;`, context);
+    context.resetTouchMotion();
+    assert.equal(context.fireHeld, false);
+    assert.equal(context.touchFireOwners.size, 0, 'backgrounding cannot leave a stale owner that suppresses the next fire edge');
+    assert.equal(context.stick.id, null);
+    assert.equal(context.lookTouch.id, null);
+  });
 }
 
 function mockSocket() {
