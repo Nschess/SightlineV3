@@ -38,6 +38,15 @@ test('Both clients share the bounded mobile policy, presets and drawing buffer r
   const balanced = 2.35*.85;
   v.G.renderScale = 100;
   assert.equal(v.pixelRatio(), Math.sqrt(1150000/(667*375)));
+  v.G.fpsCap = 90; v.rafHzBest = 90;
+  assert.equal(v.framePixelBudget(), 1050000);
+  const highRefreshBalanced = Math.sqrt(1050000/(667*375));
+  assert.equal(v.pixelRatio(), highRefreshBalanced);
+  assert.ok(highRefreshBalanced > Math.sqrt(950000/(667*375)));
+  assert.ok(highRefreshBalanced < Math.sqrt(1150000/(667*375)));
+  v.G.adaptive = false;
+  assert.equal(v.framePixelBudget(), 1150000, 'manual adaptive disable keeps the full Balanced pixel budget');
+  v.G.adaptive = true; v.G.fpsCap = 60; v.rafHzBest = 60;
   v.G.renderScale = 85;
   assert.equal(v.pixelRatio(),balanced);
   assert.ok(balanced > 1.53);

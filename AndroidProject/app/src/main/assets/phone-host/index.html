@@ -3987,7 +3987,7 @@ function framePixelBudget() {
     if (G.mobileQuality === 'low') return 650000;
     if (G.mobileQuality === 'competitive') return 850000;
     if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1450000 : 1850000;
-    return Number(G.fpsCap) === 30 ? 1250000 : G.adaptive && hz > 75 ? 950000 : 1150000;
+    return Number(G.fpsCap) === 30 ? 1250000 : G.adaptive && hz > 75 ? 1050000 : 1150000;
   }
   return !G.adaptive || Number(G.fpsCap) === 30 ? 3600000 : hz > 75 ? 1800000 : 2400000;
 }
