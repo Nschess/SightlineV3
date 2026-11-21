@@ -13,7 +13,7 @@
     { id: 'fire', title: 'Fire once', hint: 'Fire a controlled shot at the hostile.' },
     { id: 'reload', title: 'Reload', hint: 'Reload the carbine before the final engagement.' },
     { id: 'reload-finish', title: 'Finish reloading', hint: 'Keep the reload button released and let the reload finish.' },
-    { id: 'objective', title: 'Secure the route', hint: 'Eliminate the remaining hostile to finish the operation.' }
+    { id: 'objective', title: 'Secure the route', hint: 'Eliminate the remaining recruits to finish the operation.' }
   ];
 
   var GOAL_KEY = 'sightline.optional-goals.v1';

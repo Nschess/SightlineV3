@@ -11034,7 +11034,7 @@ function restoreBeginnerRules() {
 function startBeginnerOperation() {
   if (state !== 'idle' || MP.on || mpConnected() || MP.sock || MP.id || MP.retryT) return false;
   beginnerRulesBackup = Object.assign({}, R);
-  R.mode = 'tactical'; R.diff = 'recruit'; R.bots = 1; R.mates = 0; R.rounds = 1; R.time = 180; R.cash = 800;
+  R.mode = 'tactical'; R.diff = 'recruit'; R.bots = 2; R.mates = 0; R.rounds = 1; R.time = 180; R.cash = 800;
   applyRules(); refreshSpec(); renderModePicker();
   $('#btn-again').textContent = 'Play again'; $('#btn-end-menu').hidden = true; $('#optional-goal-summary').hidden = true;
   beginnerResultShowing = false;
@@ -11051,7 +11051,7 @@ function startBeginnerOperation() {
   beginnerAimCheckAt = 0;
   createBeginnerMarker(destination);
   renderBeginnerOperation(first);
-  showMsg('Beginner operation', 'A lone Recruit hostile is your target. Follow the amber marker.', 2600);
+  showMsg('Beginner operation', 'Two Recruit hostiles are your targets. Follow the amber marker.', 2600);
   updateHud();
   return true;
 }

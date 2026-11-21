@@ -56,6 +56,32 @@ test('beginner operation requires move, look, ADS, shot, reload, reload completi
   assert.equal(operation.canFire(), false);
 });
 
+test('beginner operation stays completable if the practice shot eliminates its target', () => {
+  const operation = shared.createOperation();
+  operation.start({ destination: { x: 4, z: 2, radius: 1 }, yaw: 0, pitch: 0 });
+  operation.update({ x: 4, z: 2, yaw: 0, pitch: 0 });
+  operation.update({ x: 4, z: 2, yaw: 0.23, pitch: 0 });
+  operation.update({ x: 4, z: 2, yaw: 0.23, pitch: 0, aimed: true });
+  assert.equal(operation.snapshot().step, 'fire');
+  operation.shot();
+  assert.equal(operation.snapshot().step, 'reload');
+  operation.eliminated(); // First target falls before the final objective.
+  assert.equal(operation.snapshot().step, 'reload');
+  operation.reloadStarted();
+  operation.reloadFinished();
+  assert.equal(operation.snapshot().step, 'objective');
+  const result = operation.eliminated();
+  assert.equal(result.complete, true);
+  assert.equal(result.active, false);
+  for (const asset of assets) {
+    const html = fs.readFileSync(asset.htmlPath, 'utf8');
+    assert.match(html, /R\.mode = 'tactical'; R\.diff = 'recruit'; R\.bots = 2; R\.mates = 0/,
+      `${asset.tree} supplies a remaining Recruit target if the practice shot is lethal`);
+    assert.match(html, /Two Recruit hostiles are your targets/,
+      `${asset.tree} explains why the operation begins with two targets`);
+  }
+});
+
 test('optional goals rotate and persist without altering match-record storage', () => {
   const values = new Map([['sightline-record', '{"matches":8,"kills":42}']]);
   const storage = {
@@ -97,7 +123,7 @@ test('Android offline and phone-host HTML share the prototype and protect normal
     assert.match(html, /id="optional-goal-summary"/);
     assert.match(html, /data-beginner-operation/);
     assert.match(html, /function startBeginnerOperation\(\)[\s\S]*?MP\.on \|\| mpConnected\(\) \|\| MP\.sock \|\| MP\.id \|\| MP\.retryT/);
-    assert.match(html, /function startBeginnerOperation\(\)[\s\S]*?R\.mode = 'tactical'; R\.diff = 'recruit'; R\.bots = 1/);
+    assert.match(html, /function startBeginnerOperation\(\)[\s\S]*?R\.mode = 'tactical'; R\.diff = 'recruit'; R\.bots = 2/);
     assert.match(html, /function startBeginnerOperation\(\)[\s\S]*?owned\.carbine = true; cur = 'carbine'/);
     assert.match(html, /function tryFire\(edge\)[\s\S]*?beginnerRun && !beginnerOperation\.canFire\(\)/);
     assert.match(html, /function endMatch\(\)[\s\S]*?if \(beginnerRun\) \{ finishBeginnerOperation\(\); return; \}/);
