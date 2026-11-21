@@ -14,7 +14,7 @@ const hash=b=>createHash('sha256').update(b).digest('hex');
 const manifest=readFileSync(join(host,'SHA256SUMS'),'utf8').trim().split(/\r?\n/).map(line=>{
   const m=line.match(/^([a-f0-9]{64})  (.+)$/);assert.ok(m,`bad manifest entry: ${line}`);return [m[2],m[1]];
 });
-assert.equal(manifest.length,31,'host staging count must match native host service');
+assert.equal(manifest.length,32,'host staging count must match native host service');
 for(const [name,expected] of manifest){
   assert.ok(!name.startsWith('/')&&!name.includes('\\')&&!name.split('/').some(p=>!p||p==='.'||p==='..'),`unsafe path: ${name}`);
   const data=readFileSync(join(host,name));assert.equal(hash(data),expected,`host hash mismatch: ${name}`);
@@ -27,7 +27,7 @@ const sourceRows=readFileSync(join(androidRoot,'CURRENT-SOURCE-SHA256.txt'),'utf
 for(const [name,expected] of sourceRows)assert.equal(hash(readFileSync(join(androidRoot,name))),expected,`Android source hash mismatch: ${name}`);
 console.log(`PASS ${sourceRows.length}/${sourceRows.length} Android source files match CURRENT-SOURCE-SHA256.txt`);
 
-const shared=['weapon-skins.js','character-skins.js','deathmatch-rules.js','gameplay-mode-rules.js','optics-v1.js','weapon-realism.js','infection-evasion.js','zombie-hunt.js','bot-tactics.js','character-poses.js','character-prototypes.js','character-realism.js','zombie-counterplay.js','navigation.js','mp-transport-policy.js'];
+const shared=['weapon-skins.js','character-skins.js','deathmatch-rules.js','gameplay-mode-rules.js','optics-v1.js','weapon-realism.js','infection-evasion.js','zombie-hunt.js','bot-tactics.js','character-poses.js','character-prototypes.js','character-realism.js','zombie-counterplay.js','navigation.js','mp-transport-policy.js','engagement-prototypes.js'];
 for(const name of [...shared,'legendary-packs.js'])assert.deepEqual(readFileSync(join(host,name)),readFileSync(join(offline,name)),`offline copy differs: ${name}`);
 console.log(`PASS ${shared.length}/${shared.length} shared libraries match offline assets`);
 
@@ -74,7 +74,8 @@ for(const [label,html] of [['offline',offlinePage],['phone-host',page]]){
 }
 const offlineAllowlist=main.match(/private static final Set<String> FILES = new HashSet<>\(Arrays\.asList\(([\s\S]*?)\)\);/);
 assert.ok(offlineAllowlist&&offlineAllowlist[1].includes('"sightline-theme.mp3"'),'Android WebView offline allowlist blocks the theme asset');
-assert.ok(service.includes('hashes.size()!=31'),'Android host service count differs');
+assert.ok(service.includes('hashes.size()!=32'),'Android host service count differs');
+assert.ok(service.includes('hashes.containsKey("engagement-prototypes.js")'),'Android host staging does not require the engagement prototype module');
 assert.ok(service.includes('hashes.containsKey("sightline-theme.mp3")'),'Android host staging does not require the active theme');
 assert.ok(service.includes('b.size()>16_000_000'),'Android host staging file-size guard is missing');
 assert.ok(service.includes('hashes.containsKey("legendary-packs.js")'),'Android host staging does not require Legendary module');

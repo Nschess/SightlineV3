@@ -2084,6 +2084,10 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
         <div id="dmgring"><i></i></div>
         <div id="msg"><b></b><span></span></div>
       </div>
+      <section id="beginner-operation-card" class="beginner-operation-card" hidden role="status" aria-live="polite" aria-label="Beginner operation instructions">
+        <div class="beginner-operation-top"><span id="beginner-operation-progress">OPERATION · 1 / 7</span><button type="button" id="beginner-operation-skip">SKIP</button></div>
+        <strong id="beginner-operation-title">Move to the marker</strong><span id="beginner-operation-hint">Use the joystick or movement keys to reach the amber route marker.</span>
+      </section>
 
       <div id="score" class="score" hidden></div>
       <div id="fps" hidden></div><div id="net" hidden></div>
@@ -2172,8 +2176,10 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
           <h2 id="end-title">Match won</h2>
           <p id="end-text"></p>
           <div class="res" id="end-res"></div>
+          <section id="optional-goal-summary" class="optional-goal-summary" hidden aria-live="polite"><strong id="optional-goal-title"></strong><span id="optional-goal-detail"></span></section>
           <div class="mappick" data-pick></div>
           <button class="btn" id="btn-again" type="button">Play again</button>
+          <button class="btn ghost" id="btn-end-menu" type="button" hidden>Return to main menu</button>
         </div>
       </div>
     </div>
@@ -2269,11 +2275,15 @@ body.sl-lobby-screen[data-sl-route=play] #ov-start .mn-subtab:hover,body.sl-lobb
 <script src="character-realism.js"></script>
 <script src="character-realism-v12.js"></script>
 <script src="thirdperson-hands.js"></script>
+<script src="engagement-prototypes.js"></script>
 
 <script>
 (function () {
 'use strict';
 var $ = function (s) { return document.querySelector(s); };
+var beginnerOperation = window.SightlineEngagement.createOperation();
+var beginnerRun = false, beginnerResultShowing = false, beginnerRulesBackup = null, beginnerMarker = null, beginnerAimCheckAt = 0;
+var beginnerAimView = null, beginnerAimPoint = null, beginnerPose = {};
 
 /* ---------- config ---------- */
 var CFG = { roundTime: 100, winRounds: 5, startMoney: 800, killReward: 300, winBonus: 1800, lossBonus: 1000, maxMoney: 9000, armorPrice: 650, botHP: 100, vestPrice: 300, nadePrice: 300, maxNades: 2, flashPrice: 200, smokePrice: 300, incendPrice: 400, decoyPrice: 50, nadeDmg: 130, nadeRadius: 8, buyTime: 20 };
@@ -9383,6 +9393,7 @@ function killBot(b, head, killer) {
     if(state==='live')SOLO_FFA.respawns.set(b.soloId,T*1000+SightlineModeRules.FFA_DEFAULTS.respawnMs);
     return;
   }
+  if (beginnerRun && !killer) { beginnerOperation.eliminated(); renderBeginnerOperation(beginnerOperation.snapshot()); }
   checkRound();
 }
 // Local counterpart of the server's infection push. Apply only to actual
@@ -10748,23 +10759,26 @@ function startReload() {
   reloading = w.reload; scoped = false; reloadStage=0; shellStage=-1; pumpSnd=false;
   if (touchMode) updateTouchActions();
   if (MP.on) mpSend({ t: 'rl', w: cur, ep: MP.ep });
+  if (beginnerRun) { renderBeginnerOperation(beginnerOperation.reloadStarted()); }
   sfxTone(400, 300, 0.06, 0.2, 'square');
 }
 function finishReload() {
   var w = WEAPONS[cur], a = ammo[cur], need = w.mag - a.mag, take = Math.min(need, a.res);
   a.mag += take; a.res -= take; reloading = 0;
+  if (beginnerRun) { renderBeginnerOperation(beginnerOperation.reloadFinished()); }
   sfxTone(300, 500, 0.06, 0.2, 'square'); updateHud();
 }
 function tryFire(edge) {
   if (state === 'live' && !P.alive) { if (edge) cycleSpec(); return; }
   if (state !== 'live' || !P.alive) return;
+  if (beginnerRun && !beginnerOperation.canFire()) return;
   legendCancelInspect();
   var w = WEAPONS[cur], a = ammo[cur];
   if (reloading > 0 || T < nextFire) return;
   if (!w.auto && !edge) return;
   if (w.melee) { meleeAttack(false); return; }
   if (a.mag <= 0) { startReload(); return; }
-  a.mag--; M.stats.shots++; nextFire = T + 60 / w.rpm;
+  a.mag--; M.stats.shots++; if (beginnerRun) renderBeginnerOperation(beginnerOperation.shot()); nextFire = T + 60 / w.rpm;
   var base = scoped ? (w.scopedSpread !== undefined ? w.scopedSpread : w.spread * w.adsSpread) : w.spread;
   var sp = base + bloom * (scoped ? 0.5 : 1) + speedFrac * w.moveSpread * (scoped ? 0.5 : 1) + (P.onGround ? 0 : 0.05);
   sp *= 1 - P.crouch * 0.3 - P.prone * 0.15;
@@ -11224,7 +11238,126 @@ function updateMobileAim(dt, eyeY) {
     P.pitch + Math.max(-limit, Math.min(limit, mobileAimAngles.pitch * blend))));
 }
 
+function renderBeginnerOperation(snapshot) {
+  var card = $('#beginner-operation-card'); if (!card) return;
+  if (!snapshot || !beginnerRun) { card.hidden = true; return; }
+  card.hidden = false;
+  $('#beginner-operation-progress').textContent = 'OPERATION · ' + Math.min(snapshot.index + 1, snapshot.total) + ' / ' + snapshot.total;
+  $('#beginner-operation-title').textContent = snapshot.title;
+  $('#beginner-operation-hint').textContent = snapshot.hint;
+}
+function beginnerDestination() {
+  var nodes = NAV && NAV.nodes || [], best = null, bestD = Infinity, fallback = null, fallbackD = Infinity;
+  for (var i = 0; i < nodes.length; i++) {
+    var n = nodes[i], d = Math.hypot(n.x - P.x, n.z - P.z), ny = Number(n.y) || 0;
+    if (d < 2.8 || d > 8 || Math.abs(ny - P.y) > .45) continue;
+    if (d < fallbackD) { fallback = n; fallbackD = d; }
+    if (d < bestD && navLine(P.x, P.z, n.x, n.z, P.y, ny)) { best = n; bestD = d; }
+  }
+  var node = best || fallback;
+  if (node) return { x: node.x, z: node.z, y: Number(node.y) || 0, radius: 1.15 };
+  var x = P.x + Math.sin(P.yaw) * 3.5, z = P.z - Math.cos(P.yaw) * 3.5;
+  return { x: x, z: z, y: groundAt(x, z, P.y), radius: 1.15 };
+}
+function clearBeginnerMarker() {
+  if (!beginnerMarker) return;
+  scene.remove(beginnerMarker);
+  beginnerMarker.traverse(function (part) {
+    if (!part.isMesh) return;
+    if (part.geometry) part.geometry.dispose();
+    if (Array.isArray(part.material)) part.material.forEach(function (m) { if (m) m.dispose(); });
+    else if (part.material) part.material.dispose();
+  });
+  beginnerMarker = null;
+}
+function createBeginnerMarker(destination) {
+  clearBeginnerMarker();
+  beginnerMarker = new THREE.Group();
+  var material = new THREE.MeshBasicMaterial({ color: 0xffc56f, transparent: true, opacity: .88, depthWrite: false });
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(.56, .055, 6, 24), material);
+  ring.rotation.x = Math.PI / 2; ring.position.y = .055;
+  var beamMaterial = new THREE.MeshBasicMaterial({ color: 0xffb94e, transparent: true, opacity: .42, depthWrite: false });
+  var beam = new THREE.Mesh(new THREE.CylinderGeometry(.035, .11, .82, 8), beamMaterial);
+  beam.position.y = .48;
+  var crown = new THREE.Mesh(new THREE.TorusGeometry(.2, .045, 6, 16), material);
+  crown.rotation.x = Math.PI / 2; crown.position.y = .9;
+  beginnerMarker.add(ring, beam, crown);
+  beginnerMarker.position.set(destination.x, destination.y + .03, destination.z);
+  beginnerMarker.traverse(function (part) { if (part.isMesh) { part.renderOrder = 20; part.frustumCulled = false; } });
+  scene.add(beginnerMarker);
+}
+function beginnerTargetAimed(now) {
+  if (now < beginnerAimCheckAt) return false;
+  beginnerAimCheckAt = now + 100;
+  var target = null;
+  for (var i = 0; i < bots.length; i++) if (bots[i].alive) { target = bots[i]; break; }
+  if (!target || !target.g) return false;
+  if (!beginnerAimView) { beginnerAimView = new THREE.Vector3(); beginnerAimPoint = new THREE.Vector3(); }
+  camera.getWorldDirection(beginnerAimView);
+  beginnerAimPoint.set(target.x - camera.position.x, target.y + 1.25 - camera.position.y, target.z - camera.position.z).normalize();
+  if (beginnerAimView.dot(beginnerAimPoint) < .9925) return false;
+  return losClear(P.x, P.y + 1.5, P.z, target.x, target.y + 1.25, target.z);
+}
+function tickBeginnerOperation(now) {
+  if (!beginnerRun || state !== 'live' || MP.on) return;
+  var before = beginnerOperation.snapshot();
+  beginnerPose.x = P.x; beginnerPose.z = P.z; beginnerPose.yaw = P.yaw; beginnerPose.pitch = P.pitch;
+  beginnerPose.aimed = before.step === 'aim' && scoped && beginnerTargetAimed(now);
+  var after = beginnerOperation.update(beginnerPose);
+  if (before.step !== after.step) {
+    if (before.step === 'move' && beginnerMarker) beginnerMarker.visible = false;
+    renderBeginnerOperation(after);
+  }
+}
+function restoreBeginnerRules() {
+  if (!beginnerRulesBackup) return;
+  Object.keys(R).forEach(function (k) { if (!Object.prototype.hasOwnProperty.call(beginnerRulesBackup, k)) delete R[k]; });
+  Object.keys(beginnerRulesBackup).forEach(function (k) { R[k] = beginnerRulesBackup[k]; });
+  beginnerRulesBackup = null;
+  applyRules(); refreshSpec(); renderModePicker();
+}
+function startBeginnerOperation() {
+  if (state !== 'idle' || MP.on || mpConnected() || MP.sock || MP.id || MP.retryT) return false;
+  beginnerRulesBackup = Object.assign({}, R);
+  R.mode = 'tactical'; R.diff = 'recruit'; R.bots = 1; R.mates = 0; R.rounds = 1; R.time = 180; R.cash = 800;
+  applyRules(); refreshSpec(); renderModePicker();
+  $('#btn-again').textContent = 'Play again'; $('#btn-end-menu').hidden = true; $('#optional-goal-summary').hidden = true;
+  beginnerResultShowing = false;
+  var launched = startMatch();
+  if (launched === false || state !== 'buy') { restoreBeginnerRules(); return false; }
+  offlineAimMatch = null; clearMobileAim();
+  owned.carbine = true; cur = 'carbine'; ammo.carbine = { mag: 2, res: WEAPONS.carbine.reserve };
+  beginRound();
+  if (state !== 'live') { quitToMenu(); return false; }
+  var destination = beginnerDestination();
+  beginnerRun = true;
+  var first = beginnerOperation.start({ destination: destination, yaw: P.yaw, pitch: P.pitch, networked: MP.on || !!MP.sock || !!MP.id, reconnecting: !!MP.retryT, hostMigration: !!MP.migrating });
+  if (!first) { quitToMenu(); return false; }
+  beginnerAimCheckAt = 0;
+  createBeginnerMarker(destination);
+  renderBeginnerOperation(first);
+  showMsg('Beginner operation', 'A lone Recruit hostile is your target. Follow the amber marker.', 2600);
+  updateHud();
+  return true;
+}
+function finishBeginnerOperation() {
+  var result = beginnerOperation.snapshot();
+  beginnerRun = false; beginnerResultShowing = true;
+  clearBeginnerMarker(); renderBeginnerOperation(null); beginnerOperation.cancel();
+  state = 'matchend'; exitLock();
+  el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true; resetTouchMotion();
+  restoreBeginnerRules();
+  $('#optional-goal-summary').hidden = true;
+  $('#btn-again').textContent = 'Replay operation'; $('#btn-end-menu').hidden = false;
+  $('.mappick[data-pick]').hidden = true;
+  $('#end-title').textContent = result.complete ? 'Operation complete' : 'Operation paused';
+  $('#end-text').textContent = result.complete ? 'You reached the route, practiced movement, aiming, firing and reloading, then secured the area.' : 'The training sequence ended before its objective was secured. Replay the short operation or return to the lobby.';
+  $('#end-res').innerHTML = [['Mission', result.complete ? 'Complete' : 'Incomplete'], ['Map', CURMAP.name], ['Difficulty', 'Recruit'], ['Objective', 'Secure one route']].map(function (r) { return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('');
+  showOverlay('#ov-end');
+}
 function startMatch() {
+  beginnerResultShowing = false; $('#optional-goal-summary').hidden = true; $('#btn-end-menu').hidden = true; $('#btn-again').textContent = 'Play again';
+  renderBeginnerOperation(null);
   SOLO_INF.on=false;SOLO_INF.chosen=false;SOLO_INF.playerInfected=false;SOLO_INF.playerRespawnT=0;SOLO_INF.playerDown=false;applySelectedFirstPersonAppearance();applyRules(); refreshSpec();
   if(R.mode==='bomb'&&!soloBombPrepareSites()){showMsg('Bomb Defusal unavailable','This map has no validated pair of reachable A/B sites.',2800);return false;}
   if(R.mode!=='bomb')SOLO_BOMB.state=null;
@@ -11469,6 +11602,7 @@ function finishRoundEnd() {
   if (M.you >= CFG.winRounds || M.bots >= CFG.winRounds) endMatch(); else nextRound();
 }
 function endMatch() {
+  if (beginnerRun) { finishBeginnerOperation(); return; }
   state = 'matchend'; exitLock();
   el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true;
   resetTouchMotion();
@@ -11478,19 +11612,19 @@ function endMatch() {
     $('#end-title').textContent=ffaWinner===-1?'Free-for-all won':ffaWinner==null?'Free-for-all draw':'Free-for-all complete';
     $('#end-text').textContent='Your placement: '+ffaPlacement+' of '+ffaRows.length+' · '+soloFFAScore(-1)+' eliminations. '+(ffaWinner===-1?'You reached the kill target.':ffaWinner==null?'The match ended tied.':'The match ended before you reached the lead.');
     $('#end-res').innerHTML=[['Placement',ffaPlacement+' / '+ffaRows.length],['Your kills',soloFFAScore(-1)],['Top score',ffaRows.length?ffaRows[0].score:0],['Deaths',s.deaths],['Headshots',s.hs],['Accuracy',acc+'%']].map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
-    recordMatch(ffaWinner===-1,s);showOverlay('#ov-end');return;
+    recordMatch(ffaWinner===-1,s);showOptionalGoalSummary(ffaWinner===-1,s,'ffa');showOverlay('#ov-end');return;
   }
   if (OB.inf) {
     var bst = loadObj('sightline.best.v1', { wave: 0, kills: 0 }), nb = OB.wave > bst.wave; if (nb) { bst.wave = OB.wave; bst.kills = OB.total; saveObj('sightline.best.v1', bst); }
     var tt = Math.floor(OB.t); $('#end-title').textContent = 'Run over';
     $('#end-text').textContent = 'You fell on wave ' + OB.wave + ' after ' + Math.floor(tt / 60) + ':' + ('0' + tt % 60).slice(-2) + '. ' + (nb ? 'New best wave!' : 'Best wave: ' + bst.wave + '.');
     $('#end-res').innerHTML = [['Wave', OB.wave], ['Hollowed down', OB.total], ['Headshots', s.hs], ['Accuracy', acc + '%'], ['Infected squad', OB.infected], ['Best wave', bst.wave]].map(function (r) { return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('');
-    recordMatch(false, s); showOverlay('#ov-end'); return;
+    recordMatch(false, s); showOptionalGoalSummary(false,s,'outbreak'); showOverlay('#ov-end'); return;
   }
   $('#end-title').textContent = won ? 'Match won' : 'Match lost';
   $('#end-text').textContent = 'Final score: ' + TEAMS[ME.team].name + ' ' + M.you + ', ' + foeTeam().name + ' ' + M.bots + '.';
   $('#end-res').innerHTML = [['Kills', s.kills], ['Deaths', s.deaths], ['Headshots', s.hs], ['Accuracy', acc + '%'], ['Shots', s.shots], ['Rounds', M.round]].map(function (r) { return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('');
-  recordMatch(won, s);
+  recordMatch(won, s); showOptionalGoalSummary(won,s,R.mode);
   showOverlay('#ov-end');
 }
 function pause() {
@@ -12156,7 +12290,10 @@ $('#btn-start').addEventListener('click', function () {
   startMatch();
 });
 $('#btn-go').addEventListener('click', function () { audio(); if (MP.on) return; beginRound(); });
-$('#btn-again').addEventListener('click', function () { audio(); startMatch(); });
+$('#btn-again').addEventListener('click', function () { audio(); if (beginnerResultShowing) { quitToMenu(); startBeginnerOperation(); } else startMatch(); });
+$('#btn-end-menu').addEventListener('click', function () { audio(); beginnerResultShowing = false; quitToMenu(); });
+$('#beginner-operation-skip').addEventListener('click', function () { audio(); if (beginnerRun) quitToMenu(); });
+document.addEventListener('click', function (event) { var button = event.target.closest && event.target.closest('[data-beginner-operation]'); if (!button) return; event.preventDefault(); event.stopPropagation(); startBeginnerOperation(); });
 $('#buy-list').addEventListener('click', function (e) {
   var c = e.target.closest('[data-cat]'); if (c) { storeCat = +c.getAttribute('data-cat'); detailId = CATS[storeCat].ids[0]; storeNote(''); renderBuy(); return; }
   var b = e.target.closest('[data-buy]'); if (b) buy(b.getAttribute('data-buy'));
@@ -13226,13 +13363,15 @@ document.addEventListener('keydown', function (e) {
 function quitToMenu() {
   if (MP.on) { mpLeave(); return; }
   if (state === 'idle') return;
+  if (beginnerRun) { beginnerRun = false; beginnerOperation.cancel(); clearBeginnerMarker(); renderBeginnerOperation(null); restoreBeginnerRules(); }
+  beginnerResultShowing = false; $('#btn-end-menu').hidden = true; $('#btn-again').textContent = 'Play again'; hideOptionalGoalSummary();
   offlineAimMatch = null;
   clearMobileAim();
   state = 'idle'; M = null; fireHeld = false; scoped = false; reloading = 0; endT = 0;
   clearNades(); clearUnits(); rebuildTargets();
   Object.keys(guns).forEach(function (k) { guns[k].visible = false; });
   el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true; el.ret.hidden = true; $('#score').hidden = true; $('#ov-buy').hidden = true;
-  leaveTouchSession(); exitLock(); menuTab = 'play'; showOverlay('#ov-start');
+  leaveTouchSession(); exitLock(); menuTab = 'play'; renderModePicker(); showOverlay('#ov-start');
 }
 $('#btn-quit').addEventListener('click', quitToMenu);
 $('#btn-restart').addEventListener('click', function () { audio(); $('#btn-start').textContent = 'Deploy'; startMatch(); });
@@ -13282,6 +13421,19 @@ function recordMatch(won, s) {
   b.wins += won ? 1 : 0; b.tk += s.kills; b.td += s.deaths; b.ths += s.hs; b.tsh += s.shots; b.thi += s.hits; b.rounds += M.round;
   b.hist.unshift({ m: CURMAP.name, o: ME.name, w: won, y: M.you, b: M.bots, k: s.kills, d: s.deaths, f: DIFF[R.diff].name }); b.hist = b.hist.slice(0, 6);
   saveBest(b); renderBest();
+}
+function hideOptionalGoalSummary() { var card = $('#optional-goal-summary'); if (card) card.hidden = true; }
+function showOptionalGoalSummary(won, s, mode) {
+  var card = $('#optional-goal-summary');
+  if (!card || MP.on || beginnerRun) { hideOptionalGoalSummary(); return; }
+  var records = recObj(), result = window.SightlineEngagement.resolveOptionalGoal(window.localStorage, {
+    won: !!won, kills: s.kills, hs: s.hs, shots: s.shots, hits: s.hits, mode: mode || R.mode
+  }, Math.max(0, records.matches - 1));
+  $('#optional-goal-title').textContent = result.completed ? 'Optional goal complete · ' + result.goal.title : 'Optional goal · ' + result.goal.title;
+  $('#optional-goal-detail').textContent = result.completed
+    ? result.goal.detail + ' Next: ' + result.next.title + ' · ' + result.next.detail
+    : result.goal.detail + ' This match: ' + result.value + ' / ' + result.goal.target + '. Keep it optional.';
+  card.hidden = false;
 }
 
 /* ---------- LAN multiplayer (host-authoritative; see server.js) ---------- */
@@ -13760,6 +13912,7 @@ function mpSpawn(m) {
   if(MP.on&&(MP.mode==='deathmatch'||MP.mode==='ffa')&&state==='live'){hideOverlays();el.hud.hidden=false;$('#touch').hidden=!touchMode;gunFor(cur).visible=true;updateHud();if(touchMode)enterTouchSession();else mpLock();}
 }
 function mpMatchEnd(m) {
+  hideOptionalGoalSummary(); beginnerResultShowing = false; $('#btn-end-menu').hidden = true; $('#btn-again').textContent = 'Play again';
   state = 'matchend'; resetTouchMotion(); exitLock(); el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true; el.ret.hidden = true; $('#score').hidden = true;
   var me = null, nxt = (MP.lobby && MP.lobby.auto) ? 'The next match starts automatically.' : 'Returning to the lobby.';
   if (MP.sc) MP.sc.players.forEach(function (p) { if (p.id === MP.id) me = p; });
@@ -15299,6 +15452,7 @@ function frame(now) {
     if (p0Frame) p0Frame.playerMs = p0PlayerElapsed;
     var botStarted = performance.now();
     runOfflineBots(dt);
+    if (state === 'live' && beginnerRun) tickBeginnerOperation(now);
     var p0BotElapsed = performance.now() - botStarted;
     botCpuEma += (p0BotElapsed - botCpuEma) * 0.07;
     if (p0Frame) p0Frame.botsMs = p0BotElapsed;
@@ -15477,6 +15631,10 @@ function slRenderV8() {
   if (lan) { lan.classList.toggle('on', on); lan.lastChild.textContent = on ? 'LAN connected' : 'Offline \u00b7 LAN'; }
   var pp = $('#pn-play');
   if (pp && !$('#sl-hints')) { pp.insertAdjacentHTML('beforeend', '<div class="sl-hints" id="sl-hints"><button type="button" data-sl-goto="rules"><i>R</i>Rules</button></div>'); var ib = $('#btn-intro'); if (ib) $('#sl-hints').appendChild(ib); }
+  var hints = $('#sl-hints');
+  if (hints && !$('#beginner-operation-action')) hints.insertAdjacentHTML('afterbegin', '<button type="button" id="beginner-operation-action" aria-label="Start the skippable beginner operation"><i>O</i>Training</button>');
+  var operationButton = $('#beginner-operation-action');
+  if (operationButton) operationButton.hidden = mpConnected() || MP.on || !!MP.sock || !!MP.id || !!MP.retryT || state !== 'idle';
 }
 renderModePicker = function () { slRMPBase(); try { slRenderStats(); slRenderPlate(); slRenderSquad(); slRenderV8(); } catch (e) {} };
 (function () {
@@ -17123,5 +17281,26 @@ html.touch-device #ov-start .sl-setup-replace input { width:20px; height:20px; m
     border:1px solid #5d8b83; font:inherit;
   }
 }
+</style>
+<style id="engagement-prototypes-style">
+  #stage .beginner-operation-card { position:absolute; z-index:24; top:calc(env(safe-area-inset-top,0px) + 56px); left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:4px; width:min(320px,36vw); box-sizing:border-box; padding:9px 10px; border:1px solid rgba(230,185,112,.72); border-left:3px solid #e4b66e; border-radius:5px; background:rgba(9,17,20,.9); color:#edf4ee; box-shadow:0 6px 20px rgba(0,0,0,.32); font:500 12px/1.35 system-ui,sans-serif; pointer-events:none; }
+  #stage .beginner-operation-card[hidden] { display:none!important; }
+  .beginner-operation-top { display:flex; align-items:center; justify-content:space-between; gap:10px; color:#e3b66f; font:800 9px/1.2 ui-monospace,monospace; letter-spacing:.12em; }
+  #beginner-operation-skip { min-width:44px; min-height:36px; padding:4px 8px; border:1px solid rgba(230,185,112,.65); border-radius:4px; background:rgba(31,43,43,.96); color:#f0dfc1; font:800 10px/1 system-ui,sans-serif; pointer-events:auto; touch-action:manipulation; }
+  #beginner-operation-title { font:800 13px/1.2 system-ui,sans-serif; letter-spacing:.03em; }
+  #beginner-operation-hint { color:#c4d0cb; }
+  .optional-goal-summary { display:flex; flex-direction:column; gap:3px; margin:10px 0; padding:9px 11px; border:1px solid rgba(154,203,182,.38); border-left:3px solid #86c6ae; background:rgba(41,72,64,.2); color:#e8f2eb; font:500 12px/1.4 system-ui,sans-serif; }
+  .optional-goal-summary[hidden] { display:none!important; }
+  .optional-goal-summary strong { color:#b9e2cb; font-weight:800; }
+  .optional-goal-summary span { color:#c4d0cb; }
+  #btn-end-menu { margin-top:8px; }
+  #beginner-operation-action[hidden] { display:none!important; }
+  #sl-hints #beginner-operation-action { white-space:nowrap; }
+  @media(max-width:760px), (max-height:520px) and (orientation:landscape) {
+    #stage .beginner-operation-card { top:calc(env(safe-area-inset-top,0px) + 48px); width:min(280px,calc(100% - 20px)); padding:7px 8px; font-size:11px; }
+    #beginner-operation-title { font-size:12px; }
+    #beginner-operation-skip { min-height:40px; }
+    .optional-goal-summary { margin:8px 0; padding:7px 9px; font-size:11px; }
+  }
 </style>
 </body></html>

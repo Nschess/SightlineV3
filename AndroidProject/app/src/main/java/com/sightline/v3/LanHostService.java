@@ -74,7 +74,7 @@ public final class LanHostService extends Service {
                 hashes.put(parts[1],parts[0]);
             }
         }
-        if(hashes.size()!=31 || !hashes.containsKey("lan-discovery.cjs") || !hashes.containsKey("server.js") || !hashes.containsKey("index.html") || !hashes.containsKey("sightline-theme.mp3") || !hashes.containsKey("mp-transport-policy.js") || !hashes.containsKey("gameplay-mode-rules.js") || !hashes.containsKey("character-realism-v12.js") || !hashes.containsKey("zombie-hunt.js") || !hashes.containsKey("weapon-realism.js") || !hashes.containsKey("legendary-packs.js")) throw new Exception("Incomplete host bundle");
+        if(hashes.size()!=32 || !hashes.containsKey("lan-discovery.cjs") || !hashes.containsKey("server.js") || !hashes.containsKey("index.html") || !hashes.containsKey("sightline-theme.mp3") || !hashes.containsKey("mp-transport-policy.js") || !hashes.containsKey("gameplay-mode-rules.js") || !hashes.containsKey("character-realism-v12.js") || !hashes.containsKey("zombie-hunt.js") || !hashes.containsKey("weapon-realism.js") || !hashes.containsKey("legendary-packs.js") || !hashes.containsKey("engagement-prototypes.js")) throw new Exception("Incomplete host bundle");
         for(Map.Entry<String,String> item:hashes.entrySet()) {
             String name=item.getKey();
             byte[] buf;
