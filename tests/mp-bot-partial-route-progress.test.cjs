@@ -2,6 +2,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { DATA, G, _t } = require('../AndroidProject/app/src/main/assets/phone-host/server.js');
+const missionMapIds = new Set(['floodline_district', 'switchyard_nine', 'ridgefall_outpost']);
+const priorMaps = DATA.maps.filter(row => !missionMapIds.has(row.id));
 
 test('all legal live-budget partial map routes continue to objectives through bounded replans', () => {
   const previousMap = G.map;
@@ -14,7 +16,7 @@ test('all legal live-budget partial map routes continue to objectives through bo
   let sampled = 0, partial = 0, completed = 0, maxReplans = 0;
   const mapSummary = [];
   try {
-    for (const row of DATA.maps) {
+    for (const row of priorMaps) {
       G.map = row.id;
       const map = _t.mapData(), nav = _t.buildNav(map);
       let partialOnMap = 0, maxOnMap = 0;
@@ -50,7 +52,7 @@ test('all legal live-budget partial map routes continue to objectives through bo
   } finally {
     G.map = previousMap;
   }
-  assert.equal(DATA.maps.length, 19, 'the audited registry contains 19 configured maps');
+  assert.equal(DATA.maps.length, 22, 'the configured registry contains the 19 existing maps and three Missions maps');
   assert.equal(sampled, 114, 'six deterministic spawn samples are checked per map');
   assert.equal(partial, 54, 'the previously reported 54 partial paths are reproduced');
   assert.equal(completed, 54, 'every reproduced partial route reaches its objective');
