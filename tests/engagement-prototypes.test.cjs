@@ -22,7 +22,7 @@ test('beginner operation is blocked for every networked or reconnecting state', 
   }
 });
 
-test('beginner operation requires move, look, ADS, shot, reload, reload completion and elimination', () => {
+test('beginner operation teaches one reload step until the magazine is full', () => {
   const operation = shared.createOperation();
   operation.start({ destination: { x: 4, z: 2, radius: 1 }, yaw: 0, pitch: 0 });
   const moveSnapshot = operation.snapshot();
@@ -46,7 +46,8 @@ test('beginner operation requires move, look, ADS, shot, reload, reload completi
   assert.equal(operation.snapshot().step, 'reload');
   assert.equal(operation.canFire(), false);
   operation.reloadStarted();
-  assert.equal(operation.snapshot().step, 'reload-finish');
+  assert.equal(operation.snapshot().step, 'reload');
+  assert.match(operation.snapshot().hint, /magazine is full/);
   operation.reloadFinished();
   assert.equal(operation.snapshot().step, 'objective');
   assert.equal(operation.canFire(), true);
@@ -90,17 +91,20 @@ test('optional goals rotate and persist without altering match-record storage', 
   };
   const first = shared.resolveOptionalGoal(storage, { hs: 3 }, 9);
   assert.equal(first.completed, true);
+  assert.equal(first.completedCount, 1);
   assert.equal(first.goal.id, 'headshots');
   assert.equal(first.next.id, 'hits');
   assert.equal(JSON.parse(values.get('sightline-record')).matches, 8);
   const next = shared.resolveOptionalGoal(storage, { hits: 10 }, 9);
   assert.equal(next.completed, true);
+  assert.equal(next.completedCount, 2);
   assert.equal(next.goal.id, 'hits');
   assert.equal(next.next.id, 'eliminations');
   const incomplete = shared.resolveOptionalGoal(storage, { kills: 2 }, 10);
   assert.equal(incomplete.goal.id, 'eliminations');
   assert.equal(incomplete.completed, false);
   assert.equal(incomplete.value, 2);
+  assert.equal(incomplete.completedCount, 2);
 });
 
 test('post-match feedback identifies new personal kill and accuracy records', () => {
@@ -121,6 +125,8 @@ test('post-match feedback identifies new personal kill and accuracy records', ()
       `${asset.tree} compares the match against existing browser records`);
     assert.match(html, /Personal best · /,
       `${asset.tree} announces new records in the existing result summary`);
+    assert.match(html, /Challenges cleared: /,
+      `${asset.tree} displays the existing locally saved challenge completion total`);
     assert.match(html, /var personal = recordMatch\(won, s\); showOptionalGoalSummary\(won,s,R\.mode,personal\)/,
       `${asset.tree} connects new records to the existing post-match panel`);
   }
@@ -146,6 +152,8 @@ test('Android offline and phone-host HTML share the prototype and protect normal
     assert.match(html, /<script src="engagement-prototypes\.js"><\/script>/, `${asset.tree} loads the shared module`);
     assert.match(html, /id="beginner-operation-card"/);
     assert.match(html, /id="optional-goal-summary"/);
+    assert.doesNotMatch(module, /reload-finish/);
+    assert.match(module, /reloadFinished: function \(\) \{ if \(active && OP_STEPS\[index\]\.id === 'reload'\) return advance\(\);/);
     assert.match(html, /data-beginner-operation/);
     assert.match(html, /function startBeginnerOperation\(\)[\s\S]*?MP\.on \|\| mpConnected\(\) \|\| MP\.sock \|\| MP\.id \|\| MP\.retryT/);
     assert.match(html, /function startBeginnerOperation\(\)[\s\S]*?R\.mode = 'tactical'; R\.diff = 'recruit'; R\.bots = 2/);

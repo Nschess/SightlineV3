@@ -11,8 +11,7 @@
     { id: 'look', title: 'Look around', hint: 'Swipe or move the camera to scan the arena.' },
     { id: 'aim', title: 'Aim at the hostile', hint: 'Hold ADS and center the lone hostile in your sights.' },
     { id: 'fire', title: 'Fire once', hint: 'Fire a controlled shot at the hostile.' },
-    { id: 'reload', title: 'Reload', hint: 'Reload the carbine before the final engagement.' },
-    { id: 'reload-finish', title: 'Finish reloading', hint: 'Keep the reload button released and let the reload finish.' },
+    { id: 'reload', title: 'Reload the carbine', hint: 'Reload, then move to the next target when the magazine is full.' },
     { id: 'objective', title: 'Secure the route', hint: 'Eliminate the remaining recruits to finish the operation.' }
   ];
 
@@ -69,8 +68,8 @@
       },
       canFire: function () { var step = OP_STEPS[index]; return active && !!step && (step.id === 'fire' || step.id === 'objective'); },
       shot: function () { if (active && OP_STEPS[index].id === 'fire') return advance(); return snapshot(); },
-      reloadStarted: function () { if (active && OP_STEPS[index].id === 'reload') return advance(); return snapshot(); },
-      reloadFinished: function () { if (active && OP_STEPS[index].id === 'reload-finish') return advance(); return snapshot(); },
+      reloadStarted: function () { return snapshot(); },
+      reloadFinished: function () { if (active && OP_STEPS[index].id === 'reload') return advance(); return snapshot(); },
       eliminated: function () {
         if (!active || OP_STEPS[index].id !== 'objective') return snapshot();
         complete = true; active = false; index = OP_STEPS.length; cachedSnapshot = null;

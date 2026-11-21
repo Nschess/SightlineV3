@@ -13438,7 +13438,8 @@ function showOptionalGoalSummary(won, s, mode, personal) {
   var goalDetail = result.completed
     ? result.goal.detail + ' Next: ' + result.next.title + ' · ' + result.next.detail
     : result.goal.detail + ' This match: ' + result.value + ' / ' + result.goal.target + '. Keep it optional.';
-  $('#optional-goal-detail').textContent = hasRecord ? 'New browser record. ' + goalDetail : goalDetail;
+  var challengeRecord = result.completedCount ? ' Challenges cleared: ' + result.completedCount + '.' : '';
+  $('#optional-goal-detail').textContent = (hasRecord ? 'New browser record. ' : '') + goalDetail + challengeRecord;
   card.hidden = false;
 }
 
