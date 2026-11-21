@@ -14712,9 +14712,11 @@ function syncAndroidGameTarget(now) {
     renderNextDue = 0;
     resetFpsWindow();
     perfEma = 1000 / next;
-    if (next > 75 && !androidHighBudgetTier) {
-      androidHighBudgetTier = true;
-      if (G.adaptive && G.mobileQuality !== 'competitive') resize();
+    var nextHighBudgetTier = next > 75;
+    if (nextHighBudgetTier !== androidHighBudgetTier) {
+      androidHighBudgetTier = nextHighBudgetTier;
+      if (G.adaptive && !G.fastMode && Number(G.fpsCap) !== 30 &&
+          G.mobileQuality !== 'competitive' && G.mobileQuality !== 'low') resize();
     }
   }
   return androidGameTarget;
