@@ -185,3 +185,90 @@ test('a heard Outbreak gunshot prioritizes its visible shooter without adding LO
     G.mode = prior.mode; G.phase = prior.phase; G.map = prior.map;
   }
 });
+
+test('an audible shooter behind cover cannot displace a zombie’s visible target', () => {
+  const map = MAPS.courtyard, originalBoxes = map.boxes.slice();
+  const prior = { mode: G.mode, phase: G.phase, map: G.map };
+  try {
+    players.clear(); _t.OB.zs.clear();
+    G.mode = 'outbreak'; G.phase = 'live'; G.map = 'courtyard';
+    // The wall blocks the five nearest actors and the shooter at z=27, while
+    // the sixth actor remains visible around the left edge.
+    map.boxes.push([13, 17, 18, 20, 3]);
+    _t.obReset(); _t.OB.phase = 'fight';
+    const { hidden, visible } = targets();
+    for (const p of hidden) players.set(p.id, p);
+    players.set(visible.id, visible);
+
+    const zombie = _t.makeZ(15, 15, 'walker', 1);
+    zombie.rise = 0; zombie.yaw = Math.PI; zombie.tt = 0; zombie.gSpd = 0; zombie.atkT = 1000;
+    const all = [...players.values()];
+    const firstTime = Date.now();
+    assert.equal(_t.zombiePerceive(zombie, all, map, firstTime), null,
+      'initial nearest-five visibility scan cannot see through the wall');
+    let acquired = false;
+    for (let i = 1; i <= 24; i++) {
+      zombie.tt = 0;
+      if (_t.zombiePerceive(zombie, all, map, firstTime + i * 300) === visible) { acquired = true; break; }
+    }
+    assert.ok(acquired, 'fair rotating LOS probes can acquire the visible target first');
+
+    const shooter = _t.makeBot(0);
+    Object.assign(shooter, { alive: true, x: 15, y: 0, z: 27, cur: 'carbine', nextShot: 0, lastShot: 0 });
+    shooter.owned.add('carbine'); shooter.ammo.carbine = { mag: 30, res: 90 };
+    const dx = shooter.x - zombie.x, dz = shooter.z - zombie.z, d = Math.hypot(dx, dz);
+    assert.ok(_t.wallDist(map, zombie.x, zombie.y + 1.35, zombie.z, dx / d, 0, dz / d, d) < d - 0.12,
+      'the audible shooter is physically occluded');
+
+    _t.onShot(shooter, { w: 'carbine', d: [[1, 0, 0]] });
+    assert.strictEqual(zombie.heardShotTarget, shooter, 'gunfire still supplies a one-scan shooter cue');
+    zombie.tt = 0;
+    assert.strictEqual(_t.zombiePerceive(zombie, [...players.values()].filter(p => p.alive), map, Date.now()), visible,
+      'LOS is still required and the already visible target remains selected');
+    assert.equal(zombie.tgt, visible);
+    assert.equal(zombie.heardShotTarget, null, 'the occluded cue is consumed without granting target knowledge');
+    assert.ok(zombie.perceptionScratch.length <= 5, 'the cue stays within the existing LOS budget');
+  } finally {
+    map.boxes.splice(0, map.boxes.length, ...originalBoxes);
+    players.clear(); _t.obReset();
+    G.mode = prior.mode; G.phase = prior.phase; G.map = prior.map;
+  }
+});
+
+test('multiple Outbreak shooters notify only the nearby zombies and retain the five-probe cap', () => {
+  const prior = { mode: G.mode, phase: G.phase, map: G.map };
+  try {
+    players.clear(); _t.OB.zs.clear();
+    G.mode = 'outbreak'; G.phase = 'live'; G.map = 'courtyard';
+    _t.obReset(); _t.OB.phase = 'fight';
+
+    const zA = _t.makeZ(-20, -25, 'walker', 1);
+    const zB = _t.makeZ(20, 25, 'walker', 1);
+    for (const z of [zA, zB]) { z.rise = 0; z.tt = 0; z.gSpd = 0; }
+    const makeShooter = (x, z) => {
+      const p = _t.makeBot(0);
+      Object.assign(p, { alive: true, x, y: 0, z, cur: 'carbine', nextShot: 0, lastShot: 0 });
+      p.owned.add('carbine'); p.ammo.carbine = { mag: 30, res: 90 };
+      return p;
+    };
+    const shooterA = makeShooter(-20, -15), shooterB = makeShooter(20, 15);
+    assert.ok(Math.hypot(shooterA.x - zB.x, shooterA.z - zB.z) > 36);
+    assert.ok(Math.hypot(shooterB.x - zA.x, shooterB.z - zA.z) > 36);
+
+    _t.onShot(shooterA, { w: 'carbine', d: [[1, 0, 0]] });
+    _t.onShot(shooterB, { w: 'carbine', d: [[1, 0, 0]] });
+    assert.strictEqual(zA.heardShotTarget, shooterA, 'the first horde member records its nearby shooter');
+    assert.strictEqual(zB.heardShotTarget, shooterB, 'the second horde member records its nearby shooter');
+    const humans = [...players.values()].filter(p => p.alive);
+    for (const [z, shooter] of [[zA, shooterA], [zB, shooterB]]) {
+      z.tt = 0;
+      _t.zombiePerceive(z, humans, MAPS.courtyard, Date.now());
+      assert.equal(z.heardShotTarget, null, 'each zombie consumes its cue on its next scan');
+      assert.ok(z.perceptionScratch.length <= 5, 'multiple cues do not raise the LOS candidate budget');
+      assert.equal(z.perceptionScratch[0].p, shooter, 'the matching local shooter is first in the existing probe list');
+    }
+  } finally {
+    players.clear(); _t.obReset();
+    G.mode = prior.mode; G.phase = prior.phase; G.map = prior.map;
+  }
+});
