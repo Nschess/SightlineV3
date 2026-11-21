@@ -90,12 +90,14 @@ test('optional goals rotate and persist without altering match-record storage', 
     setItem(key, value) { values.set(key, value); }
   };
   const first = shared.resolveOptionalGoal(storage, { hs: 3 }, 9);
+  assert.equal(first.saved, true);
   assert.equal(first.completed, true);
   assert.equal(first.completedCount, 1);
   assert.equal(first.goal.id, 'headshots');
   assert.equal(first.next.id, 'hits');
   assert.equal(JSON.parse(values.get('sightline-record')).matches, 8);
   const next = shared.resolveOptionalGoal(storage, { hits: 10 }, 9);
+  assert.equal(next.saved, true);
   assert.equal(next.completed, true);
   assert.equal(next.completedCount, 2);
   assert.equal(next.goal.id, 'hits');
@@ -149,6 +151,43 @@ test('post-match feedback identifies new personal kill and accuracy records', ()
   }
   assert.match(fs.readFileSync(assets[0].htmlPath, 'utf8'), /showOptionalGoalSummary\(ffaWinner===-1,s,'ffa',ffaPersonal\)/,
     'offline FFA results also show new personal records');
+});
+
+test('post-match feedback does not claim browser persistence after storage writes fail', () => {
+  const html = fs.readFileSync(assets[0].htmlPath, 'utf8');
+  function chunk(startToken, endToken) {
+    const start = html.indexOf(startToken), end = html.indexOf(endToken, start);
+    assert.ok(start >= 0 && end > start, `${startToken} source is present`);
+    return html.slice(start, end);
+  }
+  const source = [
+    chunk('function loadBest()', '\nfunction renderBest()'),
+    chunk('function recObj()', '\nfunction mobileHudSettingsHtml'),
+    chunk('function recordMatch(won, s)', '\nfunction hideOptionalGoalSummary'),
+    chunk('function showOptionalGoalSummary(won, s, mode, personal)', '/* ---------- LAN multiplayer')
+  ].join('\n');
+  const elements = new Map();
+  const storage = { getItem() { return null; }, setItem() { throw new Error('storage unavailable'); } };
+  const context = vm.createContext({
+    localStorage: storage,
+    window: { SightlineEngagement: shared, localStorage: storage },
+    BEST_KEY: 'sightline-record',
+    M: { round: 1, you: 3, bots: 0 }, CURMAP: { name: 'Range' }, ME: { name: 'Operator' },
+    DIFF: { recruit: { name: 'Recruit' } }, R: { diff: 'recruit', mode: 'tactical' },
+    MP: { on: false }, beginnerRun: false,
+    $: (selector) => {
+      if (!elements.has(selector)) elements.set(selector, { hidden: false, textContent: '', innerHTML: '' });
+      return elements.get(selector);
+    },
+    renderBest() {}, hideOptionalGoalSummary() {}
+  });
+  vm.runInContext(source + "\nvar stats={kills:3,deaths:1,shots:4,hits:3,hs:3}; var personal=recordMatch(true,stats); showOptionalGoalSummary(true,stats,'tactical',personal);", context,
+    { filename: 'www/storage-failure.test.js' });
+  assert.equal(context.personal.saved, false);
+  assert.match(elements.get('#optional-goal-title').textContent, /^Best this match · /);
+  assert.match(elements.get('#optional-goal-detail').textContent, /This best could not be saved in this browser/);
+  assert.match(elements.get('#optional-goal-detail').textContent, /Challenge progress could not be saved in this browser/);
+  assert.doesNotMatch(elements.get('#optional-goal-detail').textContent, /New browser record|Challenges cleared:/);
 });
 
 test('saved match records coerce malformed history to safe dashboard values', () => {

@@ -129,8 +129,10 @@
     var completed = value >= goal.target, completedCount = state.completed;
     if (completed && completedCount < 9007199254740991) completedCount++;
     var nextState = { version: 1, index: completed ? (state.index + 1) % GOALS.length : state.index, completed: completedCount };
-    try { if (storage) storage.setItem(GOAL_KEY, JSON.stringify(nextState)); } catch (e) {}
+    var saved = false;
+    try { if (storage) { storage.setItem(GOAL_KEY, JSON.stringify(nextState)); saved = true; } } catch (e) {}
     return {
+      saved: saved,
       completed: completed,
       goal: { id: goal.id, title: goal.title, detail: goal.detail, target: goal.target },
       value: Math.min(value, goal.target),

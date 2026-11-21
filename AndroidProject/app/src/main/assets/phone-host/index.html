@@ -3862,7 +3862,7 @@ fillStatic();
 /* ---------- records ---------- */
 var BEST_KEY = 'sightline-record';
 function loadBest() { try { return JSON.parse(localStorage.getItem(BEST_KEY) || 'null'); } catch (e) { return null; } }
-function saveBest(b) { try { localStorage.setItem(BEST_KEY, JSON.stringify(b)); } catch (e) {} }
+function saveBest(b) { try { localStorage.setItem(BEST_KEY, JSON.stringify(b)); return true; } catch (e) { return false; } }
 function renderBest() {
   var b = window.SightlineEngagement.normalizeMatchRecords(loadBest());
   var hasRecords = b.matches > 0 || b.kills > 0 || b.acc > 0;
@@ -13086,7 +13086,7 @@ function recordMatch(won, s) {
   b.matches = window.SightlineEngagement.addSafeCount(b.matches, 1); b.kills = Math.max(b.kills, s.kills); b.acc = Math.max(b.acc, acc);
   b.wins = window.SightlineEngagement.addSafeCount(b.wins, won ? 1 : 0); b.tk = window.SightlineEngagement.addSafeCount(b.tk, s.kills); b.td = window.SightlineEngagement.addSafeCount(b.td, s.deaths); b.ths = window.SightlineEngagement.addSafeCount(b.ths, s.hs); b.tsh = window.SightlineEngagement.addSafeCount(b.tsh, s.shots); b.thi = window.SightlineEngagement.addSafeCount(b.thi, s.hits); b.rounds = window.SightlineEngagement.addSafeCount(b.rounds, M.round);
   b.hist.unshift({ m: CURMAP.name, o: ME.name, w: won, y: M.you, b: M.bots, k: s.kills, d: s.deaths, f: DIFF[R.diff].name }); b.hist = b.hist.slice(0, 6);
-  saveBest(b); renderBest();
+  personal.saved = saveBest(b); renderBest();
   return personal;
 }
 function hideOptionalGoalSummary() { var card = $('#optional-goal-summary'); if (card) card.hidden = true; }
@@ -13096,15 +13096,16 @@ function showOptionalGoalSummary(won, s, mode, personal) {
   var records = recObj(), result = window.SightlineEngagement.resolveOptionalGoal(window.localStorage, {
     won: !!won, kills: s.kills, hs: s.hs, shots: s.shots, hits: s.hits, mode: mode || R.mode
   }, Math.max(0, records.matches - 1));
-  var hasRecord = !!(personal && (personal.newKillsBest || personal.newAccuracyBest));
+  var hasRecord = !!(personal && (personal.newKillsBest || personal.newAccuracyBest)), recordSaved = !!(personal && personal.saved);
   $('#optional-goal-title').textContent = hasRecord
-    ? 'Personal best · ' + [personal.newKillsBest ? personal.kills + ' eliminations' : '', personal.newAccuracyBest ? personal.accuracy + '% accuracy' : ''].filter(Boolean).join(' / ')
+    ? (recordSaved ? 'Personal best · ' : 'Best this match · ') + [personal.newKillsBest ? personal.kills + ' eliminations' : '', personal.newAccuracyBest ? personal.accuracy + '% accuracy' : ''].filter(Boolean).join(' / ')
     : (result.completed ? 'Optional goal complete · ' + result.goal.title : 'Optional goal · ' + result.goal.title);
   var goalDetail = result.completed
     ? result.goal.detail + ' Next: ' + result.next.title + ' · ' + result.next.detail
     : result.goal.detail + ' This match: ' + result.value + ' / ' + result.goal.target + '. Keep it optional.';
-  var challengeRecord = result.completedCount ? ' Challenges cleared: ' + result.completedCount + '.' : '';
-  $('#optional-goal-detail').textContent = (hasRecord ? 'New browser record. ' : '') + goalDetail + challengeRecord;
+  var challengeRecord = result.saved ? (result.completedCount ? ' Challenges cleared: ' + result.completedCount + '.' : '') : ' Challenge progress could not be saved in this browser.';
+  var recordStatus = hasRecord ? (recordSaved ? 'New browser record. ' : 'This best could not be saved in this browser. ') : '';
+  $('#optional-goal-detail').textContent = recordStatus + goalDetail + challengeRecord;
   card.hidden = false;
 }
 
