@@ -10742,7 +10742,7 @@ function setWeapon(k) {
   if (!owned[k] || state !== 'live' && state !== 'roundend') return;
   gunFor(k);
   if (k !== cur) { if (cur === 'longbow') cancelLongbowCycle(); lastCur = cur; autoReloadSwitchToken++; }
-  cur = k; reloading = 0; scoped = false; zoomLvl = 0; nextFire = T + 0.35; mel.t = 0; mel.hit = true; drawT = 0.3;
+  cur = k; reloading = 0; scoped = false; zoomLvl = 0; nextFire = T + 0.25; mel.t = 0; mel.hit = true; drawT = 0.3;
   Object.keys(guns).forEach(function (n) { guns[n].visible = (n === k) && P.alive; });
   
   if (legendActive(guns[k]) && legendWas !== k) legendCue(guns[k]);
