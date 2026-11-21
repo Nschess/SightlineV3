@@ -16,19 +16,32 @@ test('combat orbit gives deterministic lateral motion around an idle target', ()
 });
 
 test('authoritative LAN Hollowed keep moving while attacking a stationary survivor', () => {
-  players.clear();
-  G.mode = 'outbreak'; G.map = 'courtyard'; G.phase = 'live';
-  const survivor = { id: 9001, bot: false, team: 0, alive: true, x: 0, y: 0, z: 36, hp: 100, armor: 0, c: null, hist: [] };
-  players.set(survivor.id, survivor);
-  _t.obReset(); _t.OB.phase = 'fight';
-  const z = _t.makeZ(1.45, 36, 'walker', 1);
-  z.rise = 0; z.atkT = 1000; z.tt = 10; z.tgt = survivor;
-  Hunt.seen(z.hunt, survivor, Date.now());
-  const start = { x: z.x, z: z.z };
-  for (let i = 0; i < 50; i++) _t.stepZombies(0.02);
-  assert.ok(Math.hypot(z.x - start.x, z.z - start.z) > 0.2, 'server-side enemy position changes while the target remains idle');
-  assert.equal(survivor.x, 0); assert.equal(survivor.z, 36, 'the test target remained stationary');
-  players.clear(); _t.obReset(); G.phase = 'lobby'; G.mode = 'versus';
+  const realNow = Date.now;
+  let simulationTime = 1700000000000;
+  Date.now = () => simulationTime;
+  try {
+    players.clear();
+    G.mode = 'outbreak'; G.map = 'courtyard'; G.phase = 'live';
+    const survivor = { id: 9001, bot: false, team: 0, alive: true, x: 0, y: 0, z: 36, hp: 100, armor: 0, c: null, hist: [] };
+    players.set(survivor.id, survivor);
+    _t.obReset(); _t.OB.phase = 'fight';
+    const z = _t.makeZ(1.45, 36, 'walker', 1);
+    z.rise = 0; z.atkT = 1000; z.tt = 10; z.tgt = survivor;
+    Hunt.seen(z.hunt, survivor, simulationTime);
+    let previous = { x: z.x, z: z.z }, travelled = 0;
+    for (let i = 0; i < 50; i++) {
+      simulationTime += 20;
+      _t.stepZombies(0.02);
+      travelled += Math.hypot(z.x - previous.x, z.z - previous.z);
+      previous = { x: z.x, z: z.z };
+    }
+    assert.equal(z.hunt.state, 'attack', 'the Hollowed remains in its attack state');
+    assert.ok(travelled > 0.2, 'server-side enemy travels while the target remains idle');
+    assert.equal(survivor.x, 0); assert.equal(survivor.z, 36, 'the test target remained stationary');
+  } finally {
+    Date.now = realNow;
+    players.clear(); _t.obReset(); G.phase = 'lobby'; G.mode = 'versus';
+  }
 });
 
 test('LAN Outbreak survivor bots use role-diverse primary weapons when the starting budget allows them', () => {
