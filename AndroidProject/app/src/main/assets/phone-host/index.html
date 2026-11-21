@@ -11306,6 +11306,7 @@ function finishRoundEnd() {
   if (M.you >= CFG.winRounds || M.bots >= CFG.winRounds) endMatch(); else nextRound();
 }
 function endMatch() {
+  if (state === 'matchend') return;
   if (beginnerRun) { finishBeginnerOperation(); return; }
   state = 'matchend'; exitLock();
   el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true;
@@ -16895,7 +16896,7 @@ html.touch-device #ov-start .sl-setup-replace input { width:20px; height:20px; m
   @media(max-width:760px), (max-height:520px) and (orientation:landscape) {
     #stage .beginner-operation-card { top:calc(env(safe-area-inset-top,0px) + 48px); width:min(280px,calc(100% - 20px)); padding:7px 8px; font-size:11px; }
     #beginner-operation-title { font-size:12px; }
-    #beginner-operation-skip { min-height:40px; }
+    #beginner-operation-skip { min-height:44px; }
     .optional-goal-summary { margin:8px 0; padding:7px 9px; font-size:11px; }
   }
 </style>

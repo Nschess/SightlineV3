@@ -198,6 +198,50 @@ test('beginner operation replay returns from match end to idle before starting a
   }
 });
 
+test('tutorial skip keeps a 44px touch target on narrow and short landscape layouts', () => {
+  for (const asset of assets) {
+    const html = fs.readFileSync(asset.htmlPath, 'utf8');
+    assert.match(html, /@media\(max-width:760px\), \(max-height:520px\) and \(orientation:landscape\) \{[\s\S]*?#beginner-operation-skip \{ min-height:44px; \}/,
+      `${asset.tree} must preserve the minimum touch height in compressed mobile layouts`);
+  }
+});
+
+test('repeated offline match completion records results and advances the goal only once', () => {
+  const html = fs.readFileSync(assets[0].htmlPath, 'utf8');
+  const start = html.indexOf('function endMatch() {');
+  const end = html.indexOf('\nfunction pause()', start);
+  assert.ok(start >= 0 && end > start, 'the offline match-end function is present');
+  const source = html.slice(start, end);
+  assert.match(source, /^function endMatch\(\) \{\s*if \(state === 'matchend'\) return;/,
+    'completed matches must stop before changing saved records or goals');
+
+  const calls = { records: 0, goals: 0, overlays: 0 };
+  const elements = new Map();
+  const context = vm.createContext({
+    state: 'roundend', beginnerRun: false,
+    MP: { on: false }, OB: { inf: false }, R: { mode: 'tactical' },
+    M: { you: 2, bots: 0, round: 3, stats: { shots: 4, hits: 3, hs: 1, kills: 2, deaths: 0 } },
+    ME: { team: 0 }, TEAMS: [{ name: 'Blue' }, { name: 'Red' }],
+    el: { hud: {}, scope: {}, ret: {} },
+    $: (selector) => {
+      if (!elements.has(selector)) elements.set(selector, { hidden: false, textContent: '', innerHTML: '' });
+      return elements.get(selector);
+    },
+    exitLock() {}, resetTouchMotion() {}, foeTeam: () => ({ name: 'Red' }),
+    recordMatch() { calls.records += 1; return {}; },
+    showOptionalGoalSummary() { calls.goals += 1; },
+    showOverlay() { calls.overlays += 1; }
+  });
+  vm.runInContext(source + '\nendMatch(); endMatch();', context, { filename: 'www/endMatch.test.js' });
+  assert.deepEqual(calls, { records: 1, goals: 1, overlays: 1 });
+  assert.equal(context.state, 'matchend');
+  for (const asset of assets) {
+    const mirrored = fs.readFileSync(asset.htmlPath, 'utf8');
+    assert.match(mirrored, /function endMatch\(\) \{\s*if \(state === 'matchend'\) return;/,
+      `${asset.tree} ignores repeated offline completion after results are recorded`);
+  }
+});
+
 test('Android offline and phone-host HTML share the prototype and protect normal/LAN flows', () => {
   const scripts = [];
   for (const asset of assets) {
