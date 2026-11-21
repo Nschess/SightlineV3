@@ -12,7 +12,7 @@ const assets = path.join(root, 'AndroidProject/app/src/main/assets');
 const offline = fs.readFileSync(path.join(assets, 'www/index.html'), 'utf8');
 const phone = fs.readFileSync(path.join(assets, 'phone-host/index.html'), 'utf8');
 const data = JSON.parse(fs.readFileSync(path.join(assets, 'phone-host/data.json'), 'utf8'));
-const expectedIds = ['floodline_district', 'switchyard_nine', 'ridgefall_outpost'];
+const expectedIds = ['floodline_district', 'iron_junction', 'ridgefall_outpost'];
 
 function mapsFrom(page) {
   const begin = page.indexOf('var MAPS = [');

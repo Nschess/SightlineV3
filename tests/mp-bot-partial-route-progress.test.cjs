@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { DATA, G, _t } = require('../AndroidProject/app/src/main/assets/phone-host/server.js');
-const missionMapIds = new Set(['floodline_district', 'switchyard_nine', 'ridgefall_outpost']);
+const missionMapIds = new Set(['floodline_district', 'iron_junction', 'ridgefall_outpost']);
 const priorMaps = DATA.maps.filter(row => !missionMapIds.has(row.id));
 
 test('all legal live-budget partial map routes continue to objectives through bounded replans', () => {

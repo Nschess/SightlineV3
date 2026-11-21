@@ -7,7 +7,7 @@ const html=fs.readFileSync(path.join(hostAssets,'index.html'),'utf8');
 test('game identity, save namespaces and map identifiers are unchanged',()=>{
  assert.match(html,/sightline\.settings\.v1/);
  const ids=JSON.parse(fs.readFileSync(path.join(hostAssets,'data.json'))).maps.map(m=>m.id);
- const expected=['courtyard','dune','foundry','oldtown','yard','saltpan','kagay','divisoria','cathedral','gorge','overpass','bridge','park','divisoria_district','macasandig_riverside','uptown_ridge','horror_city','blackwater_old_quarter','meridian_labyrinth','floodline_district','switchyard_nine','ridgefall_outpost'];
+ const expected=['courtyard','dune','foundry','oldtown','yard','saltpan','kagay','divisoria','cathedral','gorge','overpass','bridge','park','divisoria_district','macasandig_riverside','uptown_ridge','horror_city','blackwater_old_quarter','meridian_labyrinth','floodline_district','iron_junction','ridgefall_outpost'];
  assert.deepEqual(ids,expected);assert.equal(ids.length,22);
 });
 test('lobby settings use five accessible categories and avoid sticky overlay collisions',()=>{
