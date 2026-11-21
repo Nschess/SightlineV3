@@ -3997,7 +3997,7 @@ function framePixelBudget() {
     if (G.mobileQuality === 'low') return 650000;
     if (G.mobileQuality === 'competitive') return 850000;
     if (G.mobileQuality === 'high') return G.adaptive && hz > 75 ? 1450000 : 1850000;
-    return Number(G.fpsCap) === 30 ? 1250000 : G.adaptive && hz > 75 ? 950000 : 1150000;
+    return Number(G.fpsCap) === 30 ? 1250000 : G.adaptive && hz > 75 ? 1050000 : 1150000;
   }
   return !G.adaptive || Number(G.fpsCap) === 30 ? 3600000 : hz > 75 ? 1800000 : 2400000;
 }
@@ -14712,9 +14712,11 @@ function syncAndroidGameTarget(now) {
     renderNextDue = 0;
     resetFpsWindow();
     perfEma = 1000 / next;
-    if (next > 75 && !androidHighBudgetTier) {
-      androidHighBudgetTier = true;
-      if (G.adaptive && G.mobileQuality !== 'competitive') resize();
+    var nextHighBudgetTier = next > 75;
+    if (nextHighBudgetTier !== androidHighBudgetTier) {
+      androidHighBudgetTier = nextHighBudgetTier;
+      if (G.adaptive && !G.fastMode && Number(G.fpsCap) !== 30 &&
+          G.mobileQuality !== 'competitive' && G.mobileQuality !== 'low') resize();
     }
   }
   return androidGameTarget;

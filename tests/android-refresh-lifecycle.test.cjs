@@ -182,6 +182,34 @@ test('refresh decrease and battery saver are immediate, increases need stability
   assert.deepEqual(messages,['auto','120','auto','auto']);
 });
 
+test('Android restores the adaptive pixel budget after a high-refresh target downshifts', () => {
+  const {ctx,report}=androidFixture(90,'balanced');
+  const policy=section(html,'function framePixelBudget()','function fail(msg)');
+  assert.equal(policy,section(host,'function framePixelBudget()','function fail(msg)'));
+  vm.runInContext(policy,ctx);
+  ctx.touchMode=true; ctx.rafHzBest=90; ctx.resizeCalls=0;
+  ctx.resize=()=>{ctx.resizeCalls++;};
+  report(90,[60,90]);
+  ctx.syncAndroidGameTarget(0);
+  assert.equal(ctx.syncAndroidGameTarget(1800),90);
+  assert.equal(ctx.androidHighBudgetTier,true);
+  assert.equal(ctx.framePixelBudget(),1050000);
+  assert.equal(ctx.resizeCalls,1);
+
+  report(60,[60,90]);
+  assert.equal(ctx.syncAndroidGameTarget(1810),60);
+  assert.equal(ctx.androidHighBudgetTier,false);
+  assert.equal(ctx.framePixelBudget(),1150000);
+  assert.equal(ctx.resizeCalls,2);
+
+  report(90,[60,90]);
+  assert.equal(ctx.syncAndroidGameTarget(1820),60,'upshift still waits for mode stability');
+  assert.equal(ctx.syncAndroidGameTarget(3620),90);
+  assert.equal(ctx.androidHighBudgetTier,true);
+  assert.equal(ctx.framePixelBudget(),1050000);
+  assert.equal(ctx.resizeCalls,3);
+});
+
 test('Auto profiles differ and sustained overload steps to a supported refresh mode at the graphics floor', () => {
   const balanced=androidFixture(0,'balanced'), high=androidFixture(0,'high');
   for (const instance of [balanced,high]) {
