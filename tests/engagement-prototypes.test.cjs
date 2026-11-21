@@ -107,6 +107,23 @@ test('optional goals rotate and persist without altering match-record storage', 
   assert.equal(incomplete.completedCount, 2);
 });
 
+test('optional-goal save data rejects unsafe lifetime counts and recovers from match history', () => {
+  const values = new Map([[shared.goalKey, '{"version":1,"index":0,"completed":1e100}']]);
+  const storage = {
+    getItem(key) { return values.has(key) ? values.get(key) : null; },
+    setItem(key, value) { values.set(key, value); }
+  };
+  const recovered = shared.resolveOptionalGoal(storage, {}, 2);
+  assert.equal(recovered.goal.id, 'eliminations');
+  assert.equal(recovered.completedCount, 0);
+  assert.deepEqual(JSON.parse(values.get(shared.goalKey)), { version: 1, index: 2, completed: 0 });
+
+  values.set(shared.goalKey, '{"version":1,"index":0,"completed":9007199254740991}');
+  const saturated = shared.resolveOptionalGoal(storage, { hs: 3 }, 2);
+  assert.equal(saturated.completedCount, 9007199254740991);
+  assert.equal(Number.isSafeInteger(JSON.parse(values.get(shared.goalKey)).completed), true);
+});
+
 test('post-match feedback identifies new personal kill and accuracy records', () => {
   const prior = { kills: 5, acc: 72 };
   assert.deepEqual(shared.comparePersonalRecords(prior, { kills: 7, shots: 10, hits: 8 }), {

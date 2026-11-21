@@ -5,7 +5,7 @@ f5f0c4fd7fbb46156930016017390da715ab2743a9906be21799ebf07f6ba64b  ANDROID-SECURI
 183ccd89a26d41a967aa77f207603b0c0ca5d5ec75a78bd1eb6733602b773ef6  app/src/debug/res/xml/network_security_config.xml
 fca9a7d1d04b9d68f812873a442379888fc1aefa909fab5971b7b43c11030edf  app/src/main/AndroidManifest.xml
 47fef53e91c47acd4011f4db8863fc8937a10d53bbf48ae5164ab230c6d58d11  app/src/main/assets/phone-host/character-realism.js
-273caa00d5e6a1e560889c5f034875b4705dca63db1c32f21e40bd400f5c8384  app/src/main/assets/phone-host/engagement-prototypes.js
+1456275a58802f7010c8518fcc675c20bf5729be03f2d511fea74df91ce2199e  app/src/main/assets/phone-host/engagement-prototypes.js
 38fdf19ccb118802fbdf18ed38792f20df685418c4eaf936000dd1ff070bbea4  app/src/main/assets/phone-host/host-transport-config.js
 b41f1b5ecae43c62334b898a98ec277a0d8cf989b80c3c993557ea21d0af20af  app/src/main/assets/phone-host/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/phone-host/infection-evasion.js
@@ -13,7 +13,7 @@ e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/a
 239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b  app/src/main/assets/phone-host/mp-transport-policy.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/phone-host/navigation.js
 c2dc444f1be1f755b678dda1576cfa72c9288a6dfd00282b729202c7ea364b72  app/src/main/assets/phone-host/server.js
-5e2b6d59636db9ab04d95144cc015f9bf684fd604ba01ac7d4bccc3e93198351  app/src/main/assets/phone-host/SHA256SUMS
+73ad58795606cc8da9f37ae65393ef2d22c574ab3eedde844f922a4ee21f54d6  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js
@@ -22,7 +22,7 @@ d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/a
 545eb491447b27ca67de1077294574b92625f87af35439668fa71e356114743f  app/src/main/assets/www/character-skins.js
 e49ec0b3d6d8d87e14626c833686996793232bb82bc3d42c00341bcee5b4894a  app/src/main/assets/www/combat-foundation.js
 ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272  app/src/main/assets/www/deathmatch-rules.js
-273caa00d5e6a1e560889c5f034875b4705dca63db1c32f21e40bd400f5c8384  app/src/main/assets/www/engagement-prototypes.js
+1456275a58802f7010c8518fcc675c20bf5729be03f2d511fea74df91ce2199e  app/src/main/assets/www/engagement-prototypes.js
 0f48e6557d5841c04e5aa796a1050a93e8eaac67c90a2f527e836c919dccfa2d  app/src/main/assets/www/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/www/infection-evasion.js
 e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/assets/www/legendary-packs.js

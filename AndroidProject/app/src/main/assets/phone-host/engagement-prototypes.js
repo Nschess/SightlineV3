@@ -83,7 +83,7 @@
   function readGoalState(storage, priorMatchCount) {
     try {
       var saved = storage && JSON.parse(storage.getItem(GOAL_KEY) || 'null');
-      if (saved && saved.version === 1 && Number.isInteger(saved.index) && saved.index >= 0 && saved.index < GOALS.length && Number.isInteger(saved.completed) && saved.completed >= 0) return saved;
+      if (saved && saved.version === 1 && Number.isSafeInteger(saved.index) && saved.index >= 0 && saved.index < GOALS.length && Number.isSafeInteger(saved.completed) && saved.completed >= 0) return saved;
     } catch (e) {}
     var count = Math.floor(number(priorMatchCount));
     return { version: 1, index: count % GOALS.length, completed: 0 };
@@ -92,7 +92,9 @@
   function resolveOptionalGoal(storage, summary, priorMatchCount) {
     summary = summary || {};
     var state = readGoalState(storage, priorMatchCount), goal = GOALS[state.index], value = goal.value(summary);
-    var completed = value >= goal.target, nextState = { version: 1, index: completed ? (state.index + 1) % GOALS.length : state.index, completed: state.completed + (completed ? 1 : 0) };
+    var completed = value >= goal.target, completedCount = state.completed;
+    if (completed && completedCount < 9007199254740991) completedCount++;
+    var nextState = { version: 1, index: completed ? (state.index + 1) % GOALS.length : state.index, completed: completedCount };
     try { if (storage) storage.setItem(GOAL_KEY, JSON.stringify(nextState)); } catch (e) {}
     return {
       completed: completed,
