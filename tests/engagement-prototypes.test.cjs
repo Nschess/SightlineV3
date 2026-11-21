@@ -151,6 +151,43 @@ test('post-match feedback identifies new personal kill and accuracy records', ()
     'offline FFA results also show new personal records');
 });
 
+test('saved match records coerce malformed history to safe dashboard values', () => {
+  const normalized = shared.normalizeMatchRecords(JSON.parse(JSON.stringify({
+    matches: '<img src=x onerror=alert(1)>', kills: -4, acc: 180, wins: 3.5,
+    tk: Number.MAX_SAFE_INTEGER + 1, hist: [null, [], {
+      m: '<svg onload=alert(1)>', o: { invalid: true }, w: 'true', y: '<b>2</b>', b: -1,
+      k: 9007199254740992, d: 2, f: 'A'.repeat(40)
+    }]
+  })));
+  assert.deepEqual(normalized, {
+    matches: 0, kills: 0, acc: 100, wins: 0, tk: 0, td: 0, ths: 0, tsh: 0, thi: 0, rounds: 0,
+    hist: [{ m: '<svg onload=alert(1)>', o: '', w: false, y: 0, b: 0, k: 0, d: 2, f: 'A'.repeat(32) }]
+  });
+  for (const asset of assets) {
+    const html = fs.readFileSync(asset.htmlPath, 'utf8');
+    assert.match(html, /function renderBest\(\) \{\s*var b = window\.SightlineEngagement\.normalizeMatchRecords\(loadBest\(\)\)/,
+      `${asset.tree} normalizes data before rendering personal records`);
+    assert.match(html, /function recObj\(\) \{ return window\.SightlineEngagement\.normalizeMatchRecords\(loadBest\(\)\); \}/,
+      `${asset.tree} normalizes data before history templates interpolate it`);
+    assert.match(html, /esc\(x\.m\).*esc\(x\.o\).*esc\(x\.f\)/,
+      `${asset.tree} escapes stored history labels in the dashboard template`);
+  }
+});
+
+test('career record counters saturate instead of overflowing safe integer precision', () => {
+  assert.equal(shared.addSafeCount(Number.MAX_SAFE_INTEGER, 1), Number.MAX_SAFE_INTEGER);
+  assert.equal(shared.addSafeCount(Number.MAX_SAFE_INTEGER - 2, 2), Number.MAX_SAFE_INTEGER);
+  assert.equal(shared.addSafeCount(12, 4), 16);
+  assert.equal(shared.addSafeCount(-1, 4), 4);
+  for (const asset of assets) {
+    const html = fs.readFileSync(asset.htmlPath, 'utf8');
+    assert.match(html, /b\.matches = window\.SightlineEngagement\.addSafeCount\(b\.matches, 1\)/,
+      `${asset.tree} saturates lifetime match count`);
+    assert.match(html, /b\.rounds = window\.SightlineEngagement\.addSafeCount\(b\.rounds, M\.round\)/,
+      `${asset.tree} saturates lifetime round count`);
+  }
+});
+
 test('beginner operation replay returns from match end to idle before starting again', () => {
   for (const asset of assets) {
     const html = fs.readFileSync(asset.htmlPath, 'utf8');

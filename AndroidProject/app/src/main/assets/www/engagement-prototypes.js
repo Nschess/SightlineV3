@@ -27,6 +27,40 @@
     return isFinite(value) && value > 0 ? value : 0;
   }
 
+  function safeCount(value) {
+    value = Number(value);
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  }
+
+  function addSafeCount(current, amount) {
+    current = safeCount(current);
+    amount = safeCount(amount);
+    return current > Number.MAX_SAFE_INTEGER - amount ? Number.MAX_SAFE_INTEGER : current + amount;
+  }
+
+  function safeLabel(value, maxLength) {
+    return typeof value === 'string' ? value.slice(0, maxLength) : '';
+  }
+
+  function normalizeMatchRecords(records) {
+    records = records && typeof records === 'object' ? records : {};
+    var history = Array.isArray(records.hist) ? records.hist.slice(0, 6).filter(function (entry) {
+      return !!entry && typeof entry === 'object' && !Array.isArray(entry);
+    }).map(function (entry) {
+      return {
+        m: safeLabel(entry.m, 64), o: safeLabel(entry.o, 48), w: entry.w === true,
+        y: safeCount(entry.y), b: safeCount(entry.b), k: safeCount(entry.k),
+        d: safeCount(entry.d), f: safeLabel(entry.f, 32)
+      };
+    }) : [];
+    return {
+      matches: safeCount(records.matches), kills: safeCount(records.kills), acc: Math.min(100, safeCount(records.acc)),
+      wins: safeCount(records.wins), tk: safeCount(records.tk), td: safeCount(records.td),
+      ths: safeCount(records.ths), tsh: safeCount(records.tsh), thi: safeCount(records.thi),
+      rounds: safeCount(records.rounds), hist: history
+    };
+  }
+
   function comparePersonalRecords(records, summary) {
     records = records || {};
     summary = summary || {};
@@ -105,5 +139,5 @@
     };
   }
 
-  return { createOperation: createOperation, resolveOptionalGoal: resolveOptionalGoal, comparePersonalRecords: comparePersonalRecords, goalKey: GOAL_KEY, goals: GOALS.map(function (g) { return { id: g.id, title: g.title, detail: g.detail, target: g.target }; }) };
+  return { createOperation: createOperation, resolveOptionalGoal: resolveOptionalGoal, comparePersonalRecords: comparePersonalRecords, normalizeMatchRecords: normalizeMatchRecords, addSafeCount: addSafeCount, goalKey: GOAL_KEY, goals: GOALS.map(function (g) { return { id: g.id, title: g.title, detail: g.detail, target: g.target }; }) };
 });
