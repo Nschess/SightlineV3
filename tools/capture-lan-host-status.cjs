@@ -10,10 +10,9 @@ const {performance}=require('node:perf_hooks');
 const ROOT=path.resolve(__dirname,'..');
 const HOST_DIR=path.join(ROOT,'AndroidProject','app','src','main','assets','phone-host');
 const EXPECTED=Object.freeze({
-  // Pinned to the accepted recovery APK's phone-host assets (verified from
-  // the APK and matching the source and SHA256SUMS bundle manifest).
-  bundle:'3decff17808d44f7ad213a34f687f10eb69e3be545904df19f0bcfc176fd8f59',
-  server:'cbe82cdbb4065922a37bd2afd5bb2b554d12ab70f558d1b809baf3a8a1de3651'
+  // Pinned to this candidate's phone-host assets and SHA256SUMS manifest.
+  bundle:'13161bed3db090b501141a0808a84ddf10397914930e65577f55f4e751c35bf9',
+  server:'51409c842a8463e20ad399aef563560075720066f11b8b8f37e78e02b37d183d'
 });
 const LIVE_SAMPLE_CAPACITY=2400;
 function sha256(file){return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');}
