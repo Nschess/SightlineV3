@@ -1001,6 +1001,9 @@ function zombieHearShot(p, w, key) {
     if (!z.alive || Math.abs(z.y - p.y) > 5 || Math.hypot(p.x - z.x, p.z - z.z) > radius) continue;
     if (!z.hunt) z.hunt = Hunt.create(z.id);
     Hunt.hear(z.hunt, { x: p.x + (Math.random() - 0.5) * 6, z: p.z + (Math.random() - 0.5) * 6, y: p.y || 0 }, time);
+    // Give the next already-budgeted LOS scan one direct probe at the shooter.
+    // Do not expand the five-ray perception cap or retain stale sound targets.
+    z.heardShotTarget = p; z.heardShotUntil = time + 850;
     zombieHuntStats.heard++;
   }
 }
@@ -1062,6 +1065,24 @@ function zombiePerceptionInterval(id) {
   const phase = (Math.abs(Number.isInteger(id) ? id : 0) * 0.6180339887498949) % 1;
   return 0.24 + phase * 0.11;
 }
+function prioritizeHeardShot(z, hs, nearby, count, time) {
+  const target = z.heardShotTarget, until = z.heardShotUntil || 0;
+  z.heardShotTarget = null; z.heardShotUntil = 0;
+  if (!target || time > until || !target.alive || !hs.includes(target)) return count;
+  const dx = target.x - z.x, dz = target.z - z.z, d2 = dx * dx + dz * dz;
+  if (!(d2 < 56 * 56) || !(Math.abs(target.y - z.y) < 5)) return count;
+  let at = -1;
+  for (let i = 0; i < count; i++) if (nearby[i].p === target) { at = i; break; }
+  if (at === 0) return count;
+  let entry;
+  if (at > 0) entry = nearby[at];
+  else if (count >= 5) entry = nearby[count - 1];
+  else return count; // All in-range actors already fit; nothing needs replacing.
+  for (let i = at > 0 ? at : count - 1; i > 0; i--) nearby[i] = nearby[i - 1];
+  nearby[0] = entry;
+  entry.p = target; entry.dx = dx; entry.dz = dz; entry.d2 = d2; entry.sourceIndex = -1;
+  return count;
+}
 function zombiePerceive(z, hs, m, time) {
   const h = z.hunt; z.tt -= Math.min(0.15, Math.max(0.01, z.senseDt || 0.05));
   if (z.tt > 0) return z.tgt && z.tgt.alive && time - h.seenAt < 1100 ? z.tgt : null;
@@ -1077,6 +1098,7 @@ function zombiePerceive(z, hs, m, time) {
     nearbyCount = preferred ? nearestZombieTargets(z, [preferred], nearby, 1) : nearestZombieTargets(z, hs, nearby, 1);
     nearbyCount = appendZombiePerceptionProbes(z, hs, nearby, nearbyCount, 5);
   }
+  if (z.heardShotTarget) nearbyCount = prioritizeHeardShot(z, hs, nearby, nearbyCount, time);
   const first = nearbyCount ? nearby[0] : null;
   if (!first) { z.tgt = null; return null; }
   const dNearest = Math.sqrt(first.d2) || 1;

@@ -148,3 +148,40 @@ test('authoritative Outbreak zombie acquires a farther visible survivor behind a
     G.mode = prior.mode; G.phase = prior.phase; G.map = prior.map;
   }
 });
+
+test('a heard Outbreak gunshot prioritizes its visible shooter without adding LOS probes', () => {
+  const map = MAPS.courtyard, originalBoxes = map.boxes.slice();
+  const prior = { mode: G.mode, phase: G.phase, map: G.map };
+  try {
+    players.clear(); _t.OB.zs.clear();
+    G.mode = 'outbreak'; G.phase = 'live'; G.map = 'courtyard';
+    map.boxes.push([13, 17, 18, 20, 3]);
+    _t.obReset(); _t.OB.phase = 'fight';
+
+    const { hidden } = targets();
+    for (const p of hidden) players.set(p.id, p);
+    const shooter = _t.makeBot(0);
+    const generatedId = shooter.id;
+    Object.assign(shooter, { alive: true, id: 200, x: 6, y: 0, z: 26, cur: 'carbine', nextShot: 0, lastShot: 0 });
+    shooter.owned.add('carbine'); shooter.ammo.carbine = { mag: 30, res: 90 };
+    players.delete(generatedId);
+    players.set(shooter.id, shooter);
+
+    const zombie = _t.makeZ(15, 15, 'walker', 1);
+    zombie.rise = 0; zombie.yaw = Math.PI; zombie.tt = 0; zombie.gSpd = 0; zombie.atkT = 1000;
+    const ammoBefore = shooter.ammo.carbine.mag;
+    _t.onShot(shooter, { w: 'carbine', d: [[0, -0.1, -1]] });
+    assert.equal(shooter.ammo.carbine.mag, ammoBefore - 1, 'the normal authoritative ammunition deduction remains intact');
+    assert.strictEqual(zombie.heardShotTarget, shooter, 'authoritative gunfire records the actual shooter as a one-scan cue');
+
+    const before = Date.now(); zombie.tt = 0;
+    assert.strictEqual(_t.zombiePerceive(zombie, [...players.values()].filter(p => p.alive), map, before), shooter,
+      'the next perception scan checks the audible shooter ahead of the screened nearest five');
+    assert.equal(zombie.perceptionScratch.length, 5, 'the direct sound cue stays inside the existing five-candidate LOS budget');
+    assert.equal(zombie.heardShotTarget, null, 'the direct shooter cue is consumed once');
+  } finally {
+    map.boxes.splice(0, map.boxes.length, ...originalBoxes);
+    players.clear(); _t.obReset();
+    G.mode = prior.mode; G.phase = prior.phase; G.map = prior.map;
+  }
+});
