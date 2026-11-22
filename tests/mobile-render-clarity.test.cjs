@@ -177,6 +177,112 @@ test('mobile map obstacles reuse materials for shared textures and dispose them 
   assert.equal(cleanupContext.mobileMapTextures.size, 0, 'per-map texture variants are released on transition');
 });
 
+test('static bamboo stalks batch by shade while preserving placement, collisions and map cleanup', () => {
+  const helperStart = pages[0].indexOf('function addBambooBatches(bamboo, add)');
+  assert.ok(helperStart >= 0, 'repeated static bamboo stalk meshes are consolidated into color batches');
+  const helper = section(pages[0], 'function addBambooBatches(bamboo, add)', 'function addPalmTreeBatches');
+  assert.equal(helper, section(pages[1], 'function addBambooBatches(bamboo, add)', 'function addPalmTreeBatches'));
+  const deco = section(pages[0], 'function buildDeco(m)', 'function mobileTilesBoxFaces(');
+  assert.match(deco, /if\s*\(m\.bamboo\s*&&\s*m\.bamboo\.length\)\s*addBambooBatches\(m\.bamboo,\s*add\)/);
+  const gorge = section(pages[0], 'function makeGorge()', 'function makePark()');
+  assert.match(gorge, /\[-36, 16\].*\[16, 50\].*bamboo\.push/s, 'the 8-cluster Gorge foliage uses the shared batch path');
+  const park = section(pages[0], 'function makePark()', 'function makeMacasandigRiverside()');
+  assert.match(park, /bamboo\.push\(\[-33,\s*15\],\s*\[33,\s*15\],\s*\[-32,\s*-36\],\s*\[32,\s*-36\]\)/, 'the 4-cluster Park foliage uses the shared batch path');
+
+  const THREE = require(path.join(assets, 'www/three.min.js'));
+  const temporaryGeometries = [];
+  const trackedThree = Object.create(THREE);
+  trackedThree.CylinderGeometry = class extends THREE.CylinderGeometry {
+    constructor(...args) {
+      super(...args);
+      this.disposeCount = 0;
+      this.addEventListener('dispose', () => this.disposeCount++);
+      temporaryGeometries.push(this);
+    }
+  };
+  const context = vm.createContext({ THREE: trackedThree });
+  vm.runInContext(helper, context);
+  const bamboo = [[-36,16],[36,16],[-17,-8],[17,-8],[-38,-36],[38,-28],[-16,44],[16,50]];
+  const scene = new THREE.Scene(), worldObjs = [], obstacleMeshes = [{ gameplayCollider: true }], added = [];
+  function add(object, castsShadow) { object.castShadow = castsShadow !== false; scene.add(object); worldObjs.push(object); added.push(object); return object; }
+  context.addBambooBatches(bamboo, add);
+
+  assert.equal(added.length, 1, '48 Gorge stalks become one static scene object');
+  assert.equal(added[0].geometry.groups.length, 2, 'two shades require two material draw groups');
+  const sampleCylinder = new THREE.CylinderGeometry(0.07, 0.05, 6.6, 8);
+  assert.deepEqual(added[0].geometry.groups.map(group => group.count), [sampleCylinder.index.count * 24, sampleCylinder.index.count * 24]);
+  assert.deepEqual(Array.from(added[0].material, material => material.color.getHexString()), ['77963c','8fae4a']);
+  assert.ok(added[0].castShadow && !added[0].receiveShadow, 'the batch retains the old stalk shadow policy');
+  assert.ok(added[0].geometry.boundingSphere);
+  assert.equal(temporaryGeometries.length, 3, 'only the three repeated stalk shapes are built');
+  assert.ok(temporaryGeometries.every(geometry => geometry.disposeCount === 1), 'temporary shape templates are disposed after merging');
+
+  const positions = added[0].geometry.getAttribute('position').array;
+  const normals = added[0].geometry.getAttribute('normal').array;
+  const indices = added[0].geometry.index.array;
+  const shapeTemplates = temporaryGeometries.slice(0, 3), verticesPerCylinder = shapeTemplates[0].getAttribute('position').count;
+  const globalVertexBase = [0, verticesPerCylinder * 24], vertexCursor = [0, 0], indexCursor = [0, 0];
+  for (let bi = 0; bi < bamboo.length; bi++) {
+    for (let k = 0; k < 6; k++) {
+      const colorIndex = k % 2, shape = shapeTemplates[k % 3];
+      const sourcePositions = shape.getAttribute('position').array, sourceNormals = shape.getAttribute('normal').array, sourceIndices = shape.index.array;
+      const angle = k * 1.05 + bi, radius = 0.25 + (k % 3) * 0.22;
+      const x = bamboo[bi][0] + Math.cos(angle) * radius, z = bamboo[bi][1] + Math.sin(angle) * radius;
+      const vertexStart = globalVertexBase[colorIndex] + vertexCursor[colorIndex];
+      const indexStart = added[0].geometry.groups[colorIndex].start + indexCursor[colorIndex];
+      for (let i = 0; i < sourcePositions.length / 3; i++) {
+        const target = (vertexStart + i) * 3, source = i * 3;
+        assert.ok(Math.abs(positions[target] - (sourcePositions[source] + x)) < 1e-5, 'all stalks retain their original x placement');
+        assert.ok(Math.abs(positions[target + 1] - (sourcePositions[source + 1] + 3.4)) < 1e-5);
+        assert.ok(Math.abs(positions[target + 2] - (sourcePositions[source + 2] + z)) < 1e-5);
+        assert.ok(Math.abs(normals[target] - sourceNormals[source]) < 1e-5, 'vertical cylinder normals are preserved');
+        assert.ok(Math.abs(normals[target + 1] - sourceNormals[source + 1]) < 1e-5);
+        assert.ok(Math.abs(normals[target + 2] - sourceNormals[source + 2]) < 1e-5);
+      }
+      for (let i = 0; i < sourceIndices.length; i++) assert.equal(indices[indexStart + i], sourceIndices[i] + vertexStart, 'triangle winding and connectivity are preserved');
+      vertexCursor[colorIndex] += sourcePositions.length / 3;
+      indexCursor[colorIndex] += sourceIndices.length;
+    }
+  }
+  assert.equal(worldObjs.length, 1);
+  assert.equal(obstacleMeshes.length, 1, 'batching leaves hidden gameplay collision and raycast data independent');
+
+  const parkObjects = [], parkScene = new THREE.Scene();
+  context.addBambooBatches([[-33,15],[33,15],[-32,-36],[32,-36]], object => { parkScene.add(object); parkObjects.push(object); return object; });
+  assert.equal(parkObjects.length, 1, '24 Park stalks also become one scene object');
+  assert.deepEqual(parkObjects[0].geometry.groups.map(group => group.count), [sampleCylinder.index.count * 12, sampleCylinder.index.count * 12]);
+  assert.equal(parkObjects[0].geometry.groups.length, 2);
+  assert.ok(temporaryGeometries.every(geometry => geometry.disposeCount === 1), 'each map disposes its three shape templates after merging');
+
+  let geometryDisposals = 0, materialDisposals = 0;
+  const oldGeometry = added[0].geometry, oldMaterials = added[0].material;
+  oldGeometry.addEventListener('dispose', () => geometryDisposals++);
+  oldMaterials.forEach(material => material.addEventListener('dispose', () => materialDisposals++));
+  const cleanup = section(pages[0], 'function clearWorld()', 'function paintTex(');
+  const cleanupContext = vm.createContext({ scene, worldObjs, obstacleMeshes, mobileMapTextures: new Map() });
+  vm.runInContext(cleanup, cleanupContext); cleanupContext.clearWorld();
+  assert.equal(geometryDisposals, 1, 'merged bamboo geometry is disposed once during a map transition');
+  assert.equal(materialDisposals, 2, 'each shared shade material is disposed once');
+  assert.equal(scene.children.length, 0);
+  assert.equal(cleanupContext.worldObjs.length, 0);
+  const parkCleanup = vm.createContext({ scene: parkScene, worldObjs: parkObjects, obstacleMeshes: [], mobileMapTextures: new Map() });
+  let parkGeometryDisposals = 0, parkMaterialDisposals = 0;
+  parkObjects[0].geometry.addEventListener('dispose', () => parkGeometryDisposals++);
+  parkObjects[0].material.forEach(material => material.addEventListener('dispose', () => parkMaterialDisposals++));
+  vm.runInContext(cleanup, parkCleanup); parkCleanup.clearWorld();
+  assert.equal(parkScene.children.length, 0, 'the Park batch is also removed on map transition');
+  assert.equal(parkGeometryDisposals, 1);
+  assert.equal(parkMaterialDisposals, 2);
+  sampleCylinder.dispose();
+  shapeTemplates.forEach(shape => shape.dispose());
+
+  const rebuilt = [];
+  context.addBambooBatches(bamboo, object => { scene.add(object); rebuilt.push(object); return object; });
+  assert.equal(rebuilt.length, 1, 'map rebuild recreates one bamboo batch');
+  assert.notStrictEqual(rebuilt[0].geometry, oldGeometry, 'the rebuilt map never reuses disposed geometry');
+  assert.equal(scene.children.length, 1);
+});
+
 test('static palm decorations batch by color without entering collision and clean up on map rebuild', () => {
   const helperStart = pages[0].indexOf('function addPalmTreeBatches(trees, add)');
   assert.ok(helperStart >= 0, 'repeated static palm geometry is consolidated into color batches');

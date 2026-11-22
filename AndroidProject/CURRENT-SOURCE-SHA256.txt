@@ -7,13 +7,13 @@ fca9a7d1d04b9d68f812873a442379888fc1aefa909fab5971b7b43c11030edf  app/src/main/A
 f915fa76ddfc30707a4692c7633ec5fea537b9491e68a5286a4cfb77467b1481  app/src/main/assets/phone-host/character-realism.js
 f5e5d661460496cf53ffde57b953f9d6c526f8171df7be5d8ce194c97c5573fc  app/src/main/assets/phone-host/engagement-prototypes.js
 93e58604615231cb83cecdaa0ed97c35de507bf8744b4c2c37f1ddee35a5e671  app/src/main/assets/phone-host/host-transport-config.js
-9ad2193b6cddefc0088d3d52be92f8800e00fea450228426de911e86dac70b14  app/src/main/assets/phone-host/index.html
+ba18628fad0a485b48b14c56d64b3fc9d1d65f3c89b8df22356442506c9da877  app/src/main/assets/phone-host/index.html
 1c10bdaf5e1687f4ca37f9cadcd878464f50fef2493332f339cc79cb213f100f  app/src/main/assets/phone-host/infection-evasion.js
 e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/assets/phone-host/legendary-packs.js
 646bac75a82fd03632ece2051f58f125cb18ca02f85583476a4a9dfaace69354  app/src/main/assets/phone-host/mp-transport-policy.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/phone-host/navigation.js
 c2dc444f1be1f755b678dda1576cfa72c9288a6dfd00282b729202c7ea364b72  app/src/main/assets/phone-host/server.js
-6022fde676093589f9d08b3bf337707699e1cae47312fed623b6c1acc82694b8  app/src/main/assets/phone-host/SHA256SUMS
+30c3aa0c1f9d2abf8f668a3b9aa40be26a680b87fc67fa2478eb8fcedea26d4c  app/src/main/assets/phone-host/SHA256SUMS
 cf05d70d7249278cf65480bee9b325706379b4a851b937237c66011e5c339168  app/src/main/assets/phone-host/weapon-realism.js
 1957773839ab82575df08d9b25916598761683a403b45aa1e416660d5b8dd07a  app/src/main/assets/phone-host/zombie-hunt.js
 7b6ddf2946f875ad88ef2388a8a95466fcf13a03e65764225068e04da6bd824b  app/src/main/assets/www/bot-tactics.js
@@ -23,7 +23,7 @@ f915fa76ddfc30707a4692c7633ec5fea537b9491e68a5286a4cfb77467b1481  app/src/main/a
 ec31e205f3340ebe53b0ca143e752c8e8c2e31ba90d6df5589727c1ac1e2386b  app/src/main/assets/www/combat-foundation.js
 3227dcfe2fc872e8580e50629165df0f34910d97a593acac8ea2289cd328ae07  app/src/main/assets/www/deathmatch-rules.js
 f5e5d661460496cf53ffde57b953f9d6c526f8171df7be5d8ce194c97c5573fc  app/src/main/assets/www/engagement-prototypes.js
-06138a65becbd3e74108ddb6f1603f6920111a54ee95dc8c39330cc379438bef  app/src/main/assets/www/index.html
+5338edd7574eb03b261698762a1cdb7b3f0b84f0a3056c30b25958a4bd4f7879  app/src/main/assets/www/index.html
 1c10bdaf5e1687f4ca37f9cadcd878464f50fef2493332f339cc79cb213f100f  app/src/main/assets/www/infection-evasion.js
 e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/assets/www/legendary-packs.js
 646bac75a82fd03632ece2051f58f125cb18ca02f85583476a4a9dfaace69354  app/src/main/assets/www/mp-transport-policy.js
@@ -40,7 +40,7 @@ e52eea3598da55915ceecf86d088dd42e755c220579d66fa80516b8b1ebb3e90  app/src/main/a
 d09efef6cf313ff9df10fdd49307a1006d2139bd2d80b9e456c83fbf47db5937  app/src/main/java/com/sightline/v3/HostPolicy.java
 d48278355052d575ff02bcc1c99217fc83146c7f9d4d06cba5d4f1ef8f89aef0  app/src/main/java/com/sightline/v3/LanHostService.java
 8a20dc34aef607324d0e75343eb1ed83090c9da20d04cfb5a70784250126f268  app/src/main/java/com/sightline/v3/LanPagePolicy.java
-e6550aec751fb22a4aa4dbcf4f8487c66e639b34ac0b22fdfeb920d8c90bbc73  app/src/main/java/com/sightline/v3/MainActivity.java
+2b6be2e78e7531c8c6dbf10a5aa9e354b7112c9f4cb088e44cd7b64143348cc5  app/src/main/java/com/sightline/v3/MainActivity.java
 a04807898354679cd6b73dae8f00e5c5b0a602869ccced4c6562b18728cebc57  app/src/main/java/com/sightline/v3/UpdateManager.java
 419a326b453bd17a5b769c4bc14513533addc4eeb347c621244ccb933bcc0bda  app/src/main/java/com/sightline/v3/UpdatePolicy.java
 ac18306bf065657870381495d74a2b5fc9a56ca752665453e9309fd735f7c847  app/src/main/res/drawable-nodpi/ic_sightline_foreground.png
