@@ -4151,7 +4151,7 @@ function ctex(w, h, draw, rx, ry) {
   draw(c.getContext('2d'), w, h);
   var t = colorTexture(new THREE.CanvasTexture(c));
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx || 1, ry || 1); t.anisotropy = 4;
-  return t;
+  return mobileSurfaceTexture(t);
 }
 function speckle(g, w, h, n, a, random) {
   random = typeof random === 'function' ? random : Math.random;
