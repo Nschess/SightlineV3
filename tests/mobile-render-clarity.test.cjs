@@ -204,6 +204,214 @@ test('Generated map signage follows mobile anisotropy tiers and releases trackin
   assert.ok(!context.mobileSurfaceTextures.has(texture));
 });
 
+test('Smoke clouds share one sphere geometry and dispose it once per cloud', () => {
+  const smoke = section(pages[0], 'function smokeBurst(pos)', 'function smokeBlocks(');
+  assert.equal(smoke, section(pages[1], 'function smokeBurst(pos)', 'function smokeBlocks('));
+  class Geometry {
+    static created = 0;
+    static disposed = 0;
+    constructor(radius, widthSegments, heightSegments) {
+      Geometry.created++;
+      this.radius = radius;
+      this.widthSegments = widthSegments;
+      this.heightSegments = heightSegments;
+    }
+    dispose() { Geometry.disposed++; }
+  }
+  class Material { constructor(options) { Object.assign(this, options); } dispose() {} }
+  const vector = () => ({ set(x, y, z) { Object.assign(this, { x, y, z }); } });
+  class Group {
+    constructor() { this.children = []; this.position = vector(); this.scale = vector(); }
+    add(child) { this.children.push(child); }
+  }
+  class Mesh {
+    constructor(geometry, material) { this.geometry = geometry; this.material = material; this.position = vector(); this.scale = { setScalar(value) { this.x = this.y = this.z = value; } }; }
+  }
+  const deterministicMath = Object.create(Math);
+  deterministicMath.random = () => 0;
+  const context = vm.createContext({
+    Math: deterministicMath,
+    smokes: [],
+    THREE: { Group, Mesh, MeshBasicMaterial: Material, SphereGeometry: Geometry },
+    scene: { add() {}, remove() {} },
+    sfxNoise() {}, sfxTone() {},
+    rEase: (a, b, value) => Math.max(0, Math.min(1, (value - a) / (b - a)))
+  });
+  vm.runInContext(smoke, context);
+
+  context.smokeBurst({ x: 3, z: 4 });
+  context.smokeBurst({ x: -1, z: 2 });
+  assert.equal(Geometry.created, 2, 'each cloud should create one shared unit-sphere geometry');
+  assert.equal(context.smokes.length, 2);
+  for (const cloud of context.smokes) {
+    assert.equal(cloud.geos.length, 1);
+    assert.ok(cloud.g.children.every(mesh => mesh.geometry === cloud.geos[0]));
+    for (const mesh of cloud.g.children)
+      assert.equal(mesh.geometry.radius * mesh.scale.x, 1.1, 'per-particle radius must stay visually equivalent');
+  }
+  context.updateSmokes(18);
+  assert.equal(Geometry.disposed, 2, 'each cloud should dispose its shared geometry once');
+  assert.equal(context.smokes.length, 0);
+});
+
+test('Bomb objective visual sync reuses loops instead of allocating per-frame callbacks', () => {
+  const sync = section(pages[0], 'function syncBombWorldVisuals(now)', 'function updateBombHudProgress(');
+  assert.equal(sync, section(pages[1], 'function syncBombWorldVisuals(now)', 'function updateBombHudProgress('));
+  const vector = () => ({ x: 0, y: 0, z: 0, set(x, y, z) { Object.assign(this, { x, y, z }); }, setScalar(value) { this.x = this.y = this.z = value; }, copy(value) { Object.assign(this, value); } });
+  const object = () => ({ visible: false, position: vector(), rotation: vector(), scale: vector() });
+  const sites = { A: object(), B: object() };
+  const deviceMats = Array.from({ length: 4 }, () => ({ transparent: false, opacity: 1 }));
+  const visual = {
+    root: object(), sites, device: object(), carrier: object(), progress: Object.assign(object(), { material: { opacity: 1 } }),
+    led: { material: { color: { set(value) { this.value = value; } }, opacity: 1 } },
+    screen: { color: { set(value) { this.value = value; } } },
+    deviceMats, baseScale: { x: 1, y: 1, z: 1 }
+  };
+  const callbacks = [];
+  deviceMats.forEach = callback => { callbacks.push(callback); for (let i=0; i<deviceMats.length; i++) callback(deviceMats[i], i, deviceMats); };
+  const objective = { sites: { A: { x: 2, y: 0, z: 3 }, B: { x: 8, y: 0, z: 9 } }, phase: 'dropped', x: 4, y: 0, z: 5, use: null };
+  const context = vm.createContext({
+    MP: { on: true, mode: 'bomb', objective }, state: 'live', R: { mode: 'bomb' }, SOLO_BOMB: { state: null },
+    BOMB_WORLD_VIS: visual, ensureBombWorldVisuals: () => visual,
+    bombProgressFraction: () => 0.5, bombVisualActor: () => null,
+    __callbacks: callbacks
+  });
+  vm.runInContext("Array.prototype.forEach = function (callback) { __callbacks.push(callback); for (var i=0; i<this.length; i++) callback(this[i], i, this); };\n" + sync, context);
+
+  for (let i = 0; i < 4; i++) context.syncBombWorldVisuals(i * 16.67);
+  assert.equal(callbacks.length, 0, 'active frames should not allocate temporary callback closures');
+  assert.deepEqual([sites.A.position.x, sites.A.position.z, sites.B.position.x, sites.B.position.z], [2, 3, 8, 9]);
+  assert.deepEqual([visual.device.position.x, visual.device.position.z], [4, 5]);
+  assert.ok(deviceMats.every(material => !material.transparent && material.opacity === 1));
+  objective.use = { action: 'plant', siteId: 'A' };
+  context.syncBombWorldVisuals(83.35);
+  assert.equal(visual.device.visible, true);
+  assert.equal(visual.device.scale.x, 0.89);
+  assert.ok(deviceMats.every(material => material.transparent && material.opacity === 0.74));
+  assert.equal(visual.progress.visible, true);
+  assert.equal(callbacks.length, 0, 'planting frames should not allocate material callbacks');
+});
+
+test('Fire bursts share one cone geometry while preserving each flame size', () => {
+  const fire = section(pages[0], 'function fireBurst(pos)', 'function decoyDeploy(');
+  assert.equal(fire, section(pages[1], 'function fireBurst(pos)', 'function decoyDeploy('));
+  class Geometry {
+    static created = 0;
+    constructor(radius, height, radialSegments) { Geometry.created++; Object.assign(this, { radius, height, radialSegments }); }
+    dispose() {}
+  }
+  class Material { constructor(options) { Object.assign(this, options); } dispose() {} }
+  const vector = () => ({ set(x, y, z) { Object.assign(this, { x, y, z }); }, setScalar(value) { this.x = this.y = this.z = value; } });
+  class Group { constructor() { this.children = []; this.position = vector(); } add(child) { this.children.push(child); } }
+  class Mesh { constructor(geometry, material) { Object.assign(this, { geometry, material, position: vector(), scale: vector(), userData: {} }); } }
+  const context = vm.createContext({
+    fires: [], THREE: { Group, Mesh, MeshBasicMaterial: Material, ConeGeometry: Geometry },
+    scene: { add() {}, remove() {} }, sfxNoise() {}, sfxTone() {}
+  });
+  vm.runInContext(fire, context);
+
+  context.fireBurst({ x: 1, z: 2 });
+  context.fireBurst({ x: 3, z: 4 });
+  assert.equal(Geometry.created, 2, 'each burst should create one shared cone geometry');
+  context.fires.forEach(effect => { effect.tick = 1; });
+  context.updateFires(0.016);
+  for (const flame of context.fires.flatMap(effect => effect.g.children)) {
+    assert.ok(context.fires.some(effect => flame.geometry === effect.geo));
+    const k = 0.7 + Math.sin(flame.userData.ph) * 0.35;
+    assert.ok(Math.abs(flame.geometry.radius * flame.scale.x - flame.userData.s * (1 + Math.sin(flame.userData.ph * 0.7) * 0.1) * 0.5) < 1e-12);
+    assert.ok(Math.abs(flame.geometry.height * flame.scale.y * 0.5 - flame.userData.s * k * 0.9) < 1e-12);
+  }
+});
+
+test('Fire animation updates children without creating per-frame callbacks', () => {
+  const fire = section(pages[0], 'function fireBurst(pos)', 'function decoyDeploy(');
+  const callbacks = [];
+  class Geometry { constructor() {} dispose() {} }
+  class Material { constructor(options) { Object.assign(this, options); } dispose() {} }
+  const vector = () => ({ set(x, y, z) { Object.assign(this, { x, y, z }); }, setScalar(value) { this.x = this.y = this.z = value; } });
+  class Group { constructor() { this.children = []; this.position = vector(); this.children.forEach = callback => { callbacks.push(callback); for (let i=0; i<this.children.length; i++) callback(this.children[i], i, this.children); }; } add(child) { this.children.push(child); } }
+  class Mesh { constructor(geometry, material) { Object.assign(this, { geometry, material, position: vector(), scale: vector(), userData: {} }); } }
+  const context = vm.createContext({
+    fires: [], bots: [], P: { alive: false }, THREE: { Group, Mesh, MeshBasicMaterial: Material, ConeGeometry: Geometry },
+    scene: { add() {}, remove() {} }, sfxNoise() {}, sfxTone() {}, hurtBot() {}, hurtPlayer() {}, __callbacks: callbacks
+  });
+  const instrument = "Array.prototype.forEach = function (callback) { __callbacks.push(callback); for (var i=0; i<this.length; i++) callback(this[i], i, this); };\n";
+  vm.runInContext(instrument + fire, context);
+  context.fireBurst({ x: 0, z: 0 });
+  context.fires[0].tick = 1;
+  context.updateFires(0.016);
+  assert.equal(callbacks.length, 0, 'active fire frames should not allocate child-update callbacks');
+});
+
+test('Flash and explosion spheres reuse geometry, materials and meshes after expiry', () => {
+  const helperStart = pages[0].indexOf('function addPooledBurstSphere(');
+  assert.ok(helperStart >= 0, 'flash and explosion effects need the shared pool factory');
+  const helper = section(pages[0], 'function addPooledBurstSphere(', 'function flashBang(pos)');
+  const flash = section(pages[0], 'function flashBang(pos)', 'function smokeBurst(pos)');
+  const explosion = section(pages[0], 'function explode(pos)', '/* ---------- rounds ---------- */');
+  assert.equal(helper, section(pages[1], 'function addPooledBurstSphere(', 'function flashBang(pos)'));
+  assert.equal(flash, section(pages[1], 'function flashBang(pos)', 'function smokeBurst(pos)'));
+  assert.equal(explosion, section(pages[1], 'function explode(pos)', '/* ---------- rounds ---------- */'));
+  assert.match(flash, /addPooledBurstSphere\('flash'/);
+  assert.match(explosion, /addPooledBurstSphere\('explosion'/);
+  assert.doesNotMatch(flash + explosion, /new THREE\.(SphereGeometry|MeshBasicMaterial)/);
+  class Geometry {
+    static created = 0;
+    constructor(radius, widthSegments, heightSegments) { Geometry.created++; Object.assign(this, { radius, widthSegments, heightSegments }); }
+    dispose() {}
+  }
+  class Material {
+    static created = 0;
+    constructor(options) { Material.created++; Object.assign(this, options); this.color = { setHex(value) { this.value = value; } }; }
+    dispose() {}
+  }
+  class Mesh {
+    static created = 0;
+    constructor(geometry, material) { Mesh.created++; Object.assign(this, { geometry, material, visible: true, position: { set(x, y, z) { Object.assign(this, { x, y, z }); } }, scale: { setScalar(value) { this.x = this.y = this.z = value; }, multiplyScalar(value) { this.x *= value; this.y *= value; this.z *= value; } } }); }
+  }
+  const context = vm.createContext({
+    effects: [], THREE: { SphereGeometry: Geometry, MeshBasicMaterial: Material, Mesh },
+    scene: { add() {}, remove() {} }, flashSpherePool: [], explosionSpherePool: [],
+    flashSphereGeo: null, explosionSphereGeo: null, legendBoltsTick() {}
+  });
+  vm.runInContext(helper + section(pages[0], 'function updateEffects(dt)', '/* ---------- hud ---------- */'), context);
+  context.addPooledBurstSphere('flash', 1, 0.5, 2, 0.5, 0xffffff, 0.95, 0.3);
+  const firstFlash = context.effects[0].obj;
+  context.updateEffects(0.31);
+  context.addPooledBurstSphere('flash', 3, 0.5, 4, 0.5, 0xffffff, 0.95, 0.3);
+  assert.equal(context.effects[0].obj, firstFlash);
+  assert.deepEqual([firstFlash.position.x, firstFlash.position.y, firstFlash.position.z], [3, 0.5, 4]);
+  assert.deepEqual([firstFlash.scale.x, firstFlash.scale.y, firstFlash.scale.z], [0.5, 0.5, 0.5]);
+  context.updateEffects(0.31);
+  context.addPooledBurstSphere('explosion', 5, 0.08, 6, 0.6, 0xffa44a, 0.9, 0.45);
+  const firstExplosion = context.effects[0].obj;
+  context.updateEffects(0.46);
+  context.addPooledBurstSphere('explosion', 7, 0.1, 8, 0.6, 0xffa44a, 0.9, 0.45);
+  assert.equal(context.effects[0].obj, firstExplosion);
+  assert.equal(Geometry.created, 2);
+  assert.equal(Material.created, 2);
+  assert.equal(Mesh.created, 2);
+});
+
+test('Clearing grenade effects disposes every active owned GPU resource', () => {
+  const clear = section(pages[0], 'function clearNades()', 'function updateNades(dt)');
+  assert.equal(clear, section(pages[1], 'function clearNades()', 'function updateNades(dt)'));
+  let disposed = 0, removed = 0;
+  const resource = () => ({ dispose() { disposed++; } });
+  const mesh = () => ({ geometry: resource(), material: resource() });
+  const flying = [{ m: mesh() }], smokes = [{ g: {}, mat: resource(), geos: [resource()] }];
+  const fires = [{ g: {}, geo: resource(), mats: [resource(), resource()] }], decoys = [{ m: mesh() }];
+  const context = vm.createContext({
+    flying, smokes, fires, decoys, whiteT: 1, elWhite: { style: { opacity: 1 } },
+    scene: { remove() { removed++; } }
+  });
+  vm.runInContext(clear, context);
+  context.clearNades();
+  assert.equal(disposed, 9, 'flying grenades, smoke, fire and decoy resources must all be released');
+  assert.equal(removed, 4);
+  assert.deepEqual([context.flying.length, context.smokes.length, context.fires.length, context.decoys.length], [0, 0, 0, 0]);
+});
+
 test('map masonry uses each box face dimensions without changing positions or indices', () => {
   const THREE = require(path.join(assets,'www/three.min.js'));
   const policy = section(pages[0],'function mobileTilesBoxFaces','function buildWorld(');
