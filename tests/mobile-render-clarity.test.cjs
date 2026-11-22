@@ -171,6 +171,39 @@ test('Generated canvas surfaces follow the active mobile anisotropy tier', () =>
   assert.ok(!context.mobileSurfaceTextures.has(texture));
 });
 
+test('Generated map signage follows mobile anisotropy tiers and releases tracking on disposal', () => {
+  const filtering = section(pages[0], 'var mobileTextureLimit', 'if (!touchMode) renderer.setPixelRatio');
+  const factory = section(pages[0], 'function textTex(txt, bg, fg)', 'function buildDeco(m)');
+  assert.equal(factory, section(pages[1], 'function textTex(txt, bg, fg)', 'function buildDeco(m)'));
+  class Texture extends EventTarget {
+    anisotropy = 4;
+    set needsUpdate(value) { if (value) this.uploads = (this.uploads || 0) + 1; }
+  }
+  const context = vm.createContext({
+    G: { mobileQuality: 'low', fastMode: false },
+    renderer: { capabilities: { getMaxAnisotropy: () => 6 } },
+    touchMode: true,
+    document: { createElement: () => ({ getContext: () => ({
+      fillRect() {}, strokeRect() {}, measureText() { return { width: 100 }; }, fillText() {}
+    }) }) },
+    THREE: { CanvasTexture: Texture },
+    colorTexture: texture => texture
+  });
+  vm.runInContext(filtering + factory, context);
+
+  const texture = context.textTex('SITE A', '#000', '#fff');
+  assert.equal(texture.anisotropy, 2, 'Low quality must use the mobile filtering budget');
+  assert.ok(context.mobileSurfaceTextures.has(texture));
+  context.G.mobileQuality = 'high';
+  context.mobileSurfaceTextures.forEach(context.applySurfaceFiltering);
+  assert.equal(texture.anisotropy, 6, 'High quality must be capped by device support');
+  context.G.fastMode = true;
+  context.mobileSurfaceTextures.forEach(context.applySurfaceFiltering);
+  assert.equal(texture.anisotropy, 2, 'Fast mode must return to the lower filtering budget');
+  texture.dispatchEvent(new Event('dispose'));
+  assert.ok(!context.mobileSurfaceTextures.has(texture));
+});
+
 test('map masonry uses each box face dimensions without changing positions or indices', () => {
   const THREE = require(path.join(assets,'www/three.min.js'));
   const policy = section(pages[0],'function mobileTilesBoxFaces','function buildWorld(');

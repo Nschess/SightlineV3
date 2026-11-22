@@ -4296,7 +4296,7 @@ function textTex(txt, bg, fg) {
   g.fillStyle = bg; g.fillRect(0, 0, 512, 128); g.strokeStyle = fg; g.lineWidth = 6; g.strokeRect(8, 8, 496, 112);
   var fs = 64; g.font = 'bold ' + fs + 'px Arial, sans-serif'; while (g.measureText(txt).width > 450 && fs > 20) { fs -= 4; g.font = 'bold ' + fs + 'px Arial, sans-serif'; }
   g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 256, 66);
-  var t = colorTexture(new THREE.CanvasTexture(c)); t.anisotropy = 4; return t;
+  var t = colorTexture(new THREE.CanvasTexture(c)); t.anisotropy = 4; return mobileSurfaceTexture(t);
 }
 function buildDeco(m) {
   var M = {};
