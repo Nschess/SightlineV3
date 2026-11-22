@@ -394,22 +394,65 @@ test('Flash and explosion spheres reuse geometry, materials and meshes after exp
 });
 
 test('Clearing grenade effects disposes every active owned GPU resource', () => {
+  const helper = section(pages[0], 'function disposeNadeMesh(root)', 'function clearNades()');
   const clear = section(pages[0], 'function clearNades()', 'function updateNades(dt)');
+  assert.equal(helper, section(pages[1], 'function disposeNadeMesh(root)', 'function clearNades()'));
   assert.equal(clear, section(pages[1], 'function clearNades()', 'function updateNades(dt)'));
-  let disposed = 0, removed = 0;
-  const resource = () => ({ dispose() { disposed++; } });
-  const mesh = () => ({ geometry: resource(), material: resource() });
-  const flying = [{ m: mesh() }], smokes = [{ g: {}, mat: resource(), geos: [resource()] }];
-  const fires = [{ g: {}, geo: resource(), mats: [resource(), resource()] }], decoys = [{ m: mesh() }];
+  const disposed = [], removed = [];
+  const resource = name => ({ name, dispose() { disposed.push(name); } });
+  const mesh = name => ({ geometry: resource(name + '-geo'), material: resource(name + '-mat'), children: [{ geometry: resource(name + '-child-geo'), material: resource(name + '-child-mat'), children: [] }] });
+  const flying = [{ m: mesh('flying') }], smokes = [{ g: {}, mat: resource('smoke-mat'), geos: [resource('smoke-geo')] }];
+  const fires = [{ g: {}, geo: resource('fire-geo'), mats: [resource('fire-mat-a'), resource('fire-mat-b')] }], decoys = [{ m: mesh('decoy') }];
   const context = vm.createContext({
     flying, smokes, fires, decoys, whiteT: 1, elWhite: { style: { opacity: 1 } },
-    scene: { remove() { removed++; } }
+    scene: { remove(object) { removed.push(object); } }
   });
-  vm.runInContext(clear, context);
+  vm.runInContext(helper + clear, context);
   context.clearNades();
-  assert.equal(disposed, 9, 'flying grenades, smoke, fire and decoy resources must all be released');
-  assert.equal(removed, 4);
+  assert.equal(disposed.length, 13, 'flying and decoy child resources must be released with smoke and fire resources');
+  assert.equal(new Set(disposed).size, 13, 'each owned resource is disposed exactly once');
+  assert.equal(removed.length, 4);
   assert.deepEqual([context.flying.length, context.smokes.length, context.fires.length, context.decoys.length], [0, 0, 0, 0]);
+});
+
+test('Grenade detonation and decoy expiry dispose nested GPU resources', () => {
+  const helper = section(pages[0], 'function disposeNadeMesh(root)', 'function clearNades()');
+  const detonation = section(pages[0], 'function updateNades(dt)', 'var fires = [], decoys = [];');
+  const decoyExpiry = section(pages[0], 'function updateDecoys(dt)', 'var flashSpherePool=');
+  assert.equal(detonation, section(pages[1], 'function updateNades(dt)', 'var fires = [], decoys = [];'));
+  assert.equal(decoyExpiry, section(pages[1], 'function updateDecoys(dt)', 'var flashSpherePool='));
+  const makeMesh = name => ({
+    geometry: { dispose() { disposed.push(name + '-geo'); } },
+    material: { dispose() { disposed.push(name + '-mat'); } },
+    children: [{
+      geometry: { dispose() { disposed.push(name + '-child-geo'); } },
+      material: { dispose() { disposed.push(name + '-child-mat'); } },
+      children: []
+    }],
+    position: { x: 1, y: 1, z: 1, addScaledVector() {}, clone() { return { x: this.x, y: this.y, z: this.z }; } },
+    rotation: { x: 0 }
+  });
+  let disposed = [], removed = 0;
+  const grenade = { m: makeMesh('grenade'), vel: { x: 0, y: 0, z: 0 }, t: 0.01, type: 'frag' };
+  const context = vm.createContext({
+    flying: [grenade], smokes: [], fires: [], decoys: [], whiteT: 0,
+    G: { flashAmt: 100 }, BOXES: [], AREA: { x0: -10, x1: 10, z0: -10, z1: 10 },
+    scene: { remove() { removed++; } }, updateSmokes() {}, updateFires() {}, updateDecoys() {}, explode() {}
+  });
+  vm.runInContext(helper + detonation, context);
+  context.updateNades(0.02);
+  assert.deepEqual(disposed.sort(), ['grenade-child-geo', 'grenade-child-mat', 'grenade-geo', 'grenade-mat']);
+  assert.equal(removed, 1);
+  assert.equal(context.flying.length, 0);
+
+  disposed = [];
+  const decoy = { m: makeMesh('decoy'), x: 0, z: 0, t: 0.01, tick: 1 };
+  const decoyContext = vm.createContext({ decoys: [decoy], P: { x: 100, z: 100 }, scene: { remove() { removed++; } } });
+  vm.runInContext(helper + decoyExpiry, decoyContext);
+  decoyContext.updateDecoys(0.02);
+  assert.deepEqual(disposed.sort(), ['decoy-child-geo', 'decoy-child-mat', 'decoy-geo', 'decoy-mat']);
+  assert.equal(decoyContext.decoys.length, 0);
+  assert.equal(removed, 2);
 });
 
 test('map masonry uses each box face dimensions without changing positions or indices', () => {

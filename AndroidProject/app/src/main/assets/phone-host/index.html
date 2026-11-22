@@ -10716,11 +10716,27 @@ function throwNade(type) {
   scene.add(m); flying.push({ m: m, vel: vel, t: NADES[type].fuse, type: type });
   drawT = 0.3; sfxNoise(0.12, 1300, 0.25); hearPlayer(14); updateHud();
 }
+function disposeNadeMesh(root) {
+  var geometries = new Set(), materials = new Set();
+  function collect(object) {
+    if (!object) return;
+    if (object.geometry) geometries.add(object.geometry);
+    if (object.material) {
+      var list = Array.isArray(object.material) ? object.material : [object.material];
+      for (var i = 0; i < list.length; i++) if (list[i]) materials.add(list[i]);
+    }
+    var children = object.children || [];
+    for (var j = 0; j < children.length; j++) collect(children[j]);
+  }
+  collect(root);
+  geometries.forEach(function (geometry) { geometry.dispose(); });
+  materials.forEach(function (material) { material.dispose(); });
+}
 function clearNades() {
-  flying.forEach(function (n) { scene.remove(n.m); if(n.m.geometry)n.m.geometry.dispose(); if(n.m.material)n.m.material.dispose(); }); flying = [];
+  flying.forEach(function (n) { scene.remove(n.m); disposeNadeMesh(n.m); }); flying = [];
   smokes.forEach(function (s) { scene.remove(s.g); s.mat.dispose(); s.geos.forEach(function (g) { g.dispose(); }); }); smokes = [];
   fires.forEach(function (f) { scene.remove(f.g); if(f.geo)f.geo.dispose(); f.mats.forEach(function (m) { m.dispose(); }); }); fires = [];
-  decoys.forEach(function (d) { scene.remove(d.m); if(d.m.geometry)d.m.geometry.dispose(); if(d.m.material)d.m.material.dispose(); }); decoys = [];
+  decoys.forEach(function (d) { scene.remove(d.m); disposeNadeMesh(d.m); }); decoys = [];
   whiteT = 0; elWhite.style.opacity = 0;
 }
 function updateNades(dt) {
@@ -10748,7 +10764,7 @@ function updateNades(dt) {
       var pos = p.clone();
       if (n.type === 'decoy') { decoyDeploy(pos, n.m); flying.splice(i, 1); continue; }
       if (n.type === 'flash') flashBang(pos); else if (n.type === 'smoke') smokeBurst(pos); else if (n.type === 'incend') fireBurst(pos); else explode(pos);
-      scene.remove(n.m); n.m.geometry.dispose(); n.m.material.dispose(); flying.splice(i, 1);
+      scene.remove(n.m); disposeNadeMesh(n.m); flying.splice(i, 1);
     }
   }
 }
@@ -10788,7 +10804,7 @@ function updateDecoys(dt) {
       addPuff(new THREE.Vector3(d.x, 0.25, d.z), 0xffd27a);
       bots.forEach(function (b) { if (b.alive && !b.sees && Math.hypot(b.x - d.x, b.z - d.z) < 48) { b.alert = Math.max(b.alert, 1.5); b.last.set(d.x, d.z); b.lastY=0; beginLastKnownSearch(b); } });
     }
-    if (d.t <= 0) { scene.remove(d.m); d.m.geometry.dispose(); d.m.material.dispose(); decoys.splice(i, 1); }
+    if (d.t <= 0) { scene.remove(d.m); disposeNadeMesh(d.m); decoys.splice(i, 1); }
   }
 }
 var flashSpherePool=[], explosionSpherePool=[], flashSphereGeo=null, explosionSphereGeo=null;
