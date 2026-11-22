@@ -4795,7 +4795,7 @@ var touchCrouch = false, touchRun = false, touchActionLook = null;
 var P = { x: 0, z: 36, y: 0, vy: 0, vx: 0, vz: 0, yaw: 0, pitch: 0, hp: 100, armor: 0, onGround: true, alive: true, punch: 0, bob: 0, crouch: 0, prone: 0 };
 var M = null; /* match */
 var SOLO_FFA = { match: null, respawns: new Map(), playerShieldUntil: 0, playerLife: 0 };
-var SOLO_BOMB = { sites: null, state: null, settings: null, supportMap: null, playerTeam: 0 };
+var SOLO_BOMB = { sites: null, state: null, settings: null, supportMap: null, playerTeam: 0, openingTeam: 0, nextOpeningTeam: 0 };
 var owned = { pistol: true, knife: true }, cur = 'pistol', ammo = {}, reloading = 0, nextFire = 0, bloom = 0, speedFrac = 0;
 var bots = [], hitMeshes = [], targets = [], effects = [];
 var roundT = 0, endT = 0, endWon = false, pendingPause = null;
@@ -8769,7 +8769,11 @@ function soloBombPrepareSites() {
   try { SOLO_BOMB.sites = SightlineModeRules.resolveBombSites(NAV, MAPD.area, MAPD.bombSites); } catch (e) { SOLO_BOMB.sites = null; }
   return SOLO_BOMB.sites;
 }
-function bombAttackTeamForSoloRound(round) { return round>Math.floor(R.bombBestOf/2)?1:0; }
+function beginSoloBombMatch() {
+  SOLO_BOMB.openingTeam = SOLO_BOMB.nextOpeningTeam === 1 ? 1 : 0;
+  SOLO_BOMB.nextOpeningTeam = 1 - SOLO_BOMB.openingTeam;
+}
+function bombAttackTeamForSoloRound(round) { return SightlineModeRules.bombAttackTeamForRound(round,R.bombBestOf,SOLO_BOMB.openingTeam); }
 function startSoloBombRound() {
   if(!SOLO_BOMB.sites)return false;
   var attack=bombAttackTeamForSoloRound(M.round),actors=[];
@@ -11433,6 +11437,7 @@ function startMatch() {
   renderBeginnerOperation(null);
   SOLO_INF.on=false;SOLO_INF.chosen=false;SOLO_INF.playerInfected=false;SOLO_INF.playerRespawnT=0;SOLO_INF.playerDown=false;applySelectedFirstPersonAppearance();applyRules(); refreshSpec();
   if(R.mode==='bomb'&&!soloBombPrepareSites()){showMsg('Bomb Defusal unavailable','This map has no validated pair of reachable A/B sites.',2800);return false;}
+  if(R.mode==='bomb')beginSoloBombMatch();
   if(R.mode!=='bomb')SOLO_BOMB.state=null;
   lobbyAudioCue('deploy'); setLobbyMusicActive(false);
   M = { opS: {}, round: 0, you: 0, bots: 0, money: CFG.startMoney, stats: { shots: 0, hits: 0, hs: 0, kills: 0, deaths: 0 } };

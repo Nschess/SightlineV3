@@ -25,6 +25,11 @@
     for (const key of Object.keys(BOMB_DEFAULTS)) out[key] = input && input[key] !== undefined ? clampSetting(key, input[key]) : BOMB_DEFAULTS[key];
     return out;
   }
+  function bombAttackTeamForRound(round, bestOf, openingTeam) {
+    const opening = openingTeam === 1 ? 1 : 0;
+    const total = Number.isFinite(Number(bestOf)) ? Math.max(1, Math.floor(Number(bestOf))) : BOMB_DEFAULTS.bestOf;
+    return round > Math.floor(total / 2) ? 1 - opening : opening;
+  }
   function resolveBombSites(nav, area, siteAnchors) {
     if (!nav || !Array.isArray(nav.nodes) || !area || ![area.x0, area.x1, area.z0, area.z1].every(Number.isFinite)) return null;
     const width = area.x1 - area.x0, depth = area.z1 - area.z0;
@@ -157,5 +162,5 @@
     state.scores.forEach((score, id) => { if (score > best) { best = score; winnerId = id; tied = false; } else if (score === best) tied = true; });
     return tied ? null : winnerId;
   }
-  return { BOMB_DEFAULTS, BOMB_LIMITS, FFA_DEFAULTS, infectionPatientZeroCount, settings, resolveBombSites, createBombRound, beginUse, cancelUse, dropBomb, pickupBomb, advance, bombWinner, createFFA, recordFFAElimination, ffaTimedWinner };
+  return { BOMB_DEFAULTS, BOMB_LIMITS, FFA_DEFAULTS, infectionPatientZeroCount, settings, bombAttackTeamForRound, resolveBombSites, createBombRound, beginUse, cancelUse, dropBomb, pickupBomb, advance, bombWinner, createFFA, recordFFAElimination, ffaTimedWinner };
 });

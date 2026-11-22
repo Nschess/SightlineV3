@@ -259,7 +259,7 @@ const BOTCFG = { mode: 'add', balance: false, t0: Math.round(opt('bots', 0, 0, 3
 const G = { phase: 'lobby', mode: 'versus', auto: true, map: LOBBY_DEFAULTS.map, rounds: LOBBY_DEFAULTS.rounds, time: LOBBY_DEFAULTS.time, kills: Deathmatch.SCORE_LIMIT, round: 0, score: [0, 0], phaseEnd: 0, liveStart: 0, lastWin: -1 };
 const DM = { respawns: new Map() };
 const FFA = { match: null, respawns: new Map() };
-const BOMB = { settings: ModeRules.settings(), sites: null, state: null, supportMap: '', unsupportedReason: '' };
+const BOMB = { settings: ModeRules.settings(), sites: null, state: null, supportMap: '', unsupportedReason: '', openingTeam: 0, nextOpeningTeam: 0 };
 const isDeathmatch = () => G.mode === 'deathmatch';
 const isFFA = () => G.mode === 'ffa';
 const isBomb = () => G.mode === 'bomb';
@@ -579,7 +579,11 @@ function spawnPoint(m, team, taken) {
 /* ---------------- rounds ---------------- */
 function phaseMsg(extra) { return Object.assign({ t: 'ph', ph: G.phase, round: G.round, ms: Math.max(0, G.phaseEnd - now()), score: G.score, rounds: G.rounds, time: G.time, kills: G.kills,
   attackTeam: isBomb() ? (BOMB.state ? BOMB.state.attackTeam : bombAttackTeamForRound(G.round || 1)) : undefined, objective: isBomb() ? bombStateMessage() : undefined }, extra || {}); }
-function bombAttackTeamForRound(round) { return round > Math.floor(BOMB.settings.bestOf / 2) ? 1 : 0; }
+function beginBombMatch() {
+  BOMB.openingTeam = BOMB.nextOpeningTeam === 1 ? 1 : 0;
+  BOMB.nextOpeningTeam = 1 - BOMB.openingTeam;
+}
+function bombAttackTeamForRound(round) { return ModeRules.bombAttackTeamForRound(round, BOMB.settings.bestOf, BOMB.openingTeam); }
 function bombStateMessage() {
   const s = BOMB.state;
   if (!s) return { phase: 'idle', settings: BOMB.settings, sites: BOMB.sites, unsupportedReason: BOMB.unsupportedReason };
@@ -734,6 +738,7 @@ function startMatch() {
   if(isBomb()){
     BOMB.settings=ModeRules.settings(BOMB.settings);G.rounds=Math.ceil(BOMB.settings.bestOf/2);G.time=BOMB.settings.roundSeconds;
     if(!prepareBombSites()){G.phase='lobby';pushLobby();return false;}
+    beginBombMatch();
   }
   syncBots(true);
   if (groupMode()) { let i = 0, counts=[0,0]; players.forEach(p => { if (p.bot && Number.isInteger(p.homeTeam)) p.team=p.homeTeam; else p.team=counts[0]<=counts[1]?0:1; counts[p.team]++; p.infected=false; p.op = (i++) % 17; }); obReset(); pushLobby(); }

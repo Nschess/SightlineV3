@@ -12,8 +12,8 @@ b0b596450f6a4d62b51b429b55a2cd72e202d8d30423e06ea725b5e1ad4eb9ac  app/src/main/a
 e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/assets/phone-host/legendary-packs.js
 239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b  app/src/main/assets/phone-host/mp-transport-policy.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/phone-host/navigation.js
-e74f25512dc20ed16429e80964f15220e938236864b68e8e65a55447217bc917  app/src/main/assets/phone-host/server.js
-32a3ed30855dee11d5b18b2a75358b5e2559042f60e9d02ac9bf3e482d8f2fb3  app/src/main/assets/phone-host/SHA256SUMS
+7bb23fc7f180dc4ca05623107307079947bc6a8381230d577a93e51224163b8a  app/src/main/assets/phone-host/server.js
+5a31ccc3f0304506adf6abcfa516e10108f186a54abe0e815b328a2eb4ad1f01  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js
@@ -23,7 +23,7 @@ d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/a
 e49ec0b3d6d8d87e14626c833686996793232bb82bc3d42c00341bcee5b4894a  app/src/main/assets/www/combat-foundation.js
 ed41f5b08dfc61f9be0c01372696c05da40e06304c9843de411fbbf89d5a2272  app/src/main/assets/www/deathmatch-rules.js
 f5e5d661460496cf53ffde57b953f9d6c526f8171df7be5d8ce194c97c5573fc  app/src/main/assets/www/engagement-prototypes.js
-6819c2b72a47b2fc7bbe969ae61db55ecf7284bb37c8d025ae6fa5964f58d381  app/src/main/assets/www/index.html
+ca3d1da7be36da8b34d7898c1523a41f287cd3a50fee5fffd6bfcf7d006ce7c4  app/src/main/assets/www/index.html
 73ac4f84ec90849badd9d7c7998d4f872c0974db9d2b9aa054f5769020552cec  app/src/main/assets/www/infection-evasion.js
 e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/assets/www/legendary-packs.js
 239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b  app/src/main/assets/www/mp-transport-policy.js
