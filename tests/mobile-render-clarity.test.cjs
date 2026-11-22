@@ -177,6 +177,63 @@ test('mobile map obstacles reuse materials for shared textures and dispose them 
   assert.equal(cleanupContext.mobileMapTextures.size, 0, 'per-map texture variants are released on transition');
 });
 
+test('static palm decorations batch by color without entering collision and clean up on map rebuild', () => {
+  const helperStart = pages[0].indexOf('function addPalmTreeBatches(trees, add)');
+  assert.ok(helperStart >= 0, 'repeated static palm geometry is consolidated into color batches');
+  const helper = section(pages[0], 'function addPalmTreeBatches(trees, add)', 'function buildDeco(m)');
+  assert.equal(helper, section(pages[1], 'function addPalmTreeBatches(trees, add)', 'function buildDeco(m)'));
+  const deco = section(pages[0], 'function buildDeco(m)', 'function mobileTilesBoxFaces(');
+  assert.match(deco, /if\s*\(m\.palmTrees\)\s*addPalmTreeBatches\(m\.trees\s*\|\|\s*\[\],\s*add\)/);
+
+  const THREE = require(path.join(assets, 'www/three.min.js'));
+  const context = vm.createContext({ THREE });
+  vm.runInContext(helper, context);
+  const trees = [[-29,-27],[29,-27],[-31,4],[31,4],[-21,33],[21,33],[-18,-32],[18,-32],[-11,22],[11,27],[-26,-11],[26,-11]];
+  const scene = new THREE.Scene(), worldObjs = [], obstacleMeshes = [{ gameplayCollider: true }], added = [];
+  function add(object, castsShadow) { object.castShadow = castsShadow !== false; scene.add(object); worldObjs.push(object); added.push(object); return object; }
+  context.addPalmTreeBatches(trees, add);
+  assert.equal(added.length, 1, 'the Park map 12-tree fixture becomes one static scene object');
+  assert.equal(added[0].geometry.groups.length, 2, 'the merged geometry keeps two material draw groups');
+  assert.deepEqual(added[0].geometry.groups.map(group => group.count), [756, 756]);
+  assert.equal(added[0].material[0].color.getHexString(), '56863d');
+  assert.equal(added[0].material[1].color.getHexString(), '39774c');
+  assert.ok(added[0].castShadow && !added[0].receiveShadow);
+  assert.ok(added[0].geometry.boundingSphere);
+  const bounds = added[0].geometry.boundingSphere, vertex = new THREE.Vector3(), vertexData = added[0].geometry.getAttribute('position').array;
+  for (let i = 0; i < vertexData.length; i += 3) {
+    vertex.set(vertexData[i], vertexData[i + 1], vertexData[i + 2]);
+    assert.ok(bounds.containsPoint(vertex), 'aggregate bounds include every tree vertex for correct frustum culling');
+  }
+  assert.equal(worldObjs.length, 1);
+  assert.equal(obstacleMeshes.length, 1, 'decorative batching leaves collision and raycast lists independent');
+
+  const positions = added[0].geometry.getAttribute('position').array;
+  const secondEvenTreeVertex = 126 + 6;
+  const tree = trees[2], angle = 2 * 0.37, width = 0.32 * (1 - 1 / 3);
+  const expectedX = tree[0] + Math.cos(angle) * 0.9 - Math.sin(angle) * width;
+  const expectedZ = tree[1] + Math.sin(angle) * 0.9 + Math.cos(angle) * width;
+  assert.ok(Math.abs(positions[secondEvenTreeVertex * 3] - expectedX) < 1e-5, 'batched palm vertices retain the original per-tree rotation');
+  assert.ok(Math.abs(positions[secondEvenTreeVertex * 3 + 2] - expectedZ) < 1e-5);
+
+  let geometryDisposals = 0, materialDisposals = 0;
+  const oldGeometry = added[0].geometry, oldMaterials = added[0].material;
+  oldGeometry.addEventListener('dispose', () => geometryDisposals++);
+  oldMaterials.forEach(material => material.addEventListener('dispose', () => materialDisposals++));
+  const cleanup = section(pages[0], 'function clearWorld()', 'function paintTex(');
+  const cleanupContext = vm.createContext({ scene, worldObjs, obstacleMeshes, mobileMapTextures: new Map() });
+  vm.runInContext(cleanup, cleanupContext); cleanupContext.clearWorld();
+  assert.equal(geometryDisposals, 1, 'shared palm geometry is disposed once during a map transition');
+  assert.equal(materialDisposals, 2, 'each color material is disposed once');
+  assert.equal(scene.children.length, 0);
+  assert.equal(cleanupContext.worldObjs.length, 0);
+
+  const rebuilt = [];
+  context.addPalmTreeBatches(trees, object => { scene.add(object); rebuilt.push(object); return object; });
+  assert.equal(rebuilt.length, 1, 'the next map rebuild recreates one static palm object');
+  assert.notStrictEqual(rebuilt[0].geometry, oldGeometry, 'a rebuilt map does not reuse disposed geometry');
+  assert.equal(scene.children.length, 1);
+});
+
 test('Generated canvas surfaces follow the active mobile anisotropy tier', () => {
   const filtering = section(pages[0], 'var mobileTextureLimit', 'if (!touchMode) renderer.setPixelRatio');
   const factory = section(pages[0], 'function ctex(w, h, draw, rx, ry)', 'function speckle(');

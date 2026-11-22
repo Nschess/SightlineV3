@@ -4329,6 +4329,37 @@ function textTex(txt, bg, fg) {
   g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 256, 66);
   var t = colorTexture(new THREE.CanvasTexture(c)); t.anisotropy = 4; return mobileSurfaceTexture(t);
 }
+function addPalmTreeBatches(trees, add) {
+  if (!trees || !trees.length) return;
+  var verticesByColor = [[], []], colors = ['#56863d', '#39774c'];
+  trees.forEach(function (t, index) {
+    var vertices = verticesByColor[index % 2];
+    for (var f = 0; f < 7; f++) {
+      var ang = f * Math.PI * 2 / 7 + index * .37, ux = Math.cos(ang), uz = Math.sin(ang), vx = -uz, vz = ux;
+      for (var k = 0; k < 3; k++) {
+        var r0 = k * .9, r1 = (k + 1) * .9, y0 = 3.5 + Math.sin(k / 3 * Math.PI) * .7 - k * .2,
+            y1 = 3.5 + Math.sin((k + 1) / 3 * Math.PI) * .7 - (k + 1) * .2,
+            w0 = .32 * (1 - k / 3), w1 = .32 * (1 - (k + 1) / 3);
+        var A = [t[0] + ux * r0 + vx * w0, y0, t[1] + uz * r0 + vz * w0],
+            B = [t[0] + ux * r0 - vx * w0, y0, t[1] + uz * r0 - vz * w0],
+            C = [t[0] + ux * r1 + vx * w1, y1, t[1] + uz * r1 + vz * w1],
+            D = [t[0] + ux * r1 - vx * w1, y1, t[1] + uz * r1 - vz * w1];
+        [A, B, C, B, D, C].forEach(function (p) { vertices.push(p[0], p[1], p[2]); });
+      }
+    }
+  });
+  var geometry = new THREE.BufferGeometry(), positions = [], materials = [];
+  verticesByColor.forEach(function (vertices, colorIndex) {
+    if (!vertices.length) return;
+    var start = positions.length / 3;
+    for (var i = 0; i < vertices.length; i++) positions.push(vertices[i]);
+    geometry.addGroup(start, vertices.length / 3, colorIndex);
+    materials[colorIndex] = new THREE.MeshLambertMaterial({ color: new THREE.Color(colors[colorIndex]), side: THREE.DoubleSide });
+  });
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.computeVertexNormals(); geometry.computeBoundingSphere();
+  add(new THREE.Mesh(geometry, materials));
+}
 function buildDeco(m) {
   var M = {};
   function lam(c) { return M[c] || (M[c] = new THREE.MeshLambertMaterial({ color: c })); }
@@ -4347,18 +4378,8 @@ function buildDeco(m) {
     box(0.08, 1.0, 1.7, '#ececec', h[0] + h[2] * 0.4, 3.1, h[1], false);
     var rim = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.035, 6, 14), lam('#e2631a')); rim.rotation.x = Math.PI / 2; rim.position.set(h[0] + h[2] * 0.75, 2.95, h[1]); add(rim, false);
   });
-  (m.trees || []).forEach(function (t, i) {
-    if(m.palmTrees) {
-      var pos=[],green=new THREE.Color(i%2?'#39774c':'#56863d');
-      for(var f=0;f<7;f++){var ang=f*Math.PI*2/7+i*.37,ux=Math.cos(ang),uz=Math.sin(ang),vx=-uz,vz=ux;
-        for(var k=0;k<3;k++){var r0=k*.9,r1=(k+1)*.9,y0=3.5+Math.sin(k/3*Math.PI)*.7-k*.2,y1=3.5+Math.sin((k+1)/3*Math.PI)*.7-(k+1)*.2,w0=.32*(1-k/3),w1=.32*(1-(k+1)/3);
-          var A=[t[0]+ux*r0+vx*w0,y0,t[1]+uz*r0+vz*w0],B=[t[0]+ux*r0-vx*w0,y0,t[1]+uz*r0-vz*w0],C=[t[0]+ux*r1+vx*w1,y1,t[1]+uz*r1+vz*w1],D=[t[0]+ux*r1-vx*w1,y1,t[1]+uz*r1-vz*w1];
-          [A,B,C,B,D,C].forEach(function(p){pos.push(p[0],p[1],p[2]);});
-        }
-      }
-      var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.computeVertexNormals();
-      var palm=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:green,side:THREE.DoubleSide}));add(palm);return;
-    }
+  if (m.palmTrees) addPalmTreeBatches(m.trees || [], add);
+  else (m.trees || []).forEach(function (t, i) {
     var a = new THREE.Mesh(new THREE.IcosahedronGeometry(1.9, 0), lam(i % 3 ? '#3f7d34' : '#4c9040')); a.position.set(t[0], 4.5, t[1]); add(a);
     var b = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, 0), lam('#5aa046')); b.position.set(t[0] + 0.8, 5.4, t[1] + 0.3); add(b);
   });
