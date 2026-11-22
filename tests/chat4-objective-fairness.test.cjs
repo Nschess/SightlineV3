@@ -61,6 +61,43 @@ function approachSectors(nav, site) {
   return sectors.size;
 }
 
+function rectDistance(x, z, box) {
+  const dx = Math.max(box[0] - x, 0, x - box[1]);
+  const dz = Math.max(box[2] - z, 0, z - box[3]);
+  return Math.hypot(dx, dz);
+}
+
+function clearPlantRing(nav, map, site, radius = 1.8) {
+  let clear = 0;
+  for (let i = 0; i < 32; i++) {
+    const angle = Math.PI * 2 * i / 32;
+    const x = site.x + Math.cos(angle) * radius, z = site.z + Math.sin(angle) * radius;
+    if (x > map.area.x0 + 0.5 && x < map.area.x1 - 0.5 && z > map.area.z0 + 0.5 && z < map.area.z1 - 0.5 && !Nav.blocked(nav.boxes, x, 0, z)) clear++;
+  }
+  return clear;
+}
+
+function plantZoneOverlaps(map, site) {
+  return map.boxes.filter(box => box[4] > 0.35 && (box[5] || 0) < 1.85 && rectDistance(site.x, site.z, box) <= 2.42);
+}
+
+function standingCoverWithin(map, site, radius) {
+  return map.boxes.filter(box => box[4] >= 1.8 && rectDistance(site.x, site.z, box) <= radius).length;
+}
+
+function combinedRouteImbalance(nav, map, sites) {
+  const samples = spawnSamples(map), means = {};
+  for (const side of ['team0', 'team1']) {
+    const paths = samples[side].flatMap(spawn => [sites.A, sites.B].map(site => routeLength(nav, spawn, site)));
+    means[side] = paths.reduce((sum, distance) => sum + distance, 0) / paths.length;
+  }
+  return Math.abs(means.team0 - means.team1) / ((means.team0 + means.team1) / 2);
+}
+
+function openSpawnSight(map, samples, site) {
+  return Object.fromEntries(['team0', 'team1'].map(side => [side, samples[side].filter(spawn => !map.boxes.some(box => segmentHitsBox(spawn, site, box, 1.5))).length]));
+}
+
 test('Ridgefall Bomb A avoids the spawn sightline while retaining multi-route, balanced access', () => {
   const previousMap = Host.G.map;
   try {
@@ -87,6 +124,54 @@ test('Ridgefall Bomb A avoids the spawn sightline while retaining multi-route, b
     }
     const imbalance = Math.abs(means.team0 - means.team1) / ((means.team0 + means.team1) / 2);
     assert.ok(imbalance <= 0.05, `combined A/B route-length imbalance remains <=5% (actual ${(imbalance * 100).toFixed(1)}%)`);
+  } finally {
+    Host.G.map = previousMap;
+  }
+});
+
+test('Floodline B uses existing factory cover and keeps its full plant ring clear', () => {
+  const previousMap = Host.G.map;
+  try {
+    Host.G.map = 'floodline_district';
+    const map = Host._t.mapData(), nav = Host._t.buildNav(map);
+    const sites = Rules.resolveBombSites(nav, map.area, map.bombSites), samples = spawnSamples(map);
+    assert.ok(sites, 'Floodline A/B resolve');
+    assert.ok(Math.hypot(sites.B.x - map.bombSites.B.x, sites.B.z - map.bombSites.B.z) <= 1.5, 'B stays beside its authored marker');
+    assert.equal(plantZoneOverlaps(map, sites.B).length, 0, 'the 2 m Bomb use area does not overlap collision geometry');
+    assert.equal(clearPlantRing(nav, map, sites.B), 32, 'all 32 sampled bot-plant positions at 1.8 m are collision-clear');
+    assert.ok(standingCoverWithin(map, sites.B, 5) >= 1, 'existing standing-height factory cover is within 5 m');
+    assert.ok(approachSectors(nav, sites.B) >= 5, 'B retains at least five collision-clear approach sectors');
+
+    for (const side of ['team0', 'team1']) for (const site of [sites.A, sites.B]) {
+      for (const spawn of samples[side]) routeLength(nav, spawn, site);
+    }
+    const exposure = openSpawnSight(map, samples, sites.B);
+    assert.ok(exposure.team0 <= 2 && exposure.team1 <= 2, 'the move keeps direct spawn-to-site sightlines limited to two samples per side');
+    assert.ok(combinedRouteImbalance(nav, map, sites) <= 0.08, 'combined A/B route imbalance remains within 8%');
+  } finally {
+    Host.G.map = previousMap;
+  }
+});
+
+test('Ridgefall B gains checkpoint-wall cover without blocking plant or route access', () => {
+  const previousMap = Host.G.map;
+  try {
+    Host.G.map = 'ridgefall_outpost';
+    const map = Host._t.mapData(), nav = Host._t.buildNav(map);
+    const sites = Rules.resolveBombSites(nav, map.area, map.bombSites), samples = spawnSamples(map);
+    assert.ok(sites, 'Ridgefall A/B resolve');
+    assert.ok(Math.hypot(sites.B.x - map.bombSites.B.x, sites.B.z - map.bombSites.B.z) <= 1.5, 'B stays beside its authored marker');
+    assert.equal(plantZoneOverlaps(map, sites.B).length, 0, 'the 2 m Bomb use area does not overlap collision geometry');
+    assert.equal(clearPlantRing(nav, map, sites.B), 32, 'all 32 sampled bot-plant positions at 1.8 m are collision-clear');
+    assert.ok(standingCoverWithin(map, sites.B, 5) >= 1, 'the existing checkpoint wall is within 5 m');
+    assert.ok(approachSectors(nav, sites.B) >= 5, 'B retains at least five collision-clear approach sectors');
+
+    for (const side of ['team0', 'team1']) for (const site of [sites.A, sites.B]) {
+      for (const spawn of samples[side]) routeLength(nav, spawn, site);
+    }
+    const exposure = openSpawnSight(map, samples, sites.B);
+    assert.ok(exposure.team0 <= 1 && exposure.team1 <= 2, 'the move keeps direct spawn-to-site sightlines limited to one Team 0 and two Team 1 samples');
+    assert.ok(combinedRouteImbalance(nav, map, sites) <= 0.05, 'combined A/B route imbalance remains within 5%');
   } finally {
     Host.G.map = previousMap;
   }
