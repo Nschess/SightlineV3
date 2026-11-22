@@ -455,6 +455,66 @@ test('Grenade detonation and decoy expiry dispose nested GPU resources', () => {
   assert.equal(removed, 2);
 });
 
+test('inactive lobby preview leaves the render tree and reattaches across map changes and rounds', () => {
+  const preview = section(pages[0], 'function lobbyPreviewUpdate(active)', 'function updateLobbyPreviewForFrame(active)');
+  assert.equal(preview, section(pages[1], 'function lobbyPreviewUpdate(active)', 'function updateLobbyPreviewForFrame(active)'));
+  const helperStart = pages[0].indexOf('function detachLobbyPreview()');
+  const helper = helperStart >= 0 ? section(pages[0], 'function detachLobbyPreview()', 'function lobbyPreviewUpdate(active)') : '';
+  if (helperStart >= 0) assert.equal(helper, section(pages[1], 'function detachLobbyPreview()', 'function lobbyPreviewUpdate(active)'));
+  const THREE = require(path.join(assets, 'www/three.min.js'));
+  const scene = new THREE.Scene(), mapObject = new THREE.Group(), previewRoot = new THREE.Group();
+  scene.add(mapObject, previewRoot);
+  for (let i = 0; i < 32; i++) previewRoot.add(new THREE.Group());
+  let childMatrixUpdates = 0;
+  previewRoot.traverse(node => {
+    if (node === previewRoot) return;
+    const update = node.updateMatrixWorld;
+    node.updateMatrixWorld = function () { childMatrixUpdates++; return update.apply(this, arguments); };
+  });
+  previewRoot.visible = false;
+  scene.updateMatrixWorld(true);
+  assert.equal(childMatrixUpdates, 32, 'Three.js traverses descendants while the hidden preview root remains attached');
+
+  let created = 0;
+  const context = vm.createContext({
+    LOBBY_PREVIEW: { g: previewRoot, baseY: 0.08, baseYaw: Math.PI },
+    LOBBY_PREVIEW_KEY: 'operator|map-one|carbine', scene,
+    menuOpen: () => false, menuTab: '', setTab: '', finishWeapon: 'carbine', pendingOpId: null,
+    ME: { id: 'operator' }, CURMAP: { id: 'map-one' }, MAPD: { spawn: { x: 0, z: 0 } },
+    opById: () => null, ensureWorldWeapon() {}, makeUnit() { created++; const g = new THREE.Group(); scene.add(g); return { g }; },
+    THREE, window: { matchMedia: () => ({ matches: true }) }, matchMedia: () => ({ matches: true }),
+    performance: { now: () => 1000 }
+  });
+  vm.runInContext(helper + preview, context);
+  context.lobbyPreviewUpdate(false);
+  assert.equal(context.LOBBY_PREVIEW.g, previewRoot, 'deactivation retains the cached preview object');
+  assert.equal(previewRoot.visible, false);
+  assert.equal(previewRoot.parent, null, 'inactive preview is removed from the per-frame scene traversal');
+  assert.equal(mapObject.parent, scene, 'map objects remain attached');
+  childMatrixUpdates = 0;
+  scene.updateMatrixWorld(true);
+  assert.equal(childMatrixUpdates, 0, 'detached preview descendants receive no matrix updates');
+
+  const effect = new THREE.Group(); scene.add(effect);
+  context.CURMAP.id = 'map-two';
+  context.lobbyPreviewUpdate(true);
+  const rebuiltRoot = context.LOBBY_PREVIEW.g;
+  assert.notEqual(rebuiltRoot, previewRoot, 'map changes rebuild the preview model');
+  assert.equal(previewRoot.parent, null);
+  assert.equal(rebuiltRoot.parent, scene);
+  assert.equal(rebuiltRoot.visible, true);
+  assert.equal(effect.parent, scene, 'effect objects are unaffected by preview detachment');
+  assert.equal(created, 1);
+
+  context.lobbyPreviewUpdate(false);
+  scene.remove(effect); // simulate normal effect expiry during a later round
+  context.lobbyPreviewUpdate(true);
+  assert.equal(context.LOBBY_PREVIEW.g, rebuiltRoot, 'round transitions reuse the cached map preview');
+  assert.equal(rebuiltRoot.parent, scene);
+  assert.equal(rebuiltRoot.visible, true);
+  assert.equal(created, 1);
+});
+
 test('map masonry uses each box face dimensions without changing positions or indices', () => {
   const THREE = require(path.join(assets,'www/three.min.js'));
   const policy = section(pages[0],'function mobileTilesBoxFaces','function buildWorld(');
