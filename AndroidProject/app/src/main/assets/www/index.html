@@ -4261,6 +4261,11 @@ function mkTex(spec) {
 var sky = new THREE.Mesh(new THREE.SphereGeometry(150, 16, 12), new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, depthWrite: false }));
 scene.add(sky);
 var worldObjs = [], obstacleMeshes = [];
+function mapObstacleMaterial(map, cache) {
+  var material = cache.get(map);
+  if (!material) { material = new THREE.MeshLambertMaterial({ map: map }); cache.set(map, material); }
+  return material;
+}
 function freezeStaticWorldMatrices() {
   // Three.js r128 propagates forced matrix work from an auto-updated Scene.
   // The scene origin and map roots never move; cache their local transforms
@@ -4450,13 +4455,14 @@ function buildWorld(m) {
       scene.add(mesh);obstacleMeshes.push(mesh);worldObjs.push(mesh);
     });
   }else{
+    var obstacleMaterialCache = new Map();
     OBST.forEach(function(o){
       var spec=texFor(m,o.k),bottom=o.bottom||0;
       var rx=Math.max(1,Math.round(Math.max(o.w,o.d)/3)),ry=Math.max(1,Math.round(o.h/3));
       var geometry=new THREE.BoxGeometry(o.w,o.h-bottom,o.d), tiled=mobileTilesBoxFaces(spec);
       if (tiled) tileMapBoxFaces(geometry,o.w,o.h-bottom,o.d);
       var map=ctexTint(mkTex(spec),tiled?1:rx,tiled?1:ry,tiled);
-      var mesh=new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({map:map}));
+      var mesh=new THREE.Mesh(geometry,mapObstacleMaterial(map,obstacleMaterialCache));
       mesh.position.set(o.x,(o.h+bottom)/2,o.z);mesh.castShadow=o.vis!==false;mesh.receiveShadow=true;
       if(o.vis===false)mesh.visible=false;
       scene.add(mesh);obstacleMeshes.push(mesh);worldObjs.push(mesh);

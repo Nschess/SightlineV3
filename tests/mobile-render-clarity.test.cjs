@@ -136,6 +136,47 @@ test('Mobile texture variants are shared, cap filtering at device support and le
   assert.equal(desktopTexture.anisotropy,4);
 });
 
+test('mobile map obstacles reuse materials for shared textures and dispose them once on rebuild', () => {
+  const materialStart = pages[0].indexOf('function mapObstacleMaterial(map, cache)');
+  const materialFactory = materialStart >= 0 ? section(pages[0], 'function mapObstacleMaterial(map, cache)', 'function paintZone(') : '';
+  if (materialStart >= 0) assert.equal(materialFactory, section(pages[1], 'function mapObstacleMaterial(map, cache)', 'function paintZone('));
+  const worldBuilder = section(pages[0], 'function buildWorld(m)', 'buildWorld(CURMAP);');
+  const THREE = require(path.join(assets, 'www/three.min.js'));
+  const context = vm.createContext({ THREE });
+  const materialFor = materialFactory
+    ? (vm.runInContext(materialFactory, context), context.mapObstacleMaterial)
+    : (map => new THREE.MeshLambertMaterial({ map }));
+  const sharedTexture = new THREE.Texture(), otherTexture = new THREE.Texture(), cache = new Map();
+  const first = materialFor(sharedTexture, cache), repeated = materialFor(sharedTexture, cache);
+  assert.strictEqual(first, repeated, 'same mobile texture variant must not allocate duplicate map materials');
+  const other = materialFor(otherTexture, cache);
+  assert.notStrictEqual(first, other, 'different textures must keep independent material state');
+  assert.equal(cache.size, 2);
+  assert.ok(worldBuilder.includes('var obstacleMaterialCache = new Map();'), 'map material cache is scoped to one map build');
+  assert.match(worldBuilder, /mapObstacleMaterial\(map,\s*obstacleMaterialCache\)/, 'non-CDO obstacle meshes use the shared material factory');
+  const nextMapMaterial = materialFor(sharedTexture, new Map());
+  assert.notStrictEqual(first, nextMapMaterial, 'a later map build gets fresh material ownership');
+
+  const scene = new THREE.Scene(), geometryA = new THREE.BoxGeometry(1, 1, 1), geometryB = new THREE.BoxGeometry(2, 1, 2);
+  const meshA = new THREE.Mesh(geometryA, first), meshB = new THREE.Mesh(geometryB, first);
+  scene.add(meshA, meshB);
+  let materialDisposals = 0, textureDisposals = 0, geometryDisposals = 0;
+  first.addEventListener('dispose', () => materialDisposals++);
+  sharedTexture.addEventListener('dispose', () => textureDisposals++);
+  geometryA.addEventListener('dispose', () => geometryDisposals++);
+  geometryB.addEventListener('dispose', () => geometryDisposals++);
+  const cleanup = section(pages[0], 'function clearWorld()', 'function paintTex(');
+  assert.equal(cleanup, section(pages[1], 'function clearWorld()', 'function paintTex('));
+  const cleanupContext = vm.createContext({ scene, worldObjs: [meshA, meshB], obstacleMeshes: [meshA, meshB], mobileMapTextures: new Map() });
+  vm.runInContext(cleanup, cleanupContext);
+  cleanupContext.clearWorld();
+  assert.equal(materialDisposals, 1, 'shared material is disposed once when the previous map is cleared');
+  assert.equal(textureDisposals, 1, 'shared texture is disposed once');
+  assert.equal(geometryDisposals, 2, 'each per-mesh geometry retains independent ownership');
+  assert.equal(scene.children.length, 0, 'map rebuild removes the old map meshes');
+  assert.equal(cleanupContext.mobileMapTextures.size, 0, 'per-map texture variants are released on transition');
+});
+
 test('Generated canvas surfaces follow the active mobile anisotropy tier', () => {
   const filtering = section(pages[0], 'var mobileTextureLimit', 'if (!touchMode) renderer.setPixelRatio');
   const factory = section(pages[0], 'function ctex(w, h, draw, rx, ry)', 'function speckle(');
