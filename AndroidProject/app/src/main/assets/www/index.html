@@ -4795,7 +4795,7 @@ var touchCrouch = false, touchRun = false, touchActionLook = null;
 var P = { x: 0, z: 36, y: 0, vy: 0, vx: 0, vz: 0, yaw: 0, pitch: 0, hp: 100, armor: 0, onGround: true, alive: true, punch: 0, bob: 0, crouch: 0, prone: 0 };
 var M = null; /* match */
 var SOLO_FFA = { match: null, respawns: new Map(), playerShieldUntil: 0, playerLife: 0 };
-var SOLO_BOMB = { sites: null, state: null, settings: null, supportMap: null, playerTeam: 0, openingTeam: 0, nextOpeningTeam: 0 };
+var SOLO_BOMB = { sites: null, state: null, settings: null, supportMap: null, playerTeam: 0, openingTeam: 0, nextOpeningTeam: 0, matchStartConfirmed: false };
 var owned = { pistol: true, knife: true }, cur = 'pistol', ammo = {}, reloading = 0, nextFire = 0, bloom = 0, speedFrac = 0;
 var bots = [], hitMeshes = [], targets = [], effects = [];
 var roundT = 0, endT = 0, endWon = false, pendingPause = null;
@@ -8771,7 +8771,13 @@ function soloBombPrepareSites() {
 }
 function beginSoloBombMatch() {
   SOLO_BOMB.openingTeam = SOLO_BOMB.nextOpeningTeam === 1 ? 1 : 0;
+  SOLO_BOMB.matchStartConfirmed = false;
+}
+function confirmSoloBombMatchStart() {
+  if (SOLO_BOMB.matchStartConfirmed || !SOLO_BOMB.state || SOLO_BOMB.state.round !== 1) return false;
   SOLO_BOMB.nextOpeningTeam = 1 - SOLO_BOMB.openingTeam;
+  SOLO_BOMB.matchStartConfirmed = true;
+  return true;
 }
 function bombAttackTeamForSoloRound(round) { return SightlineModeRules.bombAttackTeamForRound(round,R.bombBestOf,SOLO_BOMB.openingTeam); }
 function startSoloBombRound() {
@@ -11646,6 +11652,7 @@ function beginRound() {
   roundT = CFG.roundTime; state = 'live'; T = T || 0;
   if(ffaMode)startSoloFFA();
   if(bombMode&&!startSoloBombRound()){state='buy';showMsg('Bomb Defusal unavailable','Could not create the validated objective sites for this map.',2800);return;}
+  if(bombMode&&M.round===1)confirmSoloBombMatchStart();
   hideOverlays(); el.hud.hidden = false; $('#touch').hidden = !touchMode;
   if (touchMode) enterTouchSession();
   Object.keys(guns).forEach(function (k) { guns[k].visible = (k === cur); });

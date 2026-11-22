@@ -50,10 +50,13 @@ test('Offline menu exposes all five modes and routes FFA/Bomb through the real s
   assert.match(html, /bombAttackTeamForSoloRound\(M\.round\)===0\?'Attack · carry the bomb to A\/B, plant and defend it\.'\:'Defend · stop the plant, eliminate attackers or defuse\.'/,
     'The current round HUD gives the player an attacker or defender objective prompt.');
   assert.match(html, /var MPKEY = '[^']+', TEAMKEY = \['blue', 'red'\]/, 'network team 0 is Blue and team 1 is Red');
-  assert.match(html, /function beginSoloBombMatch\(\) \{[\s\S]*SOLO_BOMB\.openingTeam = SOLO_BOMB\.nextOpeningTeam === 1 \? 1 : 0;[\s\S]*SOLO_BOMB\.nextOpeningTeam = 1 - SOLO_BOMB\.openingTeam;/);
+  assert.match(html, /function beginSoloBombMatch\(\) \{[\s\S]*SOLO_BOMB\.openingTeam = SOLO_BOMB\.nextOpeningTeam === 1 \? 1 : 0;[\s\S]*SOLO_BOMB\.matchStartConfirmed = false;/);
+  assert.match(html, /function confirmSoloBombMatchStart\(\) \{[\s\S]*SOLO_BOMB\.state\.round !== 1[\s\S]*SOLO_BOMB\.nextOpeningTeam = 1 - SOLO_BOMB\.openingTeam;/);
   assert.match(html, /function bombAttackTeamForSoloRound\(round\) \{ return SightlineModeRules\.bombAttackTeamForRound\(round,R\.bombBestOf,SOLO_BOMB\.openingTeam\); \}/);
   assert.match(html, /if\(R\.mode==='bomb'\)beginSoloBombMatch\(\);/,
-    'each validated Offline Bomb match consumes the next session opening side');
+    'site validation selects an opener without consuming the next session side');
+  assert.match(html, /if\(bombMode&&M\.round===1\)confirmSoloBombMatchStart\(\);/,
+    'only a successful first Bomb round consumes the selected opener');
   assert.match(html, /22 arenas[\s\S]*5 solo modes/);
 });
 

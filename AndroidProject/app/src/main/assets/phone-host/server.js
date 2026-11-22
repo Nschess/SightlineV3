@@ -259,7 +259,7 @@ const BOTCFG = { mode: 'add', balance: false, t0: Math.round(opt('bots', 0, 0, 3
 const G = { phase: 'lobby', mode: 'versus', auto: true, map: LOBBY_DEFAULTS.map, rounds: LOBBY_DEFAULTS.rounds, time: LOBBY_DEFAULTS.time, kills: Deathmatch.SCORE_LIMIT, round: 0, score: [0, 0], phaseEnd: 0, liveStart: 0, lastWin: -1 };
 const DM = { respawns: new Map() };
 const FFA = { match: null, respawns: new Map() };
-const BOMB = { settings: ModeRules.settings(), sites: null, state: null, supportMap: '', unsupportedReason: '', openingTeam: 0, nextOpeningTeam: 0 };
+const BOMB = { settings: ModeRules.settings(), sites: null, state: null, supportMap: '', unsupportedReason: '', openingTeam: 0, nextOpeningTeam: 0, matchStartConfirmed: false };
 const isDeathmatch = () => G.mode === 'deathmatch';
 const isFFA = () => G.mode === 'ffa';
 const isBomb = () => G.mode === 'bomb';
@@ -581,7 +581,13 @@ function phaseMsg(extra) { return Object.assign({ t: 'ph', ph: G.phase, round: G
   attackTeam: isBomb() ? (BOMB.state ? BOMB.state.attackTeam : bombAttackTeamForRound(G.round || 1)) : undefined, objective: isBomb() ? bombStateMessage() : undefined }, extra || {}); }
 function beginBombMatch() {
   BOMB.openingTeam = BOMB.nextOpeningTeam === 1 ? 1 : 0;
+  BOMB.matchStartConfirmed = false;
+}
+function confirmBombMatchStart() {
+  if (BOMB.matchStartConfirmed || !BOMB.state || BOMB.state.round !== 1) return false;
   BOMB.nextOpeningTeam = 1 - BOMB.openingTeam;
+  BOMB.matchStartConfirmed = true;
+  return true;
 }
 function bombAttackTeamForRound(round) { return ModeRules.bombAttackTeamForRound(round, BOMB.settings.bestOf, BOMB.openingTeam); }
 function bombStateMessage() {
@@ -689,7 +695,7 @@ function startRound() {
   bcast(phaseMsg()); bcast(scoreMsg()); log('round', G.round, 'buy phase');
 }
 function goLive() {
-  G.phase = 'live'; G.liveStart = now(); G.phaseEnd = now() + (isCoop() ? 3600 : isBomb() ? BOMB.settings.roundSeconds : G.time) * 1000; bcast(phaseMsg());
+  G.phase = 'live'; if (isBomb() && G.round === 1) confirmBombMatchStart(); G.liveStart = now(); G.phaseEnd = now() + (isCoop() ? 3600 : isBomb() ? BOMB.settings.roundSeconds : G.time) * 1000; bcast(phaseMsg());
   resetLiveTimingDiagnostics();
   if (isCoop()) { startWave(1); }
   if (isInfection()) {
