@@ -3753,7 +3753,7 @@ MAPS.push(
     id: 'ridgefall_outpost', name: 'Ridgefall Outpost', tag: 'Mountain · checkpoint approaches',
     area: { x0: -34, x1: 34, z0: -42, z1: 42 },
     desc: 'A remote mountain outpost surrounds a communications relay. Defensive walls and rocky berms break the long approach into checkpoint sectors, while west and east perimeter routes let attackers infiltrate from different angles.',
-    spawn: { x: 0, z: 38 }, botSpawn: { x0: -30, x1: 30, z0: -41, z1: -38 }, bombSites: { A: { x: -22, z: 17 }, B: { x: 22, z: -17 } }, view: { r: 50, h: 19 },
+    spawn: { x: 0, z: 38 }, botSpawn: { x0: -30, x1: 30, z0: -41, z1: -38 }, bombSites: { A: { x: -13, z: 11 }, B: { x: 22, z: -17 } }, view: { r: 50, h: 19 },
     sky: ['#708a76', '#b5c7b1', '#e1e4d2', '#adb79b'], fog: '#b7c2ae', fogN: 36, fogF: 122, hemi: [0xe8f0df, 0x56644c, 0.92], sun: [0xffedc0, 0.78, -18, 40, 16],
     tex: { wall: { t: 'plaster', c: '#879083' }, crate: { t: 'crate', c: '#806744' }, metal: { t: 'metal', c: '#5f7169' }, floor: { t: 'tile', c: '#687367' } },
     obst: [
@@ -3767,8 +3767,8 @@ MAPS.push(
       O(-17, -2, 4, 2, 1.1, 'crate'), O(17, -3, 4, 2, 1.1, 'crate'), O(-5, -34, 5, 2, 1.1, 'metal'), O(6, -34, 5, 2, 1.1, 'crate'),
       O(-18, 34, 4, 3, 1.8, 'metal'), O(18, 34, 4, 3, 1.8, 'metal')
     ],
-    zones: [{ x: -22, z: 17, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 22, z: -17, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 38, w: 18, d: 7, l: 'CT', c: '#2d6ea6' }],
-    callouts: [{ t: 'A RIDGE RELAY', x: -22, z: 17 }, { t: 'B COMMAND POST', x: 22, z: -17 }, { t: 'RELAY YARD', x: 0, z: 1 }, { t: 'WEST CHECKPOINT', x: -23, z: -13 }, { t: 'EAST RIDGE', x: 23, z: -13 }, { t: 'SPAWN', x: 0, z: 37 }],
+    zones: [{ x: -13, z: 11, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 22, z: -17, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 38, w: 18, d: 7, l: 'CT', c: '#2d6ea6' }],
+    callouts: [{ t: 'A RIDGE RELAY', x: -13, z: 11 }, { t: 'B COMMAND POST', x: 22, z: -17 }, { t: 'RELAY YARD', x: 0, z: 1 }, { t: 'WEST CHECKPOINT', x: -23, z: -13 }, { t: 'EAST RIDGE', x: 23, z: -13 }, { t: 'SPAWN', x: 0, z: 37 }],
     notes: [['A Ridge Relay', 'The west site is screened by low cover; use the checkpoint wall gaps to avoid the central lane.'], ['B Command Post', 'The command post is exposed from the center; the east ridge provides a longer, covered infiltration route.'], ['Relay yard', 'The relay structure breaks the center sightline; checkpoint walls leave cross-cuts open for rotations.'], ['Ridge approaches', 'Low rocky cover marks two infiltration approaches. Rotate between checkpoints instead of holding the exposed center.']]
   }
 );
