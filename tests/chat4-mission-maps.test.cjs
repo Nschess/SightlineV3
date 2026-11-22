@@ -38,6 +38,12 @@ test('three original maps have distinct layouts, mission briefs, cover and marke
   }
 });
 
+test('phone-host map count copy matches the 22 registered maps', () => {
+  assert.equal(data.maps.length, 22);
+  assert.match(phone, /22 original arenas\./);
+  assert.match(phone, /<span>22 arenas<\/span>/);
+});
+
 test('Offline and phone-host keep identical map definitions and authoritative collision boxes', () => {
   const offlineMaps = mapsFrom(offline);
   const phoneMaps = mapsFrom(phone);
