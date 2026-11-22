@@ -595,7 +595,7 @@ function bombStateMessage() {
 function bombStateBroadcast() { if (isBomb()) bcast({t:'objective', objective:bombStateMessage()}); }
 function prepareBombSites() {
   BOMB.sites=null; BOMB.supportMap=G.map; BOMB.unsupportedReason='';
-  try { BOMB.sites=ModeRules.resolveBombSites(buildNav(mapData()),mapData().area); }
+  try { const map=mapData(); BOMB.sites=ModeRules.resolveBombSites(buildNav(map),map.area,map.bombSites); }
   catch (e) { BOMB.sites=null; BOMB.unsupportedReason='Map navigation data is invalid'; }
   if (!BOMB.sites) BOMB.unsupportedReason=BOMB.unsupportedReason||'This map has no validated pair of reachable bomb sites';
   else BOMB.unsupportedReason='';

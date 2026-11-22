@@ -23,16 +23,46 @@ test('every configured host map has two separated, reachable, ground-level Bomb 
   try {
     for (const id of Object.keys(MAPS)) {
       G.map = id;
-      const map = _t.mapData(), nav = _t.buildNav(map), sites = Rules.resolveBombSites(nav, map.area);
+      const map = _t.mapData(), nav = _t.buildNav(map), sites = Rules.resolveBombSites(nav, map.area, map.bombSites);
       assert.ok(sites, id + ': no valid pair');
       assert.ok(sites.separation >= Math.max(12, Math.min(30, (map.area.x1-map.area.x0)*.22)), id + ': sites are too close');
       for (const site of [sites.A,sites.B]) {
         assert.ok(nav.reachable[site.node], id + ': site is unreachable');
         assert.ok(Math.abs(site.y) <= .15, id + ': site is not on the supported ground floor');
         assert.ok(site.x > map.area.x0 && site.x < map.area.x1 && site.z > map.area.z0 && site.z < map.area.z1, id + ': site is outside map bounds');
+        if (map.bombSites) {
+          const anchor = map.bombSites[site.id];
+          assert.ok(anchor && Math.hypot(site.x - anchor.x, site.z - anchor.z) <= 1.5, id + ': resolved site stays beside its authored marker');
+        }
       }
     }
   } finally { G.map = originalMap; }
+});
+
+test('authored Mission Bomb sites are reachable from all sampled bot spawn lanes', () => {
+  const previousMap = G.map;
+  const work = { maxMs: Infinity, maxLandingChecks: _t.botPathPolicy.maxLandingChecks, maxSmoothChecks: _t.botPathPolicy.maxSmoothChecks };
+  try {
+    for (const id of ['floodline_district', 'iron_junction', 'ridgefall_outpost']) {
+      G.map = id;
+      const map = _t.mapData(), nav = _t.buildNav(map), sites = Rules.resolveBombSites(nav, map.area, map.bombSites);
+      assert.ok(sites, id + ': authored objectives resolve');
+      for (const fx of [0.08, 0.5, 0.92]) for (const fz of [0.25, 0.75]) {
+        const start = {
+          x: map.botSpawn.x0 + (map.botSpawn.x1 - map.botSpawn.x0) * fx,
+          z: map.botSpawn.z0 + (map.botSpawn.z1 - map.botSpawn.z0) * fz
+        };
+        for (const site of [sites.A, sites.B]) {
+          const route = _t.astar(nav, start.x, start.z, site.x, site.z, 0, 0, 50000, work);
+          assert.ok(Array.isArray(route) && route.length, id + ': bot spawn sample has a route to ' + site.id);
+          const end = route[route.length - 1];
+          assert.ok(Math.hypot(end[0] - site.x, end[1] - site.z) <= 1.5, id + ': bot reaches ' + site.id);
+        }
+      }
+    }
+  } finally {
+    G.map = previousMap;
+  }
 });
 
 test('Bomb plant is role, carrier, site, location, and hold-time validated', () => {

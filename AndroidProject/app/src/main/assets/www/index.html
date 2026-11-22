@@ -3707,7 +3707,7 @@ MAPS.push(
     id: 'floodline_district', name: 'Floodline District', tag: 'Urban · alleys and cross streets',
     area: { x0: -36, x1: 36, z0: -44, z1: 44 },
     desc: 'A storm-damaged neighborhood divided by a central intersection. Reach the clinic and supply depot through the narrow west alley, the covered center street, or the longer east-side route; side-street cover rewards a careful flank.',
-    spawn: { x: 0, z: 40 }, botSpawn: { x0: -32, x1: 32, z0: -43, z1: -40 }, view: { r: 52, h: 20 },
+    spawn: { x: 0, z: 40 }, botSpawn: { x0: -32, x1: 32, z0: -43, z1: -40 }, bombSites: { A: { x: -22, z: -15 }, B: { x: 22, z: 15 } }, view: { r: 52, h: 20 },
     sky: ['#647f82', '#a8c2bb', '#d9d9c8', '#9ca99b'], fog: '#abbab1', fogN: 38, fogF: 128, hemi: [0xe2eee5, 0x4e5950, 0.9], sun: [0xffe4b0, 0.82, -24, 44, 16],
     tex: { wall: { t: 'brick', c: '#777e79' }, crate: { t: 'crate', c: '#8e7652' }, metal: { t: 'metal', c: '#566b68' }, floor: { t: 'plate', c: '#555d5b' } },
     obst: [
@@ -3724,15 +3724,15 @@ MAPS.push(
       O(-8, 31, 5, 2, 1.1, 'crate'), O(8, 31, 5, 2, 1.1, 'crate'), O(0, 35, 3, 2, 1.8, 'metal'),
       O(-18, 34, 3, 3, 2.2, 'metal'), O(18, 34, 3, 3, 2.2, 'metal')
     ],
-    zones: [{ x: -16, z: -2, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 16, z: -1, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 39, w: 18, d: 7, l: 'CT', c: '#2d6ea6' }],
-    callouts: [{ t: 'A CLINIC', x: -16, z: -2 }, { t: 'B SUPPLY DEPOT', x: 16, z: -1 }, { t: 'CROSSROADS', x: 0, z: 2 }, { t: 'WEST ALLEY', x: -28, z: -4 }, { t: 'EAST STREET', x: 28, z: -6 }, { t: 'SPAWN', x: 0, z: 39 }],
+    zones: [{ x: -22, z: -15, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 22, z: 15, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 39, w: 18, d: 7, l: 'CT', c: '#2d6ea6' }],
+    callouts: [{ t: 'A CLINIC', x: -22, z: -15 }, { t: 'B SUPPLY DEPOT', x: 22, z: 15 }, { t: 'CROSSROADS', x: 0, z: 2 }, { t: 'WEST ALLEY', x: -28, z: -4 }, { t: 'EAST STREET', x: 28, z: -6 }, { t: 'SPAWN', x: 0, z: 39 }],
     notes: [['A Clinic', 'Low cover sits close to the clinic. The west alley is a fast but narrow approach.'], ['B Supply Depot', 'The wider east street has more cover and a longer rotation back to the intersection.'], ['Crossroads', 'Street barriers break the central sightline and create two short peeks across the intersection.'], ['Side streets', 'West alley, center street and east road stay connected; rotate through the southern crosswalk to avoid the long street.']]
   },
   {
     id: 'iron_junction', name: 'Iron Junction', tag: 'Freight yard · split approaches',
     area: { x0: -40, x1: 40, z0: -48, z1: 48 },
     desc: 'An active freight junction built around staggered railcars, two low warehouse shells and a narrow signal alley. The open center is quick to cross, while west maintenance and east loading routes let teams choose safer rotations between the signal box and loading bay.',
-    spawn: { x: 0, z: 44 }, botSpawn: { x0: -36, x1: 36, z0: -47, z1: -44 }, view: { r: 58, h: 21 },
+    spawn: { x: 0, z: 44 }, botSpawn: { x0: -36, x1: 36, z0: -47, z1: -44 }, bombSites: { A: { x: -25, z: 0 }, B: { x: 25, z: 0 } }, view: { r: 58, h: 21 },
     sky: ['#697e91', '#b4c2c7', '#dfddd0', '#b3a98f'], fog: '#b3bbb9', fogN: 44, fogF: 142, hemi: [0xe5ecea, 0x565850, 0.9], sun: [0xffe0ad, 0.88, -28, 48, 18],
     tex: { wall: { t: 'brick', c: '#7f7764' }, crate: { t: 'crate', c: '#966d3d' }, metal: { t: 'metal', c: '#56626a' }, floor: { t: 'asphalt', c: '#5c6262' } },
     obst: [
@@ -3745,15 +3745,15 @@ MAPS.push(
       O(-25, 38, 5, 2, 1.1, 'crate'), O(-14, 36, 3, 3, 2.1, 'metal'), O(16, 37, 5, 2, 1.1, 'crate'), O(27, 36, 3, 3, 2.1, 'metal'),
       O(-24, -38, 5, 2, 1.1, 'crate'), O(-12, -39, 3, 3, 2.1, 'metal'), O(14, -38, 5, 2, 1.1, 'crate'), O(26, -39, 3, 3, 2.1, 'metal')
     ],
-    zones: [{ x: -16, z: -2, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 16, z: 0, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 44, w: 20, d: 7, l: 'CT', c: '#2d6ea6' }],
-    callouts: [{ t: 'A SIGNAL BOX', x: -16, z: -2 }, { t: 'B LOADING BAY', x: 16, z: 0 }, { t: 'CENTER CUT', x: 0, z: 1 }, { t: 'WEST SIDING', x: -29, z: -17 }, { t: 'EAST ROAD', x: 30, z: -18 }, { t: 'SPAWN', x: 0, z: 43 }],
+    zones: [{ x: -25, z: 0, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 25, z: 0, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 44, w: 20, d: 7, l: 'CT', c: '#2d6ea6' }],
+    callouts: [{ t: 'A SIGNAL BOX', x: -25, z: 0 }, { t: 'B LOADING BAY', x: 25, z: 0 }, { t: 'CENTER CUT', x: 0, z: 1 }, { t: 'WEST SIDING', x: -29, z: -17 }, { t: 'EAST ROAD', x: 30, z: -18 }, { t: 'SPAWN', x: 0, z: 43 }],
     notes: [['A Signal Box', 'The west objective is reached from the maintenance alley or the exposed center cut.'], ['B Loading Bay', 'The east site has a broader approach with staggered car cover.'], ['Center cut', 'Short gaps between freight cars make a fast rotation, but sightlines overlap.'], ['Sidings', 'The outer routes break contact and reconnect behind the middle rows.']]
   },
   {
     id: 'ridgefall_outpost', name: 'Ridgefall Outpost', tag: 'Mountain · checkpoint approaches',
     area: { x0: -34, x1: 34, z0: -42, z1: 42 },
     desc: 'A remote mountain outpost surrounds a communications relay. Defensive walls and rocky berms break the long approach into checkpoint sectors, while west and east perimeter routes let attackers infiltrate from different angles.',
-    spawn: { x: 0, z: 38 }, botSpawn: { x0: -30, x1: 30, z0: -41, z1: -38 }, view: { r: 50, h: 19 },
+    spawn: { x: 0, z: 38 }, botSpawn: { x0: -30, x1: 30, z0: -41, z1: -38 }, bombSites: { A: { x: -22, z: 17 }, B: { x: 22, z: -17 } }, view: { r: 50, h: 19 },
     sky: ['#708a76', '#b5c7b1', '#e1e4d2', '#adb79b'], fog: '#b7c2ae', fogN: 36, fogF: 122, hemi: [0xe8f0df, 0x56644c, 0.92], sun: [0xffedc0, 0.78, -18, 40, 16],
     tex: { wall: { t: 'plaster', c: '#879083' }, crate: { t: 'crate', c: '#806744' }, metal: { t: 'metal', c: '#5f7169' }, floor: { t: 'tile', c: '#687367' } },
     obst: [
@@ -3767,8 +3767,8 @@ MAPS.push(
       O(-17, -2, 4, 2, 1.1, 'crate'), O(17, -3, 4, 2, 1.1, 'crate'), O(-5, -34, 5, 2, 1.1, 'metal'), O(6, -34, 5, 2, 1.1, 'crate'),
       O(-18, 34, 4, 3, 1.8, 'metal'), O(18, 34, 4, 3, 1.8, 'metal')
     ],
-    zones: [{ x: -16, z: -2, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 16, z: -1, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 38, w: 18, d: 7, l: 'CT', c: '#2d6ea6' }],
-    callouts: [{ t: 'A RIDGE RELAY', x: -16, z: -2 }, { t: 'B COMMAND POST', x: 16, z: -1 }, { t: 'RELAY YARD', x: 0, z: 1 }, { t: 'WEST CHECKPOINT', x: -23, z: -13 }, { t: 'EAST RIDGE', x: 23, z: -13 }, { t: 'SPAWN', x: 0, z: 37 }],
+    zones: [{ x: -22, z: 17, w: 12, d: 12, l: 'A', c: '#d9791f' }, { x: 22, z: -17, w: 12, d: 12, l: 'B', c: '#d9791f' }, { x: 0, z: 38, w: 18, d: 7, l: 'CT', c: '#2d6ea6' }],
+    callouts: [{ t: 'A RIDGE RELAY', x: -22, z: 17 }, { t: 'B COMMAND POST', x: 22, z: -17 }, { t: 'RELAY YARD', x: 0, z: 1 }, { t: 'WEST CHECKPOINT', x: -23, z: -13 }, { t: 'EAST RIDGE', x: 23, z: -13 }, { t: 'SPAWN', x: 0, z: 37 }],
     notes: [['A Ridge Relay', 'The west site is screened by low cover; use the checkpoint wall gaps to avoid the central lane.'], ['B Command Post', 'The command post is exposed from the center; the east ridge provides a longer, covered infiltration route.'], ['Relay yard', 'The relay structure breaks the center sightline; checkpoint walls leave cross-cuts open for rotations.'], ['Ridge approaches', 'Low rocky cover marks two infiltration approaches. Rotate between checkpoints instead of holding the exposed center.']]
   }
 );
@@ -8766,7 +8766,7 @@ function soloBombPrepareSites() {
   if (SOLO_BOMB.supportMap === CURMAP.id) return SOLO_BOMB.sites;
   SOLO_BOMB.supportMap = CURMAP.id;
   SOLO_BOMB.sites = null;
-  try { SOLO_BOMB.sites = SightlineModeRules.resolveBombSites(NAV, MAPD.area); } catch (e) { SOLO_BOMB.sites = null; }
+  try { SOLO_BOMB.sites = SightlineModeRules.resolveBombSites(NAV, MAPD.area, MAPD.bombSites); } catch (e) { SOLO_BOMB.sites = null; }
   return SOLO_BOMB.sites;
 }
 function bombAttackTeamForSoloRound(round) { return round>Math.floor(R.bombBestOf/2)?1:0; }

@@ -25,14 +25,23 @@
     for (const key of Object.keys(BOMB_DEFAULTS)) out[key] = input && input[key] !== undefined ? clampSetting(key, input[key]) : BOMB_DEFAULTS[key];
     return out;
   }
-  function resolveBombSites(nav, area) {
+  function resolveBombSites(nav, area, siteAnchors) {
     if (!nav || !Array.isArray(nav.nodes) || !area || ![area.x0, area.x1, area.z0, area.z1].every(Number.isFinite)) return null;
     const width = area.x1 - area.x0, depth = area.z1 - area.z0;
     if (width < 24 || depth < 24) return null;
-    const anchors = [
+    const anchors = siteAnchors == null ? [
       { id: 'A', x: area.x0 + width * 0.28, z: area.z0 + depth * 0.48 },
       { id: 'B', x: area.x0 + width * 0.72, z: area.z0 + depth * 0.52 }
+    ] : [
+      siteAnchors.A && { id: 'A', x: siteAnchors.A.x, z: siteAnchors.A.z },
+      siteAnchors.B && { id: 'B', x: siteAnchors.B.x, z: siteAnchors.B.z }
     ];
+    if (!Array.isArray(anchors) || anchors.length !== 2) return null;
+    for (let i = 0; i < 2; i++) {
+      const anchor = anchors[i], expectedId = i === 0 ? 'A' : 'B';
+      if (!anchor || anchor.id !== expectedId || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.z) ||
+          anchor.x <= area.x0 + 1 || anchor.x >= area.x1 - 1 || anchor.z <= area.z0 + 1 || anchor.z >= area.z1 - 1) return null;
+    }
     const candidates = [[], []], reachable = nav.reachable;
     for (let i = 0; i < nav.nodes.length; i++) {
       const p = nav.nodes[i];

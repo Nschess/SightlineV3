@@ -11,6 +11,7 @@ const root = path.resolve(__dirname, '..');
 const assets = path.join(root, 'AndroidProject/app/src/main/assets');
 const offline = fs.readFileSync(path.join(assets, 'www/index.html'), 'utf8');
 const phone = fs.readFileSync(path.join(assets, 'phone-host/index.html'), 'utf8');
+const hostServer = fs.readFileSync(path.join(assets, 'phone-host/server.js'), 'utf8');
 const data = JSON.parse(fs.readFileSync(path.join(assets, 'phone-host/data.json'), 'utf8'));
 const expectedIds = ['floodline_district', 'iron_junction', 'ridgefall_outpost'];
 
@@ -28,11 +29,15 @@ test('three original maps have distinct layouts, mission briefs, cover and marke
   assert.equal(offlineMaps.length, 22);
   assert.deepEqual(Array.from(added, map => map.id), expectedIds);
   assert.equal(new Set(added.map(map => map.name)).size, 3);
+  assert.equal(new Set(added.map(map => JSON.stringify(map.bombSites))).size, 3, 'each map uses its own bomb-site lane');
   assert.ok(new Set(added.map(map => map.obst.length)).size >= 2, 'layouts use more than one authored cover density');
   for (const map of added) {
     assert.ok(map.obst.length >= 25, map.id + ': cover and route geometry is present');
     assert.ok(map.obst.filter(box => box.h <= 2.8).length >= 10, map.id + ': low cover supports tactical peeks');
     assert.deepEqual(Array.from(map.zones, zone => zone.l), ['A', 'B', 'CT'], map.id + ': both mission sites and spawn are marked');
+    const markedSites = Array.from(map.zones.filter(zone => zone.l === 'A' || zone.l === 'B'), zone => ({ id: zone.l, x: zone.x, z: zone.z }));
+    const authoredSites = ['A', 'B'].map(id => ({ id, x: map.bombSites[id].x, z: map.bombSites[id].z }));
+    assert.equal(JSON.stringify(markedSites), JSON.stringify(authoredSites), map.id + ': visible site markers match authored Bomb anchors');
     assert.ok(map.callouts.length >= 6, map.id + ': route landmarks are labeled');
     assert.ok(map.notes.length >= 4, map.id + ': operation brief explains site and rotation choices');
   }
@@ -42,6 +47,11 @@ test('phone-host map count copy matches the 22 registered maps', () => {
   assert.equal(data.maps.length, 22);
   assert.match(phone, /22 original arenas\./);
   assert.match(phone, /<span>22 arenas<\/span>/);
+});
+
+test('Offline and LAN Bomb resolution both consume authored map site anchors', () => {
+  assert.match(offline, /resolveBombSites\(NAV, MAPD\.area, MAPD\.bombSites\)/);
+  assert.match(hostServer, /resolveBombSites\(buildNav\(map\),map\.area,map\.bombSites\)/);
 });
 
 test('Offline and phone-host keep identical map definitions and authoritative collision boxes', () => {
@@ -64,6 +74,7 @@ test('Offline and phone-host keep identical map definitions and authoritative co
     assert.equal(JSON.stringify(host.boxes), JSON.stringify(perimeter.concat(authored)), map.id + ': host collision geometry matches the rendered Offline layout');
     assert.equal(JSON.stringify(host.spawn), JSON.stringify(map.spawn), map.id + ': host/player spawn parity');
     assert.equal(JSON.stringify(host.botSpawn), JSON.stringify(map.botSpawn), map.id + ': host/bot spawn parity');
+    assert.equal(JSON.stringify(host.bombSites), JSON.stringify(map.bombSites), map.id + ': host uses the same authored Bomb anchors');
   }
 });
 
