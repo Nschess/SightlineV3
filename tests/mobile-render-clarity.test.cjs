@@ -515,6 +515,76 @@ test('inactive lobby preview leaves the render tree and reattaches across map ch
   assert.equal(created, 1);
 });
 
+test('static map transforms stay cached while moving parent-child transforms still propagate', () => {
+  for (const page of pages) {
+    const worldBuilder = section(page, 'function buildWorld(m)', 'buildWorld(CURMAP);');
+    assert.ok(worldBuilder.includes('freezeStaticWorldMatrices();'), 'each asset tree freezes map roots after map construction');
+  }
+  const helperStart = pages[0].indexOf('function freezeStaticWorldMatrices()');
+  const helper = helperStart >= 0 ? section(pages[0], 'function freezeStaticWorldMatrices()', 'function paintZone(') : '';
+  if (helperStart >= 0) assert.equal(helper, section(pages[1], 'function freezeStaticWorldMatrices()', 'function paintZone('));
+  const THREE = require(path.join(assets, 'www/three.min.js'));
+  const scene = new THREE.Scene(), staticMapMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 3), new THREE.MeshBasicMaterial());
+  const movingActor = new THREE.Group(), movingWeaponChild = new THREE.Group();
+  staticMapMesh.position.set(5, 0, -3);
+  movingActor.position.set(1, 0, 0); movingWeaponChild.position.set(0, 2, 0);
+  movingActor.add(movingWeaponChild); scene.add(staticMapMesh, movingActor);
+  const worldObjs = [staticMapMesh];
+  let staticCompositions = 0, staticWorldRecomputes = 0, actorCompositions = 0, childCompositions = 0;
+  for (const [object, counter] of [[staticMapMesh, 'static'], [movingActor, 'actor'], [movingWeaponChild, 'child']]) {
+    const update = object.updateMatrix;
+    object.updateMatrix = function () {
+      if (counter === 'static') staticCompositions++;
+      else if (counter === 'actor') actorCompositions++;
+      else childCompositions++;
+      return update.apply(this, arguments);
+    };
+  }
+  const updateStaticWorld = staticMapMesh.updateMatrixWorld;
+  staticMapMesh.updateMatrixWorld = function (force) {
+    if (force || this.matrixWorldNeedsUpdate || this.matrixAutoUpdate) staticWorldRecomputes++;
+    return updateStaticWorld.apply(this, arguments);
+  };
+  const context = vm.createContext({ scene, worldObjs });
+  if (helper) { vm.runInContext(helper, context); context.freezeStaticWorldMatrices(); }
+  scene.updateMatrixWorld(true);
+  staticCompositions = staticWorldRecomputes = actorCompositions = childCompositions = 0;
+  for (let frame = 1; frame <= 3; frame++) {
+    movingActor.position.x = frame;
+    scene.updateMatrixWorld();
+  }
+  assert.equal(staticCompositions, 0, 'unchanged map roots should not recompose on rendered frames');
+  assert.equal(staticWorldRecomputes, 0, 'unchanged map roots should not recalculate world matrices on rendered frames');
+  assert.equal(actorCompositions, 3, 'moving actor transforms still update every frame');
+  assert.equal(childCompositions, 3, 'dynamic weapon child transforms still inherit actor movement');
+  assert.equal(movingWeaponChild.matrixWorld.elements[12], 3, 'weapon child world position includes the latest actor position');
+  assert.equal(staticMapMesh.matrixWorld.elements[12], 5, 'static map world position remains intact');
+
+  const nextMapMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial());
+  nextMapMesh.position.set(-7, 0, 4);
+  let nextMapCompositions = 0, nextMapWorldRecomputes = 0;
+  const nextMapUpdate = nextMapMesh.updateMatrix;
+  nextMapMesh.updateMatrix = function () { nextMapCompositions++; return nextMapUpdate.apply(this, arguments); };
+  const nextMapWorldUpdate = nextMapMesh.updateMatrixWorld;
+  nextMapMesh.updateMatrixWorld = function (force) {
+    if (force || this.matrixWorldNeedsUpdate || this.matrixAutoUpdate) nextMapWorldRecomputes++;
+    return nextMapWorldUpdate.apply(this, arguments);
+  };
+  scene.remove(staticMapMesh); worldObjs.splice(0, worldObjs.length, nextMapMesh); scene.add(nextMapMesh);
+  context.freezeStaticWorldMatrices();
+  assert.equal(nextMapCompositions, 1, 'new map root is composed once when the map is built');
+  nextMapCompositions = 0;
+  movingActor.position.x = 4;
+  scene.updateMatrixWorld();
+  assert.equal(nextMapCompositions, 0, 'new map root does not recompose on the next rendered frame');
+  assert.equal(nextMapWorldRecomputes, 1, 'new map world matrix is propagated once on the first normal traversal');
+  assert.equal(nextMapMesh.matrixWorld.elements[12], -7, 'new map root still receives its world transform');
+  assert.equal(movingWeaponChild.matrixWorld.elements[12], 4, 'movement continues to propagate after a map rebuild');
+  nextMapWorldRecomputes = 0; movingActor.position.x = 5; scene.updateMatrixWorld();
+  assert.equal(nextMapWorldRecomputes, 0, 'subsequent frames do not recalculate the new map world matrix');
+  assert.equal(movingWeaponChild.matrixWorld.elements[12], 5, 'dynamic child transforms remain current after static matrices are cached');
+});
+
 test('map masonry uses each box face dimensions without changing positions or indices', () => {
   const THREE = require(path.join(assets,'www/three.min.js'));
   const policy = section(pages[0],'function mobileTilesBoxFaces','function buildWorld(');

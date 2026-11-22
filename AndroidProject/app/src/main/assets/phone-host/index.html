@@ -4276,6 +4276,17 @@ function mkTex(spec) {
 var sky = new THREE.Mesh(new THREE.SphereGeometry(150, 16, 12), new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, depthWrite: false }));
 scene.add(sky);
 var worldObjs = [], obstacleMeshes = [];
+function freezeStaticWorldMatrices() {
+  // Three.js r128 propagates forced matrix work from an auto-updated Scene.
+  // The scene origin and map roots never move; cache their local transforms
+  // while dynamic actors, camera children and effects keep normal updates.
+  if (scene.matrixAutoUpdate) { scene.updateMatrix(); scene.matrixAutoUpdate = false; }
+  for (var i = 0; i < worldObjs.length; i++) {
+    var object = worldObjs[i];
+    if (!object || object.parent !== scene) continue;
+    object.updateMatrix(); object.matrixAutoUpdate = false;
+  }
+}
 function paintZone(x, z, w, d, label, color) {
   var t = ctex(256, 256, function (g, W, H) {
     g.strokeStyle = color; g.lineWidth = 8; g.setLineDash([22, 14]); g.strokeRect(10, 10, W - 20, H - 20); g.setLineDash([]);
@@ -4478,6 +4489,7 @@ function buildWorld(m) {
   hemi.color.setHex(m.hemi[0]); hemi.groundColor.setHex(m.hemi[1]); hemi.intensity = m.hemi[2];
   sun.color.setHex(m.sun[0]); sun.intensity = m.sun[1]; sun.position.set(m.sun[2], m.sun[3], m.sun[4]);
   var r = Math.max(w, d) * 0.6; sun.shadow.camera.left = -r; sun.shadow.camera.right = r; sun.shadow.camera.top = r; sun.shadow.camera.bottom = -r; sun.shadow.camera.updateProjectionMatrix();
+  freezeStaticWorldMatrices();
 }
 buildWorld(CURMAP);
 
