@@ -3920,12 +3920,13 @@ fillStatic();
 /* ---------- records ---------- */
 var BEST_KEY = 'sightline-record';
 function loadBest() { try { return JSON.parse(localStorage.getItem(BEST_KEY) || 'null'); } catch (e) { return null; } }
-function saveBest(b) { try { localStorage.setItem(BEST_KEY, JSON.stringify(b)); } catch (e) {} }
+function saveBest(b) { try { localStorage.setItem(BEST_KEY, JSON.stringify(b)); return true; } catch (e) { return false; } }
 function renderBest() {
-  var b = loadBest();
-  var items = [['Matches played', b ? b.matches : '0'], ['Most kills in a match', b ? b.kills : '0'], ['Best accuracy', b ? b.acc + '%' : '0%']];
+  var b = window.SightlineEngagement.normalizeMatchRecords(loadBest());
+  var hasRecords = b.matches > 0 || b.kills > 0 || b.acc > 0;
+  var items = [['Matches played', b.matches], ['Most kills in a match', b.kills], ['Best accuracy', b.acc + '%']];
   $('#rec').innerHTML = items.map(function (e) { return '<div><dt>' + e[0] + '</dt><dd>' + e[1] + '</dd></div>'; }).join('');
-  $('#rec-lead').textContent = b ? 'Saved in this browser. Beat these numbers in your next match.' : 'Finish a match to set your first record. It is saved in this browser only.';
+  $('#rec-lead').textContent = hasRecords ? 'Saved in this browser. Beat these numbers in your next match.' : 'Finish a match to set your first record. It is saved in this browser only.';
 }
 renderBest();
 
@@ -11515,7 +11516,7 @@ function restoreBeginnerRules() {
 function startBeginnerOperation() {
   if (state !== 'idle' || MP.on || mpConnected() || MP.sock || MP.id || MP.retryT) return false;
   beginnerRulesBackup = Object.assign({}, R);
-  R.mode = 'tactical'; R.diff = 'recruit'; R.bots = 1; R.mates = 0; R.rounds = 1; R.time = 180; R.cash = 800;
+  R.mode = 'tactical'; R.diff = 'recruit'; R.bots = 2; R.mates = 0; R.rounds = 1; R.time = 180; R.cash = 800;
   applyRules(); refreshSpec(); renderModePicker();
   $('#btn-again').textContent = 'Play again'; $('#btn-end-menu').hidden = true; $('#optional-goal-summary').hidden = true;
   beginnerResultShowing = false;
@@ -11532,7 +11533,7 @@ function startBeginnerOperation() {
   beginnerAimCheckAt = 0;
   createBeginnerMarker(destination);
   renderBeginnerOperation(first);
-  showMsg('Beginner operation', 'A lone Recruit hostile is your target. Follow the amber marker.', 2600);
+  showMsg('Beginner operation', 'Two Recruit hostiles are your targets. Follow the amber marker.', 2600);
   updateHud();
   return true;
 }
@@ -11801,6 +11802,7 @@ function finishRoundEnd() {
   if (M.you >= CFG.winRounds || M.bots >= CFG.winRounds) endMatch(); else nextRound();
 }
 function endMatch() {
+  if (state === 'matchend') return;
   if (beginnerRun) { finishBeginnerOperation(); return; }
   if(SOLO_BOMB.state&&SOLO_BOMB.state.use)SightlineModeRules.cancelUse(SOLO_BOMB.state);
   state = 'matchend'; exitLock();
@@ -11812,7 +11814,7 @@ function endMatch() {
     $('#end-title').textContent=ffaWinner===-1?'Free-for-all won':ffaWinner==null?'Free-for-all draw':'Free-for-all complete';
     $('#end-text').textContent='Your placement: '+ffaPlacement+' of '+ffaRows.length+' · '+soloFFAScore(-1)+' eliminations. '+(ffaWinner===-1?'You reached the kill target.':ffaWinner==null?'The match ended tied.':'The match ended before you reached the lead.');
     $('#end-res').innerHTML=[['Placement',ffaPlacement+' / '+ffaRows.length],['Your kills',soloFFAScore(-1)],['Top score',ffaRows.length?ffaRows[0].score:0],['Deaths',s.deaths],['Headshots',s.hs],['Accuracy',acc+'%']].map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
-    recordMatch(ffaWinner===-1,s);showOptionalGoalSummary(ffaWinner===-1,s,'ffa');showOverlay('#ov-end');return;
+    var ffaPersonal = recordMatch(ffaWinner===-1,s);showOptionalGoalSummary(ffaWinner===-1,s,'ffa',ffaPersonal);showOverlay('#ov-end');return;
   }
   if (OB.inf) {
     var bst = loadObj('sightline.best.v1', { wave: 0, kills: 0 }), nb = OB.wave > bst.wave; if (nb) { bst.wave = OB.wave; bst.kills = OB.total; saveObj('sightline.best.v1', bst); }
@@ -11824,7 +11826,7 @@ function endMatch() {
   $('#end-title').textContent = won ? 'Match won' : 'Match lost';
   $('#end-text').textContent = 'Final score: ' + TEAMS[ME.team].name + ' ' + M.you + ', ' + foeTeam().name + ' ' + M.bots + '.';
   $('#end-res').innerHTML = [['Kills', s.kills], ['Deaths', s.deaths], ['Headshots', s.hs], ['Accuracy', acc + '%'], ['Shots', s.shots], ['Rounds', M.round]].map(function (r) { return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('');
-  recordMatch(won, s); showOptionalGoalSummary(won,s,R.mode);
+  var personal = recordMatch(won, s); showOptionalGoalSummary(won,s,R.mode,personal);
   showOverlay('#ov-end');
 }
 function pause() {
@@ -12812,7 +12814,7 @@ function opDetail(o) {
   return '<section class="opdet" aria-label="Operator profile for '+esc(o.name)+'"><div class="opdet-portrait">'+opSvg(o,112)+'<span>'+esc(t.short||t.name)+'</span></div><div class="opdet-copy"><span class="opdet-kicker">'+(isPending?'PREVIEW CANDIDATE':'ACTIVE OPERATIVE')+' · '+esc(t.name)+'</span><h3>'+esc(o.name)+'</h3><div class="rl">'+esc(o.real||o.role)+' · '+esc(o.role)+' · '+esc(t.name)+'</div><p>'+esc(o.bio)+'</p><div class="st"><span>Aim '+pips(o.aim)+'</span><span>Pace '+pips(o.pace)+'</span><span>Grit '+pips(o.grit)+'</span></div><div class="opdet-readout"><span>FIELD ID</span><strong>'+esc(String(o.id).toUpperCase())+'</strong><span>FACTION</span><strong>'+esc(t.name.toUpperCase())+'</strong></div></div></section>';
 }
 function kbd(a) { var b = BIND[a] || ['', '']; var c = b[0] || b[1]; return '<kbd>' + labelOf(c) + '</kbd>'; }
-function recObj() { var b = loadBest() || {}; return { matches: b.matches || 0, kills: b.kills || 0, acc: b.acc || 0, wins: b.wins || 0, tk: b.tk || 0, td: b.td || 0, ths: b.ths || 0, tsh: b.tsh || 0, thi: b.thi || 0, rounds: b.rounds || 0, hist: Array.isArray(b.hist) ? b.hist : [] }; }
+function recObj() { return window.SightlineEngagement.normalizeMatchRecords(loadBest()); }
 function mobileHudSettingsHtml(){var paused=state==='paused';return (touchMode ? '' : '<div class="srow wide"><span class="lb">Touch layout<small>Visible action icons keep labels and accessible names.</small></span><span class="small">Sightline tactical</span></div>')+ '<div class="srow wide"><span class="lb">Dominant hand<small>Move-side joystick and combat actions switch together.</small></span><div class="hud-hand-options"><button type="button" data-mobile-hud-hand="right" aria-pressed="'+(mobileHud.hand==='right')+'">RIGHT-HAND FIRE</button><button type="button" data-mobile-hud-hand="left" aria-pressed="'+(mobileHud.hand==='left')+'">LEFT-HAND FIRE</button></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-opacity">Control opacity<small>Keep the battlefield visible beneath the controls.</small></label><div><input id="mobile-hud-opacity" type="range" min="50" max="100" step="5" value="'+mobileHud.opacity+'" data-mobile-hud-opacity aria-label="Mobile HUD button opacity"><output id="mobile-hud-opacity-value">'+mobileHud.opacity+'%</output></div></div>'+ '<div class="srow"><label class="lb" for="mobile-hud-fire2">Optional second fire button<small>Off by default; enable for claw or alternate-hand play.</small></label><input id="mobile-hud-fire2" type="checkbox" data-mobile-hud-fire2 '+(mobileHud.fire2?'checked':'')+'></div>'+ '<div class="srow wide"><div class="hud-edit-toggle"><button class="btn ghost" type="button" data-act="mobile-hud-edit" '+(paused?'':'disabled')+'>Edit layout</button><span>Available from a paused offline match. Drag buttons, adjust size, then tap Save.</span></div></div>'+ '<div class="setfoot"><button class="btn ghost" type="button" data-act="mobile-hud-reset">Reset mobile HUD layout</button><span class="small">' + (touchMode ? 'Button size: Controls.' : 'Button size remains under Controls → Touch.') + '</span></div>';}
 
 function loadoutWeaponCategory(key){var w=WEAPONS[key]||{};return w.melee?'melee':(w.category||'other');}
@@ -13625,22 +13627,30 @@ function showScore(on) {
 /* ---------- records ---------- */
 function recordMatch(won, s) {
   var b = recObj(), acc = s.shots ? Math.round(100 * s.hits / s.shots) : 0;
-  b.matches++; b.kills = Math.max(b.kills, s.kills); b.acc = Math.max(b.acc, acc);
-  b.wins += won ? 1 : 0; b.tk += s.kills; b.td += s.deaths; b.ths += s.hs; b.tsh += s.shots; b.thi += s.hits; b.rounds += M.round;
+  var personal = window.SightlineEngagement.comparePersonalRecords(b, s);
+  b.matches = window.SightlineEngagement.addSafeCount(b.matches, 1); b.kills = Math.max(b.kills, s.kills); b.acc = Math.max(b.acc, acc);
+  b.wins = window.SightlineEngagement.addSafeCount(b.wins, won ? 1 : 0); b.tk = window.SightlineEngagement.addSafeCount(b.tk, s.kills); b.td = window.SightlineEngagement.addSafeCount(b.td, s.deaths); b.ths = window.SightlineEngagement.addSafeCount(b.ths, s.hs); b.tsh = window.SightlineEngagement.addSafeCount(b.tsh, s.shots); b.thi = window.SightlineEngagement.addSafeCount(b.thi, s.hits); b.rounds = window.SightlineEngagement.addSafeCount(b.rounds, M.round);
   b.hist.unshift({ m: CURMAP.name, o: ME.name, w: won, y: M.you, b: M.bots, k: s.kills, d: s.deaths, f: DIFF[R.diff].name }); b.hist = b.hist.slice(0, 6);
-  saveBest(b); renderBest();
+  personal.saved = saveBest(b); renderBest();
+  return personal;
 }
 function hideOptionalGoalSummary() { var card = $('#optional-goal-summary'); if (card) card.hidden = true; }
-function showOptionalGoalSummary(won, s, mode) {
+function showOptionalGoalSummary(won, s, mode, personal) {
   var card = $('#optional-goal-summary');
   if (!card || MP.on || beginnerRun) { hideOptionalGoalSummary(); return; }
   var records = recObj(), result = window.SightlineEngagement.resolveOptionalGoal(window.localStorage, {
     won: !!won, kills: s.kills, hs: s.hs, shots: s.shots, hits: s.hits, mode: mode || R.mode
   }, Math.max(0, records.matches - 1));
-  $('#optional-goal-title').textContent = result.completed ? 'Optional goal complete · ' + result.goal.title : 'Optional goal · ' + result.goal.title;
-  $('#optional-goal-detail').textContent = result.completed
+  var hasRecord = !!(personal && (personal.newKillsBest || personal.newAccuracyBest)), recordSaved = !!(personal && personal.saved);
+  $('#optional-goal-title').textContent = hasRecord
+    ? (recordSaved ? 'Personal best · ' : 'Best this match · ') + [personal.newKillsBest ? personal.kills + ' eliminations' : '', personal.newAccuracyBest ? personal.accuracy + '% accuracy' : ''].filter(Boolean).join(' / ')
+    : (result.completed ? 'Optional goal complete · ' + result.goal.title : 'Optional goal · ' + result.goal.title);
+  var goalDetail = result.completed
     ? result.goal.detail + ' Next: ' + result.next.title + ' · ' + result.next.detail
     : result.goal.detail + ' This match: ' + result.value + ' / ' + result.goal.target + '. Keep it optional.';
+  var challengeRecord = result.saved ? (result.completedCount ? ' Challenges cleared: ' + result.completedCount + '.' : '') : ' Challenge progress could not be saved in this browser.';
+  var recordStatus = hasRecord ? (recordSaved ? 'New browser record. ' : 'This best could not be saved in this browser. ') : '';
+  $('#optional-goal-detail').textContent = recordStatus + goalDetail + challengeRecord;
   card.hidden = false;
 }
 
@@ -17543,7 +17553,7 @@ html.touch-device #ov-start .sl-setup-replace input { width:20px; height:20px; m
   @media(max-width:760px), (max-height:520px) and (orientation:landscape) {
     #stage .beginner-operation-card { top:calc(env(safe-area-inset-top,0px) + 48px); width:min(280px,calc(100% - 20px)); padding:7px 8px; font-size:11px; }
     #beginner-operation-title { font-size:12px; }
-    #beginner-operation-skip { min-height:40px; }
+    #beginner-operation-skip { min-height:44px; }
     .optional-goal-summary { margin:8px 0; padding:7px 9px; font-size:11px; }
   }
 </style>

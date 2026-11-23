@@ -11,9 +11,8 @@
     { id: 'look', title: 'Look around', hint: 'Swipe or move the camera to scan the arena.' },
     { id: 'aim', title: 'Aim at the hostile', hint: 'Hold ADS and center the lone hostile in your sights.' },
     { id: 'fire', title: 'Fire once', hint: 'Fire a controlled shot at the hostile.' },
-    { id: 'reload', title: 'Reload', hint: 'Reload the carbine before the final engagement.' },
-    { id: 'reload-finish', title: 'Finish reloading', hint: 'Keep the reload button released and let the reload finish.' },
-    { id: 'objective', title: 'Secure the route', hint: 'Eliminate the remaining hostile to finish the operation.' }
+    { id: 'reload', title: 'Reload the carbine', hint: 'Reload, then move to the next target when the magazine is full.' },
+    { id: 'objective', title: 'Secure the route', hint: 'Eliminate the remaining recruits to finish the operation.' }
   ];
 
   var GOAL_KEY = 'sightline.optional-goals.v1';
@@ -26,6 +25,48 @@
   function number(value) {
     value = Number(value);
     return isFinite(value) && value > 0 ? value : 0;
+  }
+
+  function safeCount(value) {
+    value = Number(value);
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  }
+
+  function addSafeCount(current, amount) {
+    current = safeCount(current);
+    amount = safeCount(amount);
+    return current > Number.MAX_SAFE_INTEGER - amount ? Number.MAX_SAFE_INTEGER : current + amount;
+  }
+
+  function safeLabel(value, maxLength) {
+    return typeof value === 'string' ? value.slice(0, maxLength) : '';
+  }
+
+  function normalizeMatchRecords(records) {
+    records = records && typeof records === 'object' ? records : {};
+    var history = Array.isArray(records.hist) ? records.hist.slice(0, 6).filter(function (entry) {
+      return !!entry && typeof entry === 'object' && !Array.isArray(entry);
+    }).map(function (entry) {
+      return {
+        m: safeLabel(entry.m, 64), o: safeLabel(entry.o, 48), w: entry.w === true,
+        y: safeCount(entry.y), b: safeCount(entry.b), k: safeCount(entry.k),
+        d: safeCount(entry.d), f: safeLabel(entry.f, 32)
+      };
+    }) : [];
+    return {
+      matches: safeCount(records.matches), kills: safeCount(records.kills), acc: Math.min(100, safeCount(records.acc)),
+      wins: safeCount(records.wins), tk: safeCount(records.tk), td: safeCount(records.td),
+      ths: safeCount(records.ths), tsh: safeCount(records.tsh), thi: safeCount(records.thi),
+      rounds: safeCount(records.rounds), hist: history
+    };
+  }
+
+  function comparePersonalRecords(records, summary) {
+    records = records || {};
+    summary = summary || {};
+    var shots = number(summary.shots), accuracy = shots ? Math.round(100 * number(summary.hits) / shots) : 0;
+    var kills = number(summary.kills), bestKills = number(records.kills), bestAccuracy = number(records.acc);
+    return { kills: kills, accuracy: accuracy, newKillsBest: kills > bestKills, newAccuracyBest: shots > 0 && accuracy > bestAccuracy };
   }
 
   function createOperation() {
@@ -61,8 +102,8 @@
       },
       canFire: function () { var step = OP_STEPS[index]; return active && !!step && (step.id === 'fire' || step.id === 'objective'); },
       shot: function () { if (active && OP_STEPS[index].id === 'fire') return advance(); return snapshot(); },
-      reloadStarted: function () { if (active && OP_STEPS[index].id === 'reload') return advance(); return snapshot(); },
-      reloadFinished: function () { if (active && OP_STEPS[index].id === 'reload-finish') return advance(); return snapshot(); },
+      reloadStarted: function () { return snapshot(); },
+      reloadFinished: function () { if (active && OP_STEPS[index].id === 'reload') return advance(); return snapshot(); },
       eliminated: function () {
         if (!active || OP_STEPS[index].id !== 'objective') return snapshot();
         complete = true; active = false; index = OP_STEPS.length; cachedSnapshot = null;
@@ -76,7 +117,7 @@
   function readGoalState(storage, priorMatchCount) {
     try {
       var saved = storage && JSON.parse(storage.getItem(GOAL_KEY) || 'null');
-      if (saved && saved.version === 1 && Number.isInteger(saved.index) && saved.index >= 0 && saved.index < GOALS.length && Number.isInteger(saved.completed) && saved.completed >= 0) return saved;
+      if (saved && saved.version === 1 && Number.isSafeInteger(saved.index) && saved.index >= 0 && saved.index < GOALS.length && Number.isSafeInteger(saved.completed) && saved.completed >= 0) return saved;
     } catch (e) {}
     var count = Math.floor(number(priorMatchCount));
     return { version: 1, index: count % GOALS.length, completed: 0 };
@@ -85,9 +126,13 @@
   function resolveOptionalGoal(storage, summary, priorMatchCount) {
     summary = summary || {};
     var state = readGoalState(storage, priorMatchCount), goal = GOALS[state.index], value = goal.value(summary);
-    var completed = value >= goal.target, nextState = { version: 1, index: completed ? (state.index + 1) % GOALS.length : state.index, completed: state.completed + (completed ? 1 : 0) };
-    try { if (storage) storage.setItem(GOAL_KEY, JSON.stringify(nextState)); } catch (e) {}
+    var completed = value >= goal.target, completedCount = state.completed;
+    if (completed && completedCount < 9007199254740991) completedCount++;
+    var nextState = { version: 1, index: completed ? (state.index + 1) % GOALS.length : state.index, completed: completedCount };
+    var saved = false;
+    try { if (storage) { storage.setItem(GOAL_KEY, JSON.stringify(nextState)); saved = true; } } catch (e) {}
     return {
+      saved: saved,
       completed: completed,
       goal: { id: goal.id, title: goal.title, detail: goal.detail, target: goal.target },
       value: Math.min(value, goal.target),
@@ -96,5 +141,5 @@
     };
   }
 
-  return { createOperation: createOperation, resolveOptionalGoal: resolveOptionalGoal, goalKey: GOAL_KEY, goals: GOALS.map(function (g) { return { id: g.id, title: g.title, detail: g.detail, target: g.target }; }) };
+  return { createOperation: createOperation, resolveOptionalGoal: resolveOptionalGoal, comparePersonalRecords: comparePersonalRecords, normalizeMatchRecords: normalizeMatchRecords, addSafeCount: addSafeCount, goalKey: GOAL_KEY, goals: GOALS.map(function (g) { return { id: g.id, title: g.title, detail: g.detail, target: g.target }; }) };
 });
