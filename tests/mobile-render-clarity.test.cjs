@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 const assets = path.join(__dirname, '../AndroidProject/app/src/main/assets');
+const THREE = require(path.join(assets, 'www', 'three.min.js'));
 const pages = ['www','phone-host'].map(tree => readFileSync(path.join(assets,tree,'index.html'),'utf8'));
 function section(page, start, end) {
   const a = page.indexOf(start), b = page.indexOf(end, a);
@@ -87,6 +88,53 @@ test('crosshair frame styling skips unchanged CSS writes but applies visual tran
   assert.equal(style.display, '');
   assert.equal(writes.gap, initial.gap + 1, 'visibility transition does not rewrite an unchanged gap');
   assert.equal(writes.display, initial.display + 2, 'ADS/alive visibility changes take effect immediately');
+});
+
+test('third-person weapon posing reuses top-level helpers and preserves hand alignment', () => {
+  const rigBlock = page => section(page, 'var WORLD_RIGHT_GRIP=', '\nfunction worldWeaponShape');
+  assert.equal(rigBlock(pages[0]), rigBlock(pages[1]), 'world-weapon posing stays synchronized in both Android pages');
+  for (const page of pages) {
+    const pose = section(page, 'function poseWorldArms(u){', '\nfunction worldWeaponShape').split('\n').slice(1).join('\n');
+    assert.doesNotMatch(pose, /\bfunction\s+[A-Za-z_$][\w$]*\s*\(/,
+      'per-unit pose sync does not declare and allocate nested helper closures');
+    assert.doesNotMatch(pose, /\|\|\s*\[\s*0\s*,\s*0\s*,\s*0\s*\]/,
+      'missing right-grip metadata does not allocate a fallback array per pose');
+    assert.match(page, /function poseWorldArmTarget\(/);
+    assert.match(page, /function poseWorldArmSegment\(/);
+    assert.match(page, /function alignWorldWeaponHand\(/);
+  }
+
+  for (const page of pages) {
+    const gripCalls = [];
+    const hands = { setGrip(...args) { gripCalls.push(args.slice(1)); } };
+    const context = vm.createContext({
+      THREE,
+      WORLD_WEAPON_PRESENTATION: { carbine: { rightGrip: [0.04, 0.02, -0.03], leftGrip: [0.02, 0.01, -0.22] } },
+      window: { SightlineThirdPersonHands: hands }, SightlineThirdPersonHands: hands,
+      fpGripClass: () => 'rifle'
+    });
+    vm.runInContext(rigBlock(page), context);
+    const root = new THREE.Group();
+    root.position.set(2, 0.5, -4); root.rotation.set(0.12, 0.7, -0.08);
+    const gun = new THREE.Group(); gun.position.set(0.2, 1.25, -0.4); gun.rotation.set(0.03, -0.15, 0.02); root.add(gun);
+    const armR = new THREE.Group(), armL = new THREE.Group(), handR = new THREE.Group(), handL = new THREE.Group();
+    armR.add(handR); armL.add(handL); root.add(armR, armL);
+    const unit = { worldGun: gun, worldKey: 'carbine', weaponPulse: 0.2, armR, armL, handRigR: handR, handRigL: handL,
+      armRShoulder: context.WORLD_RIGHT_SHOULDER.clone(), armLShoulder: context.WORLD_LEFT_SHOULDER.clone(),
+      armRDefaultDir: context.WORLD_RIGHT_DEFAULT_DIR.clone(), armLDefaultDir: context.WORLD_LEFT_DEFAULT_DIR.clone() };
+    context.poseWorldArms(unit);
+    root.updateMatrixWorld(true);
+
+    const gunWorld = gun.getWorldQuaternion(new THREE.Quaternion());
+    const rightHandWorld = handR.getWorldQuaternion(new THREE.Quaternion());
+    const leftHandWorld = handL.getWorldQuaternion(new THREE.Quaternion());
+    const expectedLeft = gunWorld.clone().multiply(context.WORLD_HAND_SUPPORT_ROLL_Q);
+    assert.ok(rightHandWorld.angleTo(gunWorld) < 1e-6, 'right hand follows firearm orientation');
+    assert.ok(leftHandWorld.angleTo(expectedLeft) < 1e-6, 'support hand retains its authored roll');
+    assert.ok(armR.quaternion.toArray().every(Number.isFinite) && armL.quaternion.toArray().every(Number.isFinite),
+      'both arm segments receive finite alignment transforms');
+    assert.equal(gripCalls.length, 2, 'existing third-person grip response is preserved');
+  }
 });
 
 test('Both clients share the bounded mobile policy, presets and drawing buffer resize', () => {

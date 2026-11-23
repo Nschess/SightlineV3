@@ -8354,6 +8354,19 @@ var WORLD_ARM_RIGHT_TARGET=new THREE.Vector3(),WORLD_ARM_LEFT_TARGET=new THREE.V
 var WORLD_WEAPON_META={};
 function worldWeaponUsesModelGrip(key){return !!WORLD_WEAPON_META[key];}
 function worldVisibleThroughParents(node,root){for(var p=node;p&&p!==root.parent;p=p.parent){if(!p.visible)return false;if(p===root)break;}return true;}
+function poseWorldArmTarget(gun,dst,offset){
+ if(Array.isArray(offset))WORLD_ARM_OFFSET.set(offset[0]||0,offset[1]||0,offset[2]||0);else WORLD_ARM_OFFSET.set(0,0,0);
+ dst.copy(WORLD_ARM_OFFSET).applyQuaternion(gun.quaternion).add(gun.position);
+}
+function poseWorldArmSegment(arm,shoulder,defaultDir,dst){
+ if(!arm)return;WORLD_ARM_DIRECTION.copy(dst).sub(shoulder);var len=WORLD_ARM_DIRECTION.length();
+ if(!Number.isFinite(len)||len<.08)return;
+ arm.position.copy(shoulder);arm.quaternion.setFromUnitVectors(WORLD_ARM_DEFAULT_DIRECTION.copy(defaultDir).normalize(),WORLD_ARM_DIRECTION.multiplyScalar(1/len));
+ var base=defaultDir.length();arm.scale.setScalar(Math.max(.72,Math.min(1.32,len/base)));
+}
+function alignWorldWeaponHand(hand,arm,support){
+ if(!hand||!arm)return;arm.getWorldQuaternion(WORLD_HAND_ARM_Q);WORLD_HAND_LOCAL_Q.copy(WORLD_HAND_ARM_Q).invert().multiply(WORLD_HAND_GUN_Q);if(support)WORLD_HAND_LOCAL_Q.multiply(WORLD_HAND_SUPPORT_ROLL_Q);hand.quaternion.copy(WORLD_HAND_LOCAL_Q);
+}
 function buildWorldSourceWeapon(key){
  var model;
  if(GUN_V[key])model=buildVariant(key);
@@ -8428,27 +8441,16 @@ function worldViewmodelGeometry(key){
 function poseWorldArms(u){
  if(!u||!u.worldGun||(!u.armR&&!u.armL))return;
  var meta=worldWeaponUsesModelGrip(u.worldKey)?WORLD_WEAPON_META[u.worldKey]:null,profile=WORLD_WEAPON_PRESENTATION[u.worldKey]||null;
- function target(dst,offset){
-  if(Array.isArray(offset))WORLD_ARM_OFFSET.set(offset[0]||0,offset[1]||0,offset[2]||0);else WORLD_ARM_OFFSET.set(0,0,0);
-  dst.copy(WORLD_ARM_OFFSET).applyQuaternion(u.worldGun.quaternion).add(u.worldGun.position);
- }
- function pose(arm,shoulder,defaultDir,dst){
-  if(!arm)return;WORLD_ARM_DIRECTION.copy(dst).sub(shoulder);var len=WORLD_ARM_DIRECTION.length();
-  if(!Number.isFinite(len)||len<.08)return;
-  arm.position.copy(shoulder);arm.quaternion.setFromUnitVectors(WORLD_ARM_DEFAULT_DIRECTION.copy(defaultDir).normalize(),WORLD_ARM_DIRECTION.multiplyScalar(1/len));
-  var base=defaultDir.length();arm.scale.setScalar(Math.max(.72,Math.min(1.32,len/base)));
- }
- target(WORLD_ARM_RIGHT_TARGET,meta&&meta.rightGrip||profile&&profile.rightGrip||[0,0,0]);
- target(WORLD_ARM_LEFT_TARGET,meta&&meta.leftGrip||profile&&profile.leftGrip||WORLD_DEFAULT_LEFT_GRIP);
- pose(u.armR,u.armRShoulder||WORLD_RIGHT_SHOULDER,u.armRDefaultDir||WORLD_RIGHT_DEFAULT_DIR,WORLD_ARM_RIGHT_TARGET);
- pose(u.armL,u.armLShoulder||WORLD_LEFT_SHOULDER,u.armLDefaultDir||WORLD_LEFT_DEFAULT_DIR,WORLD_ARM_LEFT_TARGET);
+ poseWorldArmTarget(u.worldGun,WORLD_ARM_RIGHT_TARGET,meta&&meta.rightGrip||profile&&profile.rightGrip||null);
+ poseWorldArmTarget(u.worldGun,WORLD_ARM_LEFT_TARGET,meta&&meta.leftGrip||profile&&profile.leftGrip||WORLD_DEFAULT_LEFT_GRIP);
+ poseWorldArmSegment(u.armR,u.armRShoulder||WORLD_RIGHT_SHOULDER,u.armRDefaultDir||WORLD_RIGHT_DEFAULT_DIR,WORLD_ARM_RIGHT_TARGET);
+ poseWorldArmSegment(u.armL,u.armLShoulder||WORLD_LEFT_SHOULDER,u.armLDefaultDir||WORLD_LEFT_DEFAULT_DIR,WORLD_ARM_LEFT_TARGET);
  // The wrist must reach the weapon socket, while the palm/fingers must follow
  // the actual weapon frame. Inheriting only the arm's shortest-arc rotation
  // leaves the fingers rolled away from the trigger/handguard on many guns.
  if(u.handRigR||u.handRigL){
   u.worldGun.getWorldQuaternion(WORLD_HAND_GUN_Q);
-  function alignHand(hand,arm,support){if(!hand||!arm)return;arm.getWorldQuaternion(WORLD_HAND_ARM_Q);WORLD_HAND_LOCAL_Q.copy(WORLD_HAND_ARM_Q).invert().multiply(WORLD_HAND_GUN_Q);if(support)WORLD_HAND_LOCAL_Q.multiply(WORLD_HAND_SUPPORT_ROLL_Q);hand.quaternion.copy(WORLD_HAND_LOCAL_Q);}
-  alignHand(u.handRigR,u.armR,false);alignHand(u.handRigL,u.armL,true);
+  alignWorldWeaponHand(u.handRigR,u.armR,false);alignWorldWeaponHand(u.handRigL,u.armL,true);
  }
  if(window.SightlineThirdPersonHands){var gripClass=fpGripClass(u.worldKey),pulse=Math.max(0,Math.min(1,(u.weaponPulse||0)*1.3));
   if(u.handRigR)SightlineThirdPersonHands.setGrip(u.handRigR,gripClass,1,pulse,pulse);
