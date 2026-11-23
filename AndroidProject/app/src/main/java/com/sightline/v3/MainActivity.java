@@ -62,7 +62,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
     private static final String OFFLINE_URL = "https://" + ASSET_DOMAIN + "/assets/www/index.html";
-    private static final String HOST_BUNDLE_SHA256 = "5d15368c88d9a9dbeacba84c0b8dff7834b9244a8e41a7ad521a15882646fec6";
+    private static final String HOST_BUNDLE_SHA256 = "1e1d05c898b2b4e4f9eeee52b1956e366fea22e649e9ede1032b51fe155d2e9c";
     private static final String DEV20_HOST_BUNDLE_SHA256 = "88e15be18fde11843d72b6905be41d30bf277e11fae81d479a25c677ae2b5b3d";
     private static final String DEV18_2_HOST_BUNDLE_SHA256 = "9bcc0b6245a6934508c9fed3315a231625eff1b8a5d2a62b96bb96cc9b7544cc";
     private static final String V17_HOST_BUNDLE_SHA256 = "54535061c2f0494c0ced44ae050d274d926b9bfc1ef3bc094af2a8d9d5ab3fe5";

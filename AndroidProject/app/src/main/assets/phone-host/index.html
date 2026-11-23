@@ -11958,26 +11958,34 @@ function updateTouchToggle(button, active) {
   if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
   setCls(button, 'selected', active);
 }
+function createTouchHudElementLookup(query) {
+  var cache = Object.create(null);
+  return function (selector) {
+    if (!Object.prototype.hasOwnProperty.call(cache, selector)) cache[selector] = query(selector);
+    return cache[selector];
+  };
+}
+var touchHudElement = createTouchHudElementLookup($);
 function touchActionAvailable(id, available) {
-  var button = $(id);
+  var button = touchHudElement(id);
   var hidden = !available && !mobileHud.editing;
   if (button.hidden !== hidden) button.hidden = hidden;
   if (button.disabled !== hidden) button.disabled = hidden;
 }
 function updateTouchActions() {
   if (!touchMode) return;
-  updateTouchToggle($('#tb-aim'), scoped);
-  updateTouchToggle($('#tb-prone'), proneOn);
-  updateTouchToggle($('#tb-crouch'), touchCrouch || proneOn && G.touchLayout !== 'advanced');
-  updateTouchToggle($('#tb-run'), touchRun);
+  updateTouchToggle(touchHudElement('#tb-aim'), scoped);
+  updateTouchToggle(touchHudElement('#tb-prone'), proneOn);
+  updateTouchToggle(touchHudElement('#tb-crouch'), touchCrouch || proneOn && G.touchLayout !== 'advanced');
+  updateTouchToggle(touchHudElement('#tb-run'), touchRun);
   var advanced = G.touchLayout === 'advanced', positions = mobileHud.positions;
   touchActionAvailable('#tb-run', advanced || !G.touchAutoSprint || !!positions['tb-run']);
   touchActionAvailable('#tb-slide', advanced || !!positions['tb-slide']);
   touchActionAvailable('#tb-prone', advanced || !!positions['tb-prone']);
-  var stance = $('#tb-crouch'), stanceLabel = advanced ? 'Crouch' : 'Tap to crouch or slide while sprinting. Hold to go prone.';
+  var stance = touchHudElement('#tb-crouch'), stanceLabel = advanced ? 'Crouch' : 'Tap to crouch or slide while sprinting. Hold to go prone.';
   if (stance.getAttribute('aria-label') !== stanceLabel) stance.setAttribute('aria-label', stanceLabel);
   setT(stance.querySelector('.tb-label'), advanced ? 'CROUCH' : proneOn ? 'PRONE' : 'STANCE');
-  var reloadButton = $('#tb-rel'), touchWeapon = WEAPONS[cur], touchAmmo = ammo[cur];
+  var reloadButton = touchHudElement('#tb-rel'), touchWeapon = WEAPONS[cur], touchAmmo = ammo[cur];
   var isReloading = !!(P.alive && reloading > 0), needsReload = !!(P.alive && touchWeapon && !touchWeapon.melee && touchAmmo && touchAmmo.res > 0 && touchAmmo.mag <= Math.max(3, Math.ceil((touchWeapon.mag || 1) * 0.15)));
   setCls(reloadButton, 'reload-active', isReloading); setCls(reloadButton, 'reload-needed', !isReloading && needsReload);
   var reloadLabel = isReloading ? 'Reloading weapon' : needsReload ? 'Reload weapon, ammunition low' : 'Reload weapon';
@@ -11992,12 +12000,12 @@ function updateTouchActions() {
   touchActionAvailable('#tb-inspect', P.alive && !!selectedLegendaryFinish(cur) && !!SightlineWeaponSkins.legend.prototype(cur));
   if (availableGrenades) {
     if (!inv[nadeSel]) nadeSel = grenadeTypes.find(function (kind) { return inv[kind] > 0; });
-    setT($('#tb-nade .tb-label'), NADES[nadeSel].name);
+    setT(touchHudElement('#tb-nade .tb-label'), NADES[nadeSel].name);
   }
   var bombLive=MP.on&&MP.mode==='bomb'&&state==='live',obj=MP.objective,team=MP.myTeam,id=MP.id;
   var mpAction=bombLive?mpBombAction():null;
   var usePrompt=bombLive?(obj&&obj.use&&obj.use.actorId===id?(obj.use.action==='plant'?'PLANTING · HOLD':'DEFUSING · HOLD'):mpAction==='plant'?'HOLD TO PLANT':mpAction==='defuse'?'HOLD TO DEFUSE':mpAction==='pickup'?'PICK UP BOMB':''):'';
-  var useButton=$('#tb-objective'),dropButton=$('#tb-dropbomb');
+  var useButton=touchHudElement('#tb-objective'),dropButton=touchHudElement('#tb-dropbomb');
   if(useButton){var showUse=!!(bombLive&&P.alive&&usePrompt);touchActionAvailable('#tb-objective',showUse);var useLabel=usePrompt||'Bomb objective';setT(useButton.querySelector('.tb-label'),useLabel);if(useButton.getAttribute('aria-label')!==useLabel)useButton.setAttribute('aria-label',useLabel);}
   if(dropButton){var hasBomb=!!(bombLive&&obj&&obj.phase==='carried'&&obj.carrierId===id);touchActionAvailable('#tb-dropbomb',hasBomb);}
 }

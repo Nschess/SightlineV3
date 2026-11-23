@@ -17,6 +17,88 @@ function section(page, begin, end) {
   return page.slice(start, stop);
 }
 
+test('mobile touch HUD refresh reuses static control lookups', () => {
+  const helper = section(pages[0], 'function createTouchHudElementLookup(', 'function touchActionAvailable(');
+  assert.equal(helper, section(pages[1], 'function createTouchHudElementLookup(', 'function touchActionAvailable('), 'offline and phone-host caches stay synchronized');
+  for (const page of pages) {
+    const available = section(page, 'function touchActionAvailable(', 'function updateTouchActions()');
+    const refresh = section(page, 'function updateTouchActions()', 'function enterTouchSession()');
+    assert.match(available, /touchHudElement\(id\)/);
+    assert.doesNotMatch(available, /\$\(/);
+    assert.match(refresh, /touchHudElement\(/);
+    assert.doesNotMatch(refresh, /\$\(/);
+  }
+  const hud = section(pages[0], 'function updateHud()', 'function showHit(');
+  assert.match(hud, /if \(touchMode\) updateTouchActions\(\)/, 'state changes still refresh touch labels and accessibility immediately');
+
+  const queried = [];
+  const aim = {}, reload = {};
+  const nodes = new Map([['#tb-aim', aim], ['#tb-rel', reload]]);
+  const context = vm.createContext({ $: selector => { queried.push(selector); return nodes.get(selector) || null; } });
+  vm.runInContext(helper + '\nthis.findTouchHudElement = touchHudElement;', context);
+  assert.strictEqual(context.findTouchHudElement('#tb-aim'), aim);
+  assert.strictEqual(context.findTouchHudElement('#tb-aim'), aim);
+  assert.strictEqual(context.findTouchHudElement('#tb-rel'), reload);
+  assert.strictEqual(context.findTouchHudElement('#tb-rel'), reload);
+  assert.strictEqual(context.findTouchHudElement('#optional'), null);
+  assert.strictEqual(context.findTouchHudElement('#optional'), null);
+  assert.deepEqual(queried, ['#tb-aim', '#tb-rel', '#optional'], 'each stable selector, including absent optional controls, is queried once');
+
+  for (const page of pages) {
+    const controls = new Map();
+    const makeControl = () => {
+      const attributes = new Map(), classes = new Set(), label = { _v: undefined, textContent: '' };
+      return { hidden: false, disabled: false, label, attributes, classes,
+        getAttribute(name) { return attributes.has(name) ? attributes.get(name) : null; },
+        setAttribute(name, value) { attributes.set(name, String(value)); },
+        classList: { toggle(name, active) { if (active) classes.add(name); else classes.delete(name); } },
+        querySelector() { return label; }
+      };
+    };
+    for (const selector of ['#tb-aim','#tb-prone','#tb-crouch','#tb-run','#tb-slide','#tb-rel','#tb-buy','#tb-nade','#tb-nsel','#tb-inspect','#tb-objective','#tb-dropbomb']) controls.set(selector, makeControl());
+    controls.set('#tb-nade .tb-label', controls.get('#tb-nade').label);
+    const lookups = [];
+    const touchContext = vm.createContext({
+      $: selector => { lookups.push(selector); return controls.get(selector) || null; },
+      touchMode: true, scoped: false, proneOn: false, touchCrouch: false, touchRun: false,
+      G: { touchLayout: 'basic', touchAutoSprint: true }, mobileHud: { positions: {}, editing: false },
+      cur: 'pistol', WEAPONS: { pistol: { mag: 12, melee: false } }, ammo: { pistol: { mag: 6, res: 18 } },
+      P: { alive: true }, reloading: 0, inv: {}, NADES: { frag: { name: 'FRAG' }, flash: { name: 'FLASH' } }, nadeSel: 'frag',
+      canBuyNow: () => false, selectedLegendaryFinish: () => null, SightlineWeaponSkins: { legend: { prototype: () => null } },
+      R: { mode: 'versus' }, MP: { on: false }, state: 'live', SOLO_BOMB: { state: null, playerTeam: 0 },
+      mpBombAction: () => null, soloBombPrompt: () => ''
+    });
+    const updateHudCode = section(page, 'function setT(', 'function showDamageDirection(');
+    const updateToggleCode = section(page, 'function updateTouchToggle(', 'function createTouchHudElementLookup(');
+    const actionsCode = section(page, 'function touchActionAvailable(', 'function enterTouchSession()');
+    vm.runInContext(updateHudCode + updateToggleCode + helper + actionsCode + '\nthis.refreshTouchActions = updateTouchActions;', touchContext);
+    touchContext.refreshTouchActions();
+    const firstRefreshLookups = lookups.length;
+    assert.equal(controls.get('#tb-aim').getAttribute('aria-pressed'), 'false');
+
+    touchContext.scoped = true;
+    touchContext.reloading = 1;
+    touchContext.ammo.pistol.mag = 1;
+    touchContext.inv.frag = 1;
+    touchContext.refreshTouchActions();
+    assert.equal(controls.get('#tb-aim').getAttribute('aria-pressed'), 'true', 'ADS state updates immediately on the cached element');
+    assert.equal(controls.get('#tb-rel').getAttribute('aria-label'), 'Reloading weapon');
+    assert.equal(controls.get('#tb-rel').label.textContent, 'LOAD…');
+    assert.ok(controls.get('#tb-rel').classes.has('reload-active'));
+
+    touchContext.scoped = false;
+    touchContext.reloading = 0;
+    touchContext.refreshTouchActions();
+    assert.equal(controls.get('#tb-aim').getAttribute('aria-pressed'), 'false');
+    assert.equal(controls.get('#tb-rel').getAttribute('aria-label'), 'Reload weapon, ammunition low');
+    assert.ok(controls.get('#tb-rel').classes.has('reload-needed'));
+    assert.equal(lookups.length, firstRefreshLookups + 1, 'only the newly visible grenade label requires one additional lookup');
+    const stableLookups = lookups.length;
+    touchContext.refreshTouchActions();
+    assert.equal(lookups.length, stableLookups, 'subsequent HUD refreshes perform no selector queries');
+  }
+});
+
 test('Opening the live store releases all mobile inputs and preserves PC input behavior', () => {
   for (const page of pages) {
     let storeOpens = 0, heldReleaseCalls = 0;
