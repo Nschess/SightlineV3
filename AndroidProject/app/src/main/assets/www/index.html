@@ -15440,9 +15440,11 @@ function renderOfflineBots(alpha) {
   alpha = Math.max(0, Math.min(1, alpha));
   for (var i = 0; i < units.length; i++) {
     var b = units[i]; if (!b.alive || !b.g || !Number.isFinite(b._visPrevX)) continue;
+    var currentY = b.y || 0;
+    if (b.x === b._visPrevX && currentY === b._visPrevY && b.z === b._visPrevZ && b.yaw === b._visPrevYaw) continue;
     b.g.position.x = b._visPrevX + (b.x - b._visPrevX) * alpha;
     b.g.position.z = b._visPrevZ + (b.z - b._visPrevZ) * alpha;
-    b.g.position.y = b._visPrevY + ((b.y || 0) - b._visPrevY) * alpha;
+    b.g.position.y = b._visPrevY + (currentY - b._visPrevY) * alpha;
     var da = Math.atan2(Math.sin(b.yaw - b._visPrevYaw), Math.cos(b.yaw - b._visPrevYaw));
     b.g.rotation.y = b._visPrevYaw + da * alpha;
   }
@@ -15451,7 +15453,9 @@ function renderOfflineBots(alpha) {
 function restoreOfflineBots() {
   for (var i = 0; i < units.length; i++) {
     var b = units[i]; if (!b.alive || !b.g || !Number.isFinite(b._visPrevX)) continue;
-    b.g.position.set(b.x, b.y || 0, b.z); b.g.rotation.y = b.yaw;
+    var currentY = b.y || 0;
+    if (b.x === b._visPrevX && currentY === b._visPrevY && b.z === b._visPrevZ && b.yaw === b._visPrevYaw) continue;
+    b.g.position.set(b.x, currentY, b.z); b.g.rotation.y = b.yaw;
   }
 }
 /* P0 FRAME DIAGNOSTICS BEGIN: opt-in, bounded, CPU timings are inclusive. */

@@ -11,8 +11,8 @@ const ROOT=path.resolve(__dirname,'..');
 const HOST_DIR=path.join(ROOT,'AndroidProject','app','src','main','assets','phone-host');
 const EXPECTED=Object.freeze({
   // Pinned to this candidate's phone-host assets and SHA256SUMS manifest.
-  bundle:'66c97d6482b0884043aaa91b766cea6527fe9aba4424723d666a7dc0186725d5',
-  server:'7b3a516fe7dc3c9f214c80756e2e62ac750a09a4f7e911c6ad8adccefe1c78e4'
+  bundle:'559c2c8594b6bc49da70ac5594acfc16d0eea0816d7de4a56c54f4a5201b2d80',
+  server:'0550732dea09a1fed68890b9287c05f31467d3377344777ba726e9e7e7ca22e2'
 });
 const LIVE_SAMPLE_CAPACITY=2400;
 function sha256(file){return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');}
