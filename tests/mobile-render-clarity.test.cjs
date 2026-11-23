@@ -59,6 +59,36 @@ test('reticle presentation avoids redundant per-frame DOM mutations', () => {
   assert.deepEqual(writes, cleared, 'cleared state remains mutation-free on following frames');
 });
 
+test('crosshair frame styling skips unchanged CSS writes but applies visual transitions', () => {
+  const helper = section(pages[0], 'var lastXhGap = null', 'function setT(');
+  assert.equal(helper, section(pages[1], 'var lastXhGap = null', 'function setT('), 'crosshair sync remains identical in both Android clients');
+  for (const page of pages) {
+    const update = section(page, 'function updatePlayer(dt)', 'var LOBBY_PREVIEW=');
+    assert.match(update, /syncCrosshairPresentation\(xhGapValue,\s*xhDisplayValue\)/);
+    assert.doesNotMatch(update, /el\.xh\.style\.(?:setProperty|display)/);
+  }
+
+  const writes = { gap: 0, display: 0 }, values = new Map(), style = {};
+  style.setProperty = (name, value) => { writes.gap++; values.set(name, String(value)); };
+  Object.defineProperty(style, 'display', { get() { return style._display || ''; }, set(value) { writes.display++; style._display = value; } });
+  const context = vm.createContext({ el: { xh: { style } } });
+  vm.runInContext(helper + '\nthis.syncCrosshairPresentation = syncCrosshairPresentation;', context);
+  context.syncCrosshairPresentation('8px', '');
+  const initial = { ...writes };
+  context.syncCrosshairPresentation('8px', '');
+  assert.deepEqual(writes, initial, 'stationary frames do not reapply unchanged gap or display styles');
+
+  context.syncCrosshairPresentation('18.5px', 'none');
+  assert.equal(values.get('--gap'), '18.5px');
+  assert.equal(style.display, 'none');
+  assert.equal(writes.gap, initial.gap + 1);
+  assert.equal(writes.display, initial.display + 1);
+  context.syncCrosshairPresentation('18.5px', '');
+  assert.equal(style.display, '');
+  assert.equal(writes.gap, initial.gap + 1, 'visibility transition does not rewrite an unchanged gap');
+  assert.equal(writes.display, initial.display + 2, 'ADS/alive visibility changes take effect immediately');
+});
+
 test('Both clients share the bounded mobile policy, presets and drawing buffer resize', () => {
   const atlas = tree => readFileSync(path.join(assets,tree,'character-realism-v12.js'));
   assert.deepEqual(atlas('www'),atlas('phone-host'));

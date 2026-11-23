@@ -10715,6 +10715,11 @@ var el = {
   ring: $('#dmgring'), msg: $('#msg'), scope: $('#scope'), ret: $('#reticle'), stance: $('#stance'), rel: $('#relbar'), relf: $('#relbar i'), radar: $('#radar')
 };
 var rctx = el.radar.getContext('2d'), hitTimer = null, msgTimer = null, flashTimer = null, damageDirTimer = null;
+var lastXhGap = null, lastXhDisplay = null;
+function syncCrosshairPresentation(xhGapValue, xhDisplayValue) {
+  if (lastXhGap !== xhGapValue) { el.xh.style.setProperty('--gap', xhGapValue); lastXhGap = xhGapValue; }
+  if (lastXhDisplay !== xhDisplayValue) { el.xh.style.display = xhDisplayValue; lastXhDisplay = xhDisplayValue; }
+}
 function setT(n, v) { if (n._v !== v) { n._v = v; n.textContent = v; } }
 function setCls(n, cls, on) { var k = '_c' + cls; if (n[k] !== on) { n[k] = on; n.classList.toggle(cls, on); } }
 function showDamageDirection(a) {
@@ -14986,8 +14991,9 @@ function updatePlayer(dt) {
   camera.rotation.x = P.pitch + P.punch + Math.cos(T * 1.7) * 0.0009 * sway;
   if (!P.alive && state !== 'idle') { var sp = specUnit(); if (sp) { sp.g.visible = false; camera.position.set(sp.x, 1.62 * sp.op.h, sp.z); camera.rotation.set(0, sp.yaw, 0); } }
   var spr = (WEAPONS[cur].scope ? (scoped ? 0 : 16) : 0) + 4 + (bloom + speedFrac * WEAPONS[cur].moveSpread + (P.onGround ? 0 : 0.05)) * 520;
-  el.xh.style.setProperty('--gap', (G.xhGap + (G.xhDynamic ? Math.min(46, spr) : 4)) + 'px');
-  el.xh.style.display = (adsT > 0.90 || WEAPONS[cur].melee || !P.alive) ? 'none' : '';
+  var xhGapValue=(G.xhGap + (G.xhDynamic ? Math.min(46, spr) : 4)) + 'px';
+  var xhDisplayValue=(adsT > 0.90 || WEAPONS[cur].melee || !P.alive) ? 'none' : '';
+  syncCrosshairPresentation(xhGapValue,xhDisplayValue);
   var st = sliding ? 'Slide' : (P.prone > 0.5 ? 'Prone' : (P.crouch > 0.5 ? 'Crouch' : ''));
   if (el.stance.textContent !== st) el.stance.textContent = st;
 }
