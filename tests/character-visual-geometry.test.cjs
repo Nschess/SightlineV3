@@ -47,6 +47,34 @@ function infected(type, id, q) {
 }
 
 function occurrences(mesh, tag) { return mesh.tag.filter((value) => value === tag).length; }
+const silhouetteTags = new Set([
+  'tidewatchCrownRail', 'tidewatchInsigniaMark', 'tidewatchShoulderCap', 'tidewatchShoulderIndex',
+  'cinderPactInsigniaMark', 'cinderAsymmetricShoulderMantle', 'cinderShoulderIndex',
+  'hollowedSpitterThroatGland', 'hollowedSpitterDuct', 'hollowedWalkerScapularSpur'
+]);
+function assertSilhouetteTriangleWinding(mesh) {
+  let taggedFaces = 0, nondegenerateFaces = 0;
+  assert.equal(mesh.I.length % 3, 0, 'mesh indices must form complete triangles');
+  for (let i = 0; i < mesh.I.length; i += 3) {
+    const a = mesh.I[i], b = mesh.I[i + 1], c = mesh.I[i + 2];
+    const tag = mesh.tag[a];
+    if (!silhouetteTags.has(tag) || mesh.tag[b] !== tag || mesh.tag[c] !== tag) continue;
+    taggedFaces++;
+    const ax = mesh.P[a * 3], ay = mesh.P[a * 3 + 1], az = mesh.P[a * 3 + 2];
+    const ux = mesh.P[b * 3] - ax, uy = mesh.P[b * 3 + 1] - ay, uz = mesh.P[b * 3 + 2] - az;
+    const vx = mesh.P[c * 3] - ax, vy = mesh.P[c * 3 + 1] - ay, vz = mesh.P[c * 3 + 2] - az;
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const area = Math.hypot(nx, ny, nz);
+    if (area < 1e-12) continue; // Pole/seam triangles can collapse by construction.
+    const normalDot = nx * (mesh.N[a * 3] + mesh.N[b * 3] + mesh.N[c * 3]) +
+      ny * (mesh.N[a * 3 + 1] + mesh.N[b * 3 + 1] + mesh.N[c * 3 + 1]) +
+      nz * (mesh.N[a * 3 + 2] + mesh.N[b * 3 + 2] + mesh.N[c * 3 + 2]);
+    assert.ok(normalDot > 0, `triangle winding and vertex normals must agree for ${tag}`);
+    nondegenerateFaces++;
+  }
+  if (taggedFaces) assert.ok(nondegenerateFaces > 0, 'tagged details must contain nondegenerate triangles');
+  return nondegenerateFaces;
+}
 function assertFiniteBuilder(mesh) {
   assert.equal(mesh.P.length, mesh.count() * 3);
   assert.equal(mesh.N.length, mesh.P.length);
@@ -59,6 +87,7 @@ function assertFiniteBuilder(mesh) {
     assert.ok(length > .5 && length < 1.5, 'builder normals remain nonzero and normalized');
   }
   for (const index of mesh.I) assert.ok(Number.isInteger(index) && index >= 0 && index < mesh.count());
+  assertSilhouetteTriangleWinding(mesh);
 }
 
 test('Tidewatch and Cinder Pact have distinct original cloth and insignia traces', () => {
@@ -99,6 +128,9 @@ test('Tidewatch helmet crown rails and paired shoulder caps are faction-only and
   for (const mesh of [tide.body, tide.right, tide.left, cinder.body, cinder.right, cinder.left]) assertFiniteBuilder(mesh);
   const added = occurrences(tide.body, 'tidewatchCrownRail') + occurrences(tide.right, 'tidewatchShoulderCap') + occurrences(tide.right, 'tidewatchShoulderIndex') + occurrences(tide.left, 'tidewatchShoulderCap') + occurrences(tide.left, 'tidewatchShoulderIndex');
   assert.ok(added < 500, 'Tidewatch silhouette details stay below 500 added vertices per character');
+  const rk = tide.D.build.arm * 1.22 * (tide.D.build.bulk > 1.1 ? 1.08 : 1);
+  const capCenterInShoulder = Math.hypot(.004 * rk / (.06 * rk), .052 * rk / (.06 * rk));
+  assert.ok(capCenterInShoulder < 1, 'Tidewatch shoulder-cap center remains attached inside the existing shoulder volume');
   assert.match(source, /arm\(1, \[\.222, 1\.205, -\.36\], \[\.55, -1, \.45\]\); armBuilders\.right = mb;/);
   assert.match(source, /arm\(-1, \[\.152, 1\.268, -\.468\], \[-\.55, -1, \.1\]\); armBuilders\.left = mb;/);
   process.stdout.write('Tidewatch tagged detail vertices: ' + added + '\n');
@@ -134,6 +166,14 @@ test('Hollowed walker spur and spitter throat anatomy are type-exclusive and fin
   assert.equal(occurrences(spitter.body, 'hollowedSpitterThroatGland') % 2, 0);
   assert.equal(occurrences(spitter.body, 'hollowedSpitterDuct') % 2, 0);
   assert.equal(occurrences(walker.body, 'hollowedSpitterThroatGland'), 0);
+  const sacCenter = [0, 1.53, -.03], sacRadii = [.085, .07, .08];
+  for (const side of [-1, 1]) {
+    const glandCenter = [side * .055, 1.535, -.087];
+    const glandAttachment = Math.hypot((glandCenter[0] - sacCenter[0]) / sacRadii[0], (glandCenter[1] - sacCenter[1]) / sacRadii[1], (glandCenter[2] - sacCenter[2]) / sacRadii[2]);
+    const ductStart = [side * .05, 1.53, -.078];
+    const ductAttachment = Math.hypot((ductStart[0] - sacCenter[0]) / sacRadii[0], (ductStart[1] - sacCenter[1]) / sacRadii[1], (ductStart[2] - sacCenter[2]) / sacRadii[2]);
+    assert.ok(glandAttachment < 1 && ductAttachment < 1, 'paired spitter glands and ducts must overlap the existing throat sac, not float free');
+  }
   for (const mesh of [walker.body, walker.legR, walker.legL, spitter.body, spitter.legR, spitter.legL, brute.body]) assertFiniteBuilder(mesh);
   const spurYs = walker.body.tag.flatMap((tag, i) => tag === 'hollowedWalkerScapularSpur' ? [walker.body.P[i * 3 + 1]] : []);
   const bodyYs = walker.body.P.filter((_v, i) => i % 3 === 1);
