@@ -950,10 +950,33 @@ test('inactive lobby preview leaves the render tree and reattaches across map ch
   scene.updateMatrixWorld(true);
   assert.equal(childMatrixUpdates, 0, 'detached preview descendants receive no matrix updates');
 
+  let ownedGeometryDisposals = 0, ownedMaterialDisposals = 0;
+  let sharedGeometryDisposals = 0, sharedMaterialDisposals = 0;
+  const ownedGeometry = new THREE.CircleGeometry(0.58, 20);
+  const ownedMaterial = new THREE.MeshBasicMaterial({ color: 0x090d0b });
+  const ownedContact = new THREE.Mesh(ownedGeometry, ownedMaterial);
+  ownedContact.userData.sightlineLobbyOwnedGpu = true;
+  ownedGeometry.addEventListener('dispose', () => ownedGeometryDisposals++);
+  ownedMaterial.addEventListener('dispose', () => ownedMaterialDisposals++);
+  const sharedGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const sharedMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  sharedGeometry.addEventListener('dispose', () => sharedGeometryDisposals++);
+  sharedMaterial.addEventListener('dispose', () => sharedMaterialDisposals++);
+  previewRoot.add(ownedContact, new THREE.Mesh(sharedGeometry, sharedMaterial));
+
   const effect = new THREE.Group(); scene.add(effect);
   context.CURMAP.id = 'map-two';
   context.lobbyPreviewUpdate(true);
   const rebuiltRoot = context.LOBBY_PREVIEW.g;
+  assert.equal(ownedGeometryDisposals, 1, 'replacing a preview disposes its owned contact-shadow geometry');
+  assert.equal(ownedMaterialDisposals, 1, 'replacing a preview disposes its owned contact-shadow material');
+  assert.equal(sharedGeometryDisposals, 0, 'replacing a preview leaves cached character geometry alive');
+  assert.equal(sharedMaterialDisposals, 0, 'replacing a preview leaves cached character material alive');
+  const rebuiltContact = rebuiltRoot.children.find(child => child.userData.sightlineLobbyOwnedGpu);
+  assert.ok(rebuiltContact, 'each newly built preview tags its uniquely owned contact-shadow resources');
+  let rebuiltGeometryDisposals = 0, rebuiltMaterialDisposals = 0;
+  rebuiltContact.geometry.addEventListener('dispose', () => rebuiltGeometryDisposals++);
+  rebuiltContact.material.addEventListener('dispose', () => rebuiltMaterialDisposals++);
   assert.notEqual(rebuiltRoot, previewRoot, 'map changes rebuild the preview model');
   assert.equal(previewRoot.parent, null);
   assert.equal(rebuiltRoot.parent, scene);
@@ -968,6 +991,15 @@ test('inactive lobby preview leaves the render tree and reattaches across map ch
   assert.equal(rebuiltRoot.parent, scene);
   assert.equal(rebuiltRoot.visible, true);
   assert.equal(created, 1);
+
+  context.CURMAP.id = 'map-three';
+  context.lobbyPreviewUpdate(true);
+  assert.notEqual(context.LOBBY_PREVIEW.g, rebuiltRoot, 'a later map change replaces the cached preview');
+  assert.equal(rebuiltGeometryDisposals, 1, 'the generated contact-shadow geometry is disposed on replacement');
+  assert.equal(rebuiltMaterialDisposals, 1, 'the generated contact-shadow material is disposed on replacement');
+  assert.equal(sharedGeometryDisposals, 0, 'cached character geometry remains valid after repeated replacement');
+  assert.equal(sharedMaterialDisposals, 0, 'cached character material remains valid after repeated replacement');
+  assert.equal(created, 2);
 });
 
 test('static map transforms stay cached while moving parent-child transforms still propagate', () => {
