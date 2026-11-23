@@ -25,7 +25,7 @@ test('changing settings category by click rerenders once and focuses newly selec
  assert(a>=0&&b>a);let click,renderN=0,navN=0,focused=0,tick=0;
  const chosen={focus(o){assert.equal(o.preventScroll,true);focused++}};
  const ctx=vm.createContext({$:(sel)=>sel==='.mn-main'?{addEventListener(event,fn){if(event==='click')click=fn}}:chosen,
-   renderBody(v){assert.equal(v,false);renderN++},renderNav(){navN++},uiTick(v){assert.equal(v,true);tick++},setTab:'video',SL82_SETTINGS_SUBROUTE:'settings',console});
+   renderBody(v){assert.equal(v,false);renderN++},renderNav(){navN++},uiTick(v){assert.equal(v,true);tick++},setTab:'video',SL82_SETTINGS_SUBROUTE:'settings',touchMode:false,console});
  vm.runInContext(html.slice(a,b),ctx);
  const target={closest(sel){return sel==='[data-sub]'?{getAttribute(k){assert.equal(k,'data-sub');return 'audio'}}:null}};
  click({target});assert.equal(ctx.setTab,'audio');assert.equal(ctx.SL82_SETTINGS_SUBROUTE,'settings');assert.equal(renderN,1);assert.equal(navN,1);assert.equal(focused,1);assert.equal(tick,1);

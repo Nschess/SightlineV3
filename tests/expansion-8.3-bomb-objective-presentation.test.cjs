@@ -18,7 +18,10 @@ test('Offline and LAN pages render A/B sites, carried/dropped/planted device sta
     assert.match(page, /phase==='dropped'\|\|phase==='planted'/, label + ' must place the bomb prop at its authoritative world position');
     assert.match(page, /use\.action==='plant'/, label + ' must show the physical plant placement animation');
     assert.match(page, /function updateBombHudProgress\(/, label + ' must show hold progress in the HUD');
-    assert.match(page, /syncBombWorldVisuals\(now\);\s*try\s*\{ renderer\.render/, label + ' must update objective presentation in the actual render loop');
+    const objectiveSync = page.indexOf('syncBombWorldVisuals(now);');
+    const submittedFrame = page.indexOf('renderer.render(scene, camera);', objectiveSync);
+    assert.ok(objectiveSync >= 0 && submittedFrame > objectiveSync && submittedFrame - objectiveSync < 500,
+      label + ' must update objective presentation immediately before the submitted frame, allowing diagnostic timing hooks');
     assert.match(page, /carrierName|CARRIER /, label + ' must visibly identify the carrier');
     assert.match(page, /plantedBy|PLANTED BY/, label + ' must identify the planter');
     assert.match(page, /defusedBy|DEFUSED/, label + ' must identify the defuser');

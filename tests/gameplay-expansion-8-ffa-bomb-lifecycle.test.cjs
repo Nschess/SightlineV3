@@ -25,7 +25,7 @@ function offlineContext(overrides) {
     R: { mode: 'ffa', ffaKills: 5, ffaTime: 60, bombBestOf: 3, bombTime: 60, bombSeconds: 20, plantSeconds: 3, defuseSeconds: 4 },
     SOLO_FFA: { match: null, respawns: new Map(), playerShieldUntil: 0, playerLife: 0 },
     SOLO_BOMB: { sites: null, state: null, settings: null, supportMap: null, playerTeam: 0 },
-    T: 0, state: 'live', cur: 'pistol', M: { you: 0, bots: 0, round: 1, money: 800 },
+    T: 0, state: 'live', touchMode: false, cur: 'pistol', M: { you: 0, bots: 0, round: 1, money: 800 },
     P: { alive: true, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, hp: 100, armor: 0 },
     ME: { id: 'human', team: 0 }, bots: [], units: [], mates: [],
     CURMAP: { id: 'courtyard' }, MAPD: { area: { x0: -30, x1: 30, z0: -30, z1: 30 } }, NAV: { nodes: [] },

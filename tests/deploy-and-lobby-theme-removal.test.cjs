@@ -78,6 +78,8 @@ function createDeployHarness() {
     lockPointer() { events.push(['lockPointer']); },
     startSoloFFA() {}, startSoloBombRound() { return true; },
     bombAttackTeamForSoloRound: () => 0,
+    renderBeginnerOperation() {},
+    clearMobileAim() {},
     enterTouchSession() {}
   };
   return { context, events, elements, classEvents };

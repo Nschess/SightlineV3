@@ -22,7 +22,9 @@ function legacyServerNearest(z, humans) {
   const rows=[];
   for (const p of humans) {
     const dx=p.x-z.x,dz=p.z-z.z,d2=dx*dx+dz*dz;
-    if(d2<44*44&&Math.abs(p.y-z.y)<5)rows.push({p,dx,dz,d2});
+    // The bounded candidate scan reaches 56 units so the caller can also
+    // evaluate moving-noise cues; LOS acquisition still has its own 44-unit gate.
+    if(d2<56*56&&Math.abs(p.y-z.y)<5)rows.push({p,dx,dz,d2});
   }
   rows.sort((a,b)=>a.d2-b.d2);
   return rows.slice(0,5);
@@ -88,7 +90,10 @@ test('offline outbreak uses shared bounded scan while retaining LOS, team-load a
     const start=page.indexOf('function stepOutbreakZombie('),end=page.indexOf('\nfunction stepZombie(',start);
     assert.ok(start>=0&&end>start,`${platform} Outbreak loop exists`);
     const body=page.slice(start,end);
-    assert.match(body,/SightlineZombieHunt\.perceptionTargets\(u, P, mates, 5, candidates, candidateDistances, u\.huntCandidateCursor, 43, 5, u\.tgt\)/);
+    assert.match(body,/SightlineZombieHunt\.perceptionTargets\(u, P, mates, 5, candidates, candidateDistances, u\.huntCandidateCursor, 60, 5, u\.tgt\)/,
+      'the bounded candidate window covers sound cues while the separate visibility test keeps its 43-unit limit');
+    assert.match(body,/if \(P\.alive && Math\.abs\(\(P\.y \|\| 0\) - \(u\.y \|\| 0\)\) <= 5\)[\s\S]*?playerProbeDistance <= 60[\s\S]*?candidates\[playerProbeIndex\] = P/,
+      'the player receives a bounded candidate slot even when closer allies fill the nearest-roster scan');
     assert.match(body,/outbreakTargetLoad\(a, u\) \* 8/);
     assert.match(body,/u\.tgt === a \? 5 : 0/);
     assert.match(body,/losClear\(/);
@@ -122,8 +127,10 @@ test('offline and phone-host shared gameplay modules and AI paths remain in pari
     assert.equal(declaration(pages[0],name),declaration(pages[1],name),`${name} shared gameplay parity`);
   assert.match(pages[0],/startSoloFFA\(\)/,'offline page wires its solo FFA lifecycle');
   assert.match(pages[0],/startSoloBombRound\(\)/,'offline page wires its solo Bomb lifecycle');
-  assert.match(pages[1],/data-v="ffa"/,'phone-host page exposes the LAN FFA mode');
-  assert.match(pages[1],/data-v="bomb"/,'phone-host page exposes the LAN Bomb mode');
+  const hostRules=pages[1].slice(pages[1].indexOf('function mpHostRouteHtml(head,L,route){'),pages[1].indexOf('function mpPanel(head)',pages[1].indexOf('function mpHostRouteHtml(head,L,route){')));
+  assert.match(hostRules,/\['ffa','Free-for-all'\]/,'phone-host mode picker includes the LAN FFA mode');
+  assert.match(hostRules,/\['bomb','Bomb Defusal'\]/,'phone-host mode picker includes the LAN Bomb mode');
+  assert.match(hostRules,/data-net="mode" data-v="'\+v\[0\]/,'mode choices are emitted as authoritative mode controls');
   const server=fs.readFileSync(path.join(ASSETS,'phone-host/server.js'),'utf8');
   assert.match(server,/opt\('tick-ms', 20, 10, 50\)/);
   assert.match(server,/opt\('snapshot-every', 1, 1, 5\)/);

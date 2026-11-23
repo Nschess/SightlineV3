@@ -8,7 +8,7 @@ const Host = require('../AndroidProject/app/src/main/assets/phone-host/server.js
 
 const serverPath = path.resolve(__dirname, '../AndroidProject/app/src/main/assets/phone-host/server.js');
 const source = fs.readFileSync(serverPath, 'utf8');
-const start = source.indexOf('const WS_FRAME_BATCH = 32, WS_FRAME_RATE_MAX = 600;');
+const start = source.indexOf('const WS_FRAME_BATCH = 32, WS_FRAME_RATE_MAX = 600, WS_MESSAGE_RATE_MAX = 150;');
 const end = source.indexOf('/* ---------------- game state ---------------- */', start);
 assert.ok(start >= 0 && end > start, 'test extracts the actual phone-host Conn implementation');
 
@@ -83,24 +83,30 @@ function decodeServerFrame(buf) {
   return { op: buf[0] & 15, payload: buf.subarray(offset, offset + len) };
 }
 
-test('32-peer input bursts yield after at most 32 frames per connection and preserve message order', () => {
+test('32-peer input bursts yield after at most 32 frames per connection while respecting the message cap', () => {
   const h = harness();
   const clients = [];
   for (let peer = 0; peer < 32; peer++) {
     const received = [];
     const c = h.peer(raw => received.push(JSON.parse(raw).i));
-    const prefix = Array.from({ length: 601 }, (_, i) => clientFrame(1, Buffer.from(JSON.stringify({ i }))));
+    const prefix = [];
+    for (let i = 0; i < 150; i++) {
+      prefix.push(clientFrame(1, Buffer.from(JSON.stringify({ i }))));
+      prefix.push(clientFrame(10), clientFrame(10), clientFrame(10));
+    }
     c.conn.data(Buffer.concat(prefix));
     clients.push({ ...c, received });
   }
   const consumedWhenEventLoopRegainsControl = clients.map(c => c.received.length);
-  assert.deepEqual(consumedWhenEventLoopRegainsControl, Array(32).fill(32));
-  assert.equal(clients.reduce((sum, c) => sum + c.received.length, 0), 32 * 32);
+  assert.deepEqual(consumedWhenEventLoopRegainsControl, Array(32).fill(8));
+  assert.ok(clients.every(c => c.conn.frameRateCount === 32), 'each parser turn handles no more than 32 frames');
+  assert.equal(clients.reduce((sum, c) => sum + c.received.length, 0), 32 * 8);
   assert.ok(h.pendingImmediates() > 0);
   h.drainAll();
   for (const c of clients) {
-    assert.deepEqual(c.received, Array.from({ length: 600 }, (_, i) => i));
-    assert.equal(c.conn.closed, true, 'per-peer frame rate cap closes a flood after 600 complete frames');
+    assert.deepEqual(c.received, Array.from({ length: 150 }, (_, i) => i));
+    assert.equal(c.conn.frameRateCount, 600);
+    assert.equal(c.conn.closed, false, '600 mixed frames remain within the frame cap and 150-message cap');
   }
 });
 
@@ -177,13 +183,13 @@ test('rolling 1 s limit rejects a burst placed immediately across the old fixed-
   const h = harness();
   const c = h.peer();
   h.setNow(1999);
-  c.conn.data(many(clientFrame(1, Buffer.from('x')), 600));
+  c.conn.data(many(clientFrame(10), 600));
   h.drainAll();
   assert.equal(c.conn.frameRateCount, 600);
   assert.equal(c.conn.closed, false);
 
   h.setNow(2000);
-  c.conn.data(clientFrame(1, Buffer.from('x')));
+  c.conn.data(clientFrame(10));
   assert.equal(c.conn.closed, true, 'a 601st frame inside the trailing 1000 ms is rejected');
   assert.equal(c.conn.frameRateCount, 600);
 });
@@ -191,7 +197,7 @@ test('rolling 1 s limit rejects a burst placed immediately across the old fixed-
 test('600 frames/s sustained on exact quarter-second boundaries remains accepted', () => {
   const h = harness();
   const c = h.peer();
-  const batch = many(clientFrame(1, Buffer.from('x')), 150);
+  const batch = many(clientFrame(10), 150);
   for (const at of [3000, 3250, 3500, 3750, 4000]) {
     h.setNow(at);
     c.conn.data(batch);

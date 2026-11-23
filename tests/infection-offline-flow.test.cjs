@@ -128,7 +128,7 @@ for (const client of ['www', 'phone-host']) {
     const ctx=vm.createContext({
       SOLO_INF:{on:true,chosen:true,playerInfected:false,playerRespawnT:0,playerDown:false,zCount:2},
       OB:{infected:2},P:{alive:false,x:1,y:0,z:2,vx:0,vy:0,vz:0,onGround:false},
-      fireHeld:true,scoped:true,reloading:.4,guns:{pistol:{visible:true},knife:{visible:false}},
+      touchMode:false,fireHeld:true,scoped:true,reloading:.4,guns:{pistol:{visible:true},knife:{visible:false}},
       el:{scope:{hidden:false}},M:{money:500},resetNades(){resetCount++;},rebuildTargets(){},
       showMsg(){},updateHud(){},
       zSpot(){return{x:7,y:1,z:9};},MAPD:{spawn:{x:0,y:0,z:0}},groundAt(){return 1;},
@@ -164,7 +164,7 @@ for (const client of ['www', 'phone-host']) {
       SOLO_INF:{on:true,chosen:true,playerInfected:false,playerRespawnT:0,playerDown:false,zCount:2},
       OB:{inf:false},P:{alive:true,hp:100,armor:0,x:0,y:0,z:0,yaw:0},M:{stats,money:500},ME:{id:'player'},
       G:{dmgDir:false},el:{flash:{classList:{add(){}}},scope:{hidden:false},ring:{style:{},classList:{add(){}}}},
-      guns:{pistol:{visible:true},knife:{visible:false}},fireHeld:true,scoped:true,reloading:.2,
+      touchMode:false,guns:{pistol:{visible:true},knife:{visible:false}},fireHeld:true,scoped:true,reloading:.2,
       flashTimer:0,
       resetNades(){},rebuildTargets(){},showMsg(){},updateHud(){},
       addFeed(){},ost(){return{k:0,d:0};},checkRound(){},
@@ -218,9 +218,9 @@ for (const client of ['www', 'phone-host']) {
       SOLO_INF:{on:true,chosen:true,playerInfected:true,playerRespawnT:2,playerDown:true},
       SOLO_BOMB:{state:null,sites:null,settings:null,supportMap:null,playerTeam:0},
       applySelectedFirstPersonAppearance(){refreshed++;},applyRules(){},refreshSpec(){},lobbyAudioCue(){},setLobbyMusicActive(){},
-      CFG:{startMoney:800},M:null,owned:{knife:true},P:{armor:0},cur:'knife',
+      touchMode:false,CFG:{startMoney:800},M:null,owned:{knife:true},P:{armor:0},cur:'knife',
       resetNades(){},curBuys:[],lastBuys:[],mel:{t:0,hit:true},mpBuildSupplies(){},
-      offlineAmmoStations(){return[];},nextRound(){started++;}
+      offlineAmmoStations(){return[];},nextRound(){started++;},$(){return{hidden:true};},renderBeginnerOperation(){},clearMobileAim(){}
     });
     vm.runInContext(src,ctx);ctx.startMatch();
     assert.equal(ctx.SOLO_INF.on,false);assert.equal(ctx.SOLO_INF.chosen,false);
