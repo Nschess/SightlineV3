@@ -4439,9 +4439,9 @@ function buildDeco(m) {
   });
   (m.blobs || []).forEach(function (b) { var o = new THREE.Mesh(new THREE.IcosahedronGeometry(b[3], 0), lam(b[4])); o.position.set(b[0], b[1], b[2]); o.scale.y = 0.8; add(o); });
   if(m.details&&m.details.length){
-    var groups=new Map();m.details.forEach(function(d){var a=groups.get(d[3]);if(!a){a=[];groups.set(d[3],a);}a.push(d);});
+    var groups=new Map(),detailGeometry=new THREE.BoxGeometry(1,1,1);m.details.forEach(function(d){var a=groups.get(d[3]);if(!a){a=[];groups.set(d[3],a);}a.push(d);});
     groups.forEach(function(a,color){
-      var mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),lam(color),a.length);
+      var mesh=new THREE.InstancedMesh(detailGeometry,lam(color),a.length);
       var t=new THREE.Object3D();
       a.forEach(function(d,i){t.position.set(d[4],d[5],d[6]);t.scale.set(d[0],d[1],d[2]);t.updateMatrix();mesh.setMatrixAt(i,t.matrix);});
       mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=false;mesh.receiveShadow=false;add(mesh,false);

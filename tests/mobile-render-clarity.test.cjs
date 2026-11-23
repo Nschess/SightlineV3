@@ -177,6 +177,70 @@ test('mobile map obstacles reuse materials for shared textures and dispose them 
   assert.equal(cleanupContext.mobileMapTextures.size, 0, 'per-map texture variants are released on transition');
 });
 
+test('map detail color batches share one map-owned box geometry across rebuilds', () => {
+  const detailCode = section(pages[0], '  if(m.details&&m.details.length){', '  (m.vis || []).forEach');
+  assert.equal(detailCode, section(pages[1], '  if(m.details&&m.details.length){', '  (m.vis || []).forEach'));
+  const mapStart = pages[0].indexOf('var MAPS = ['), mapEnd = pages[0].indexOf('\nvar DEFTEX', mapStart);
+  assert.ok(mapStart >= 0 && mapEnd > mapStart);
+  const mapCode = 'function O(x,z,w,d,h,k,bottom){return {x,z,w,d,h,k,bottom:bottom||0};}\n' + pages[0].slice(mapStart, mapEnd) + '\nMAPS';
+  const maps = vm.runInNewContext(mapCode, {}, { timeout: 2000 });
+  const map = maps.find(entry => entry.id === 'blackwater_old_quarter');
+  assert.ok(map && map.details);
+  assert.equal(map.details.length, 817);
+  assert.equal(new Set(map.details.map(detail => detail[3])).size, 52, 'the real map forms 52 independent material color batches');
+
+  const THREE = require(path.join(assets, 'www/three.min.js'));
+  const createdGeometries = [];
+  const trackedThree = Object.create(THREE);
+  trackedThree.BoxGeometry = class extends THREE.BoxGeometry {
+    constructor(...args) { super(...args); createdGeometries.push(this); }
+  };
+  function buildDetailBatches() {
+    const scene = new THREE.Scene(), worldObjs = [], materials = new Map();
+    function lam(color) {
+      if (!materials.has(color)) materials.set(color, new THREE.MeshLambertMaterial({ color }));
+      return materials.get(color);
+    }
+    function add(object, castsShadow) { object.castShadow = castsShadow !== false; scene.add(object); worldObjs.push(object); return object; }
+    const context = vm.createContext({ THREE: trackedThree, m: map, scene, worldObjs, lam, add });
+    vm.runInContext(detailCode, context);
+    return { scene, worldObjs, materials: Array.from(materials.values()) };
+  }
+
+  const first = buildDetailBatches();
+  assert.equal(first.worldObjs.length, 52, 'color grouping retains all independent instanced batches');
+  assert.equal(first.worldObjs.reduce((sum, mesh) => sum + mesh.count, 0), 817, 'all original detail instances are preserved');
+  assert.equal(new Set(first.worldObjs.map(mesh => mesh.geometry)).size, 1, 'all color batches share the same immutable unit box');
+  assert.equal(createdGeometries.length, 1, 'one unit geometry is generated per map build regardless of color count');
+  assert.ok(first.worldObjs.every(mesh => !mesh.castShadow && !mesh.receiveShadow));
+  first.worldObjs[0].visible = false;
+  assert.equal(first.worldObjs[1].visible, true, 'sharing geometry does not couple object visibility');
+
+  let geometryDisposals = 0, materialDisposals = 0;
+  const oldGeometry = createdGeometries[0];
+  oldGeometry.addEventListener('dispose', () => geometryDisposals++);
+  first.materials.forEach(material => material.addEventListener('dispose', () => materialDisposals++));
+  const cleanup = section(pages[0], 'function clearWorld()', 'function paintTex(');
+  const cleanupContext = vm.createContext({ scene: first.scene, worldObjs: first.worldObjs, obstacleMeshes: [], mobileMapTextures: new Map() });
+  vm.runInContext(cleanup, cleanupContext); cleanupContext.clearWorld();
+  assert.equal(geometryDisposals, 1, 'the shared detail geometry is disposed exactly once on map transition');
+  assert.equal(materialDisposals, 52, 'each color material is disposed exactly once');
+  assert.equal(first.scene.children.length, 0);
+
+  const second = buildDetailBatches();
+  assert.notStrictEqual(second.worldObjs[0].geometry, oldGeometry, 'a later map build gets a fresh geometry owner');
+  assert.equal(createdGeometries.length, 2, 'each repeated map build creates one fresh unit geometry');
+  assert.equal(second.worldObjs.reduce((sum, mesh) => sum + mesh.count, 0), 817);
+  let secondGeometryDisposals = 0, secondMaterialDisposals = 0;
+  second.worldObjs[0].geometry.addEventListener('dispose', () => secondGeometryDisposals++);
+  second.materials.forEach(material => material.addEventListener('dispose', () => secondMaterialDisposals++));
+  const secondCleanup = vm.createContext({ scene: second.scene, worldObjs: second.worldObjs, obstacleMeshes: [], mobileMapTextures: new Map() });
+  vm.runInContext(cleanup, secondCleanup); secondCleanup.clearWorld();
+  assert.equal(secondGeometryDisposals, 1);
+  assert.equal(secondMaterialDisposals, 52);
+  assert.equal(second.scene.children.length, 0);
+});
+
 test('non-CDO obstacle meshes reuse matching box geometry only for the current map build', () => {
   const builder = section(pages[0], 'function buildWorld(m)', 'buildWorld(CURMAP);');
   assert.match(builder, /var obstacleMaterialCache = new Map\(\),\s*obstacleGeometryCache = new Map\(\);/, 'the non-CDO builder owns a scoped immutable geometry cache');
