@@ -202,3 +202,18 @@ test('Plant and defuse holds accept the exact 2 m edge and reject points beyond 
     assert.equal(rules.beginUse(outsideDefuse, { id: 23, team: 1, alive: true, x: 2.0001, y: 0, z: 0 }, 'defuse', 1000), false);
   }
 });
+
+test('Bomb site validation rejects collapsed A/B anchors instead of relocating sites away from map markers', () => {
+  const previousMap = Host.G.map;
+  try {
+    Host.G.map = 'iron_junction';
+    const map = Host._t.mapData(), nav = Host._t.buildNav(map), a = map.bombSites.A;
+    const collapsed = { A: a, B: { x: a.x, z: a.z } };
+    assert.equal(HostRules.resolveBombSites(nav, map.area, collapsed), null,
+      'LAN match setup must reject a collapsed authored site pair');
+    assert.equal(OfflineRules.resolveBombSites(nav, map.area, collapsed), null,
+      'Offline setup must reject the same malformed site pair');
+  } finally {
+    Host.G.map = previousMap;
+  }
+});

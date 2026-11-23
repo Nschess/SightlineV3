@@ -42,11 +42,13 @@
       siteAnchors.B && { id: 'B', x: siteAnchors.B.x, z: siteAnchors.B.z }
     ];
     if (!Array.isArray(anchors) || anchors.length !== 2) return null;
+    const minimumSeparation = Math.max(12, Math.min(30, width * 0.22));
     for (let i = 0; i < 2; i++) {
       const anchor = anchors[i], expectedId = i === 0 ? 'A' : 'B';
       if (!anchor || anchor.id !== expectedId || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.z) ||
           anchor.x <= area.x0 + 1 || anchor.x >= area.x1 - 1 || anchor.z <= area.z0 + 1 || anchor.z >= area.z1 - 1) return null;
     }
+    if (Math.hypot(anchors[0].x - anchors[1].x, anchors[0].z - anchors[1].z) < minimumSeparation) return null;
     const candidates = [[], []], reachable = nav.reachable;
     for (let i = 0; i < nav.nodes.length; i++) {
       const p = nav.nodes[i];
@@ -59,7 +61,6 @@
     }
     for (const list of candidates) list.sort((a, b) => a.d - b.d || a.id - b.id);
     if (!candidates[0].length || !candidates[1].length) return null;
-    const minimumSeparation = Math.max(12, Math.min(30, width * 0.22));
     const limit = Math.min(320, candidates[0].length, candidates[1].length);
     let best = null;
     for (let i = 0; i < limit; i++) for (let j = 0; j < limit; j++) {

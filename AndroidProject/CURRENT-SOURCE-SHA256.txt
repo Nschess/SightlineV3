@@ -13,7 +13,7 @@ e50891110ae67c4dc08a3b61b700ee81c5d7becbbc2754914026385841c8ac4e  app/src/main/a
 239a29b4c449a78868b86c6ecc7203bdb0169d3453a5ecfbeb0a47b54945486b  app/src/main/assets/phone-host/mp-transport-policy.js
 442733f0220684462fe42f928de466d80da13f965f0a2ed14fa8406ddcdc3888  app/src/main/assets/phone-host/navigation.js
 fd18e5e34b747d8b81d9e3685449b2b54e0c135fc986e4b47f59435055d7a558  app/src/main/assets/phone-host/server.js
-a54dd409cb3e5c5ade33bfca2f3ed7c8f1c3d1eba77ca0184d5cd8ce506015fb  app/src/main/assets/phone-host/SHA256SUMS
+81a61e97d5e234acd563e2081e14ca56459aa91c44ec9ce41279bd15aeb381bc  app/src/main/assets/phone-host/SHA256SUMS
 964eeb1a087f753a41910d933b7bf256472351bf4c3fc79d2a4ca3eb5b9d3bee  app/src/main/assets/phone-host/weapon-realism.js
 d7a5d32b7a86bd6c1b6759941eb0318cb51c84ad3d81aa5ee5048d0f70e5e52c  app/src/main/assets/phone-host/zombie-hunt.js
 19c5ec65684f707cb419558e3c39b4534cce391dc1faa8a006f8d06a89da1f17  app/src/main/assets/www/bot-tactics.js
