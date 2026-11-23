@@ -4482,6 +4482,15 @@ function tileMapBoxFaces(geometry, width, height, depth) {
     uv[i * 2 + 1] *= (normals[i * 3 + 1] ? depth : height) / 3;
   }
 }
+function mapObstacleGeometry(width, height, depth, tiled, cache) {
+  var key = width + ':' + height + ':' + depth + ':' + (tiled ? 1 : 0);
+  var geometry = cache.get(key);
+  if (geometry) return geometry;
+  geometry = new THREE.BoxGeometry(width, height, depth);
+  if (tiled) tileMapBoxFaces(geometry, width, height, depth);
+  cache.set(key, geometry);
+  return geometry;
+}
 function buildWorld(m) {
   clearWorld();
   var w = AREA.x1 - AREA.x0, d = AREA.z1 - AREA.z0, cx = (AREA.x0 + AREA.x1) / 2, cz = (AREA.z0 + AREA.z1) / 2;
@@ -4526,12 +4535,11 @@ function buildWorld(m) {
       scene.add(mesh);obstacleMeshes.push(mesh);worldObjs.push(mesh);
     });
   }else{
-    var obstacleMaterialCache = new Map();
+    var obstacleMaterialCache = new Map(), obstacleGeometryCache = new Map();
     OBST.forEach(function(o){
       var spec=texFor(m,o.k),bottom=o.bottom||0;
       var rx=Math.max(1,Math.round(Math.max(o.w,o.d)/3)),ry=Math.max(1,Math.round(o.h/3));
-      var geometry=new THREE.BoxGeometry(o.w,o.h-bottom,o.d), tiled=mobileTilesBoxFaces(spec);
-      if (tiled) tileMapBoxFaces(geometry,o.w,o.h-bottom,o.d);
+      var tiled=mobileTilesBoxFaces(spec),geometry=mapObstacleGeometry(o.w,o.h-bottom,o.d,tiled,obstacleGeometryCache);
       var map=ctexTint(mkTex(spec),tiled?1:rx,tiled?1:ry,tiled);
       var mesh=new THREE.Mesh(geometry,mapObstacleMaterial(map,obstacleMaterialCache));
       mesh.position.set(o.x,(o.h+bottom)/2,o.z);mesh.castShadow=o.vis!==false;mesh.receiveShadow=true;

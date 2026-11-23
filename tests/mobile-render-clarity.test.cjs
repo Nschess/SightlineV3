@@ -152,7 +152,7 @@ test('mobile map obstacles reuse materials for shared textures and dispose them 
   const other = materialFor(otherTexture, cache);
   assert.notStrictEqual(first, other, 'different textures must keep independent material state');
   assert.equal(cache.size, 2);
-  assert.ok(worldBuilder.includes('var obstacleMaterialCache = new Map();'), 'map material cache is scoped to one map build');
+  assert.match(worldBuilder, /var obstacleMaterialCache = new Map\(\),\s*obstacleGeometryCache = new Map\(\);/, 'material and geometry caches are scoped to one map build');
   assert.match(worldBuilder, /mapObstacleMaterial\(map,\s*obstacleMaterialCache\)/, 'non-CDO obstacle meshes use the shared material factory');
   const nextMapMaterial = materialFor(sharedTexture, new Map());
   assert.notStrictEqual(first, nextMapMaterial, 'a later map build gets fresh material ownership');
@@ -175,6 +175,68 @@ test('mobile map obstacles reuse materials for shared textures and dispose them 
   assert.equal(geometryDisposals, 2, 'each per-mesh geometry retains independent ownership');
   assert.equal(scene.children.length, 0, 'map rebuild removes the old map meshes');
   assert.equal(cleanupContext.mobileMapTextures.size, 0, 'per-map texture variants are released on transition');
+});
+
+test('non-CDO obstacle meshes reuse matching box geometry only for the current map build', () => {
+  const builder = section(pages[0], 'function buildWorld(m)', 'buildWorld(CURMAP);');
+  assert.match(builder, /var obstacleMaterialCache = new Map\(\),\s*obstacleGeometryCache = new Map\(\);/, 'the non-CDO builder owns a scoped immutable geometry cache');
+  assert.match(builder, /mapObstacleGeometry\(o\.w,\s*o\.h-bottom,\s*o\.d,\s*tiled,\s*obstacleGeometryCache\)/);
+  const geometryFactory = section(pages[0], 'function tileMapBoxFaces(', 'function buildWorld(');
+  assert.equal(geometryFactory, section(pages[1], 'function tileMapBoxFaces(', 'function buildWorld('));
+
+  const mapStart = pages[0].indexOf('var MAPS = ['), mapEnd = pages[0].indexOf('\nvar DEFTEX', mapStart);
+  assert.ok(mapStart >= 0 && mapEnd > mapStart, 'actual authored map definitions are available for source-level counts');
+  const mapCode = 'function O(x,z,w,d,h,k,bottom){return {x,z,w,d,h,k,bottom:bottom||0};}\n' + pages[0].slice(mapStart, mapEnd) + '\nMAPS';
+  const maps = vm.runInNewContext(mapCode, {}, { timeout: 2000 });
+  const cathedral = maps.find(map => map.id === 'cathedral');
+  assert.ok(cathedral && !cathedral.cdoPremium);
+  const tiledTypes = /^(brick|stone|plaster|stucco|asphalt|cobble|plate)$/;
+  const shapeKeys = new Set(cathedral.obst.map(obstacle => {
+    const spec = cathedral.tex[obstacle.k] || cathedral.tex.wall;
+    return [obstacle.w, obstacle.h - (obstacle.bottom || 0), obstacle.d, tiledTypes.test(spec.t) ? 1 : 0].join(':');
+  }));
+  assert.equal(cathedral.obst.length, 90);
+  assert.equal(shapeKeys.size, 24, 'Cathedral has 24 geometry/UV variants for 90 obstacle meshes');
+
+  const THREE = require(path.join(assets, 'www/three.min.js'));
+  const context = vm.createContext({ THREE, touchMode: true });
+  vm.runInContext(geometryFactory, context);
+  const cache = new Map();
+  const first = context.mapObstacleGeometry(1, 2, 3, false, cache);
+  const repeated = context.mapObstacleGeometry(1, 2, 3, false, cache);
+  assert.strictEqual(first, repeated, 'matching obstacles reuse one local geometry object');
+  const tiled = context.mapObstacleGeometry(1, 2, 3, true, cache);
+  assert.notStrictEqual(tiled, first, 'UV tiling policy is part of the geometry cache key');
+  assert.notDeepEqual(Array.from(tiled.getAttribute('uv').array), Array.from(first.getAttribute('uv').array));
+  const different = context.mapObstacleGeometry(2, 2, 3, false, cache);
+  assert.notStrictEqual(different, first, 'different dimensions keep independent geometry');
+  assert.equal(cache.size, 3);
+
+  const scene = new THREE.Scene(), sharedMaterial = new THREE.MeshBasicMaterial();
+  const meshA = new THREE.Mesh(first, sharedMaterial), meshB = new THREE.Mesh(repeated, sharedMaterial);
+  meshB.position.x = 4; scene.add(meshA, meshB);
+  scene.updateMatrixWorld(true);
+  const raycaster = new THREE.Raycaster();
+  raycaster.set(new THREE.Vector3(0, 3, 0), new THREE.Vector3(0, -1, 0));
+  assert.strictEqual(raycaster.intersectObjects([meshA, meshB], false)[0].object, meshA);
+  raycaster.set(new THREE.Vector3(4, 3, 0), new THREE.Vector3(0, -1, 0));
+  assert.strictEqual(raycaster.intersectObjects([meshA, meshB], false)[0].object, meshB, 'shared geometry retains independent mesh transforms and ray hits');
+
+  let geometryDisposals = 0, materialDisposals = 0;
+  first.addEventListener('dispose', () => geometryDisposals++);
+  sharedMaterial.addEventListener('dispose', () => materialDisposals++);
+  const cleanup = section(pages[0], 'function clearWorld()', 'function paintTex(');
+  const cleanupContext = vm.createContext({ scene, worldObjs: [meshA, meshB], obstacleMeshes: [meshA, meshB], mobileMapTextures: new Map() });
+  vm.runInContext(cleanup, cleanupContext); cleanupContext.clearWorld();
+  assert.equal(geometryDisposals, 1, 'clearWorld disposes shared geometry once across both obstacle meshes');
+  assert.equal(materialDisposals, 1, 'clearWorld disposes the shared obstacle material once');
+  assert.equal(scene.children.length, 0);
+
+  const nextMapGeometry = context.mapObstacleGeometry(1, 2, 3, false, new Map());
+  assert.notStrictEqual(nextMapGeometry, first, 'a later map build gets fresh ownership after transition cleanup');
+  tiled.dispose();
+  different.dispose();
+  nextMapGeometry.dispose();
 });
 
 test('static bamboo stalks batch by shade while preserving placement, collisions and map cleanup', () => {
