@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),assets=path.join(root,'AndroidProject/app/src/main/assets/www');
+// Restored byte-for-byte from the verified 2026-11-15 source commit; Git blob 2067d359913e47a748988115bc850240016e9f74.
 const baseline=require(path.join(root,'rollback/android-formation-prechange-20261115/navigation.js'));
 const improved=require(path.join(assets,'navigation.js'));
 function maps(){const html=fs.readFileSync(path.join(assets,'index.html'),'utf8'),a=html.indexOf('function O(x, z, w, d, h, k, bottom)'),b=html.indexOf('\n];',html.indexOf('var MAPS = [',a));assert.ok(a>=0&&b>a);const ctx={};vm.createContext(ctx);vm.runInContext(html.slice(a,b+3),ctx);return ctx.MAPS;}

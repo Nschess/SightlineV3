@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const read = p => fs.readFileSync(path.join(root, p), 'utf8');
+const read = p => fs.readFileSync(path.join(root, p), 'utf8').replace(/\r\n/g, '\n');
 const mustMatch = (text, pattern, message) => assert.ok(pattern.test(text), message);
 const pages = [
   ['Offline', read('AndroidProject/app/src/main/assets/www/index.html')],
@@ -22,10 +22,13 @@ for (const [name, html] of pages) {
     mustMatch(html, /function resize\(\)\s*\{\s*var w = stage\.clientWidth \|\| 640, h = stage\.clientHeight \|\| 360;/, 'renderer sizes from the stage bounds');
   });
 
-  test(`${name}: speaker and intro controls have bounded Android touch geometry`, () => {
-    mustMatch(html, /class="mn-sound"[^>]*><svg width="19" height="19" viewBox="0 0 24 24"/, 'speaker SVG has intrinsic dimensions');
-    mustMatch(html, /#ov-start \.mn-sound\s*\{[^}]*width:38px;\s*height:38px;[^}]*display:grid;[^}]*place-items:center;/, 'speaker button has a bounded fallback size');
-    mustMatch(html, /#ov-start \.mn-sound svg\s*\{[^}]*width:19px;\s*height:19px;/, 'speaker icon stays within its button');
+  test(`${name}: audio settings and intro controls remain accessible on Android`, () => {
+    mustMatch(html, /\['audio',\s*'Audio'\]/, 'Audio remains a visible mobile Settings category');
+    mustMatch(html, /function mobileSettingsSpec\(tab\)[\s\S]*?if \(tab === 'audio'\) return SPEC\.audio\.filter/, 'Audio controls use the saved Audio settings specification');
+    mustMatch(html, /data-act="p111-mute"/, 'Audio page exposes the saved mute control');
+    mustMatch(html, /Master volume|master:profile\.audio/, 'Master volume remains editable');
+    mustMatch(html, /Music volume|musicVol:profile\.audio/, 'Music volume remains editable');
+    assert.doesNotMatch(html, /id="mn-sound"|class="mn-sound"/, 'the retired floating lobby speaker is not required');
     mustMatch(html, /#sl-intro \.si-begin\{[^}]*touch-action:manipulation/, 'intro begin accepts direct touch');
     mustMatch(html, /#sl-intro \.si-skip\{[^}]*touch-action:manipulation/, 'intro skip accepts direct touch');
     mustMatch(html, /begin\.addEventListener\('click',startCards\)/, 'intro begin handler is connected');
@@ -36,8 +39,12 @@ for (const [name, html] of pages) {
     mustMatch(html, /function updateLobbyPreviewForFrame\(active\)\{if\(lobbyPreviewFrameFault\)return;try\{lobbyPreviewUpdate\(active\);\}catch\(error\)/, 'preview update is isolated from the main frame');
     mustMatch(html, /lobby preview disabled after its frame update failed; continuing the main renderer/, 'preview failure is logged and degrades safely');
     mustMatch(html, /recover:\s*exit/, 'preview stage can restore hidden world objects');
-    mustMatch(html, /function frame\(now\)\s*\{\s*requestAnimationFrame\(frame\);[\s\S]{0,250}updateLobbyPreviewForFrame\(state==='idle'&&menuOpen\(\)\)/, 'frame loop uses the isolated preview wrapper');
-    assert.equal(/function frame\(now\)\s*\{[^}]*\blobbyPreviewUpdate\(state/.test(html), false, 'frame loop does not call the risky preview directly');
+    const frameStart = html.indexOf('function frame(now) {');
+    const frameEnd = html.indexOf('\n}\n', frameStart);
+    assert.ok(frameStart >= 0 && frameEnd > frameStart, 'the frame loop is extractable');
+    const frame = html.slice(frameStart, frameEnd);
+    mustMatch(frame, /updateLobbyPreviewForFrame\(state==='idle'&&menuOpen\(\)\)/, 'frame loop uses the isolated preview wrapper');
+    assert.doesNotMatch(frame, /\blobbyPreviewUpdate\(state/, 'frame loop does not call the risky preview directly');
   });
 
   test(`${name}: intro, deploy, and Match Rules Back remain wired to their existing flows`, () => {
@@ -68,13 +75,16 @@ test('Android host stays immersive landscape, full-size, and emits actionable de
   mustMatch(activity, /BuildConfig\.DEBUG/, 'diagnostic instrumentation is debug-only');
 });
 
-test('v6 remains an update to the installed package and bundles its runtime entrypoints', () => {
+test('diagnostic remains an update to the installed package and bundles its runtime entrypoints', () => {
   const gradle = read('AndroidProject/app/build.gradle');
   const version = read('AndroidProject/app/version.properties');
   const mainPage = pages[0][1];
   mustMatch(gradle, /applicationId 'com\.sightline\.v3'/, 'application identity is preserved');
   mustMatch(gradle, /compileSdk 36/, 'existing SDK workflow is preserved');
-  mustMatch(version, /VERSION_CODE=6/, 'v6 increments app version');
+  const code = Number(version.match(/^VERSION_CODE=(\d+)$/m)?.[1]);
+  const name = version.match(/^VERSION_NAME=(.+)$/m)?.[1];
+  assert.ok(Number.isSafeInteger(code) && code >= 18, 'the installed package version has not regressed');
+  assert.ok(name && name.endsWith('-' + code), 'version name remains tied to its source version code');
   mustMatch(mainPage, /<script[^>]+src="three\.min\.js"/, 'Three.js is locally bundled');
   assert.ok(fs.existsSync(path.join(root, 'AndroidProject/app/src/main/assets/www/three.min.js')));
   assert.ok(fs.existsSync(path.join(root, 'AndroidProject/app/src/main/assets/www/sightline-theme.mp3')));

@@ -44,8 +44,19 @@ test('Phone-host keeps disconnected mode picks local and connected host picks au
     'Connected mode selections go to server-authoritative Match Rules.');
   assert.match(page, /routeHostMode=isHost&&connected/,
     'Offline FFA/Bomb buttons are not mislabeled as requiring a LAN connection.');
-  assert.match(page, /data-net="mode" data-v="ffa"/);
-  assert.match(page, /data-net="mode" data-v="bomb"/);
+  const picker = block(page, 'function renderModePicker(){', 'function updatePlayCopy()');
+  assert.match(picker, /info=\[\[/, 'The mode picker is generated from its authoritative mode catalogue.');
+  for (const mode of ['tactical', 'ffa', 'bomb', 'outbreak', 'infection']) {
+    assert.ok(picker.includes("['"+mode+"'"), 'the mode catalogue contains '+mode);
+  }
+  assert.match(picker, /data-quick-mode="'\+r\[0\]\+'/,
+    'Generated mode choices carry the catalogue identifier as their native selection value.');
+  const hostRoutes = block(page, 'function mpHostRouteHtml(head,L,route){', 'function mpPanel(head)');
+  const rulesRoute = hostRoutes.slice(hostRoutes.indexOf("if(route==='rules')"));
+  assert.match(rulesRoute, /\['ffa','Free-for-all'\]/,
+    'Connected host Match Rules catalogue contains the Free-for-All rule.');
+  assert.match(rulesRoute, /data-net="mode" data-v="'\+v\[0\]\+'/,
+    'Connected host Match Rules serializes each selected mode through its authoritative network action.');
 });
 
 test('Lobby mode selection shows the active map and mode-specific rules with working route buttons', () => {
@@ -110,10 +121,9 @@ test('Maps and Match Rules work locally before connection and remain host-author
   assert.match(routes, /connected\?'Host maps':'Offline maps'/);
   assert.match(routes, /connected\?'Host match rules':'Offline match rules'/);
   const goRoute = block(page, 'function sl82GoRoute(route, focus) {', "$('#mn-nav').addEventListener('click'");
-  assert.match(goRoute, /if\(lanHost&&mpConnected\(\)\)[\s\S]*?SL82_HOST_SUBROUTE='maps'[\s\S]*?else\{if\(lanHost\)SL82_HOST_SUBROUTE='multiplayer';goTab\('map',focus\)/,
+  assert.match(goRoute, /var connected = mpConnected\(\), hosted = document\.querySelector\('meta\[name="sightline-route"\]'\)\?\.content === 'lan-host'/);
+  assert.match(goRoute, /if \(connected\) \{ SL82_HOST_SUBROUTE = route; goTab\('net', focus\); \}\s*else \{ SL82_HOST_SUBROUTE = 'multiplayer'; goTab\(route === 'maps' \? 'map' : 'rules', focus\); \}/,
     'Disconnected navigation opens the local map screen; connected host navigation uses validated host maps.');
-  assert.match(goRoute, /if\(lanHost&&mpConnected\(\)\)[\s\S]*?SL82_HOST_SUBROUTE='rules'[\s\S]*?else\{if\(lanHost\)SL82_HOST_SUBROUTE='multiplayer';goTab\('rules',focus\)/,
-    'Disconnected navigation opens local match rules; connected host navigation uses authoritative rules.');
   assert.match(page, /hostRoute==='maps'[\s\S]*?Connect to load the host map list/,
     'The host-only pre-connect gate remains available only in the Multiplayer host workflow.');
   assert.match(page, /hostRoute==='rules'[\s\S]*?Connect to view and edit match rules/);
@@ -122,7 +132,7 @@ test('Maps and Match Rules work locally before connection and remain host-author
     'After host connection, Maps displays the host-validated arena picker.');
   assert.match(connectedHostRoutes, /if\(route==='rules'\)[\s\S]*?data-net="mode"/,
     'After host connection, Match Rules displays authoritative server controls.');
-  assert.match(page, /if\(isHost\)return mpHostRouteHtml\(h,L,SL82_HOST_SUBROUTE\)/,
+  assert.match(page, /if \(isHost \|\| SL82_HOST_SUBROUTE === 'rules' \|\| SL82_HOST_SUBROUTE === 'maps'\) return mpHostRouteHtml\(h,L,SL82_HOST_SUBROUTE\)/,
     'The host route selection is used when the authoritative lobby is available.');
 
   function navigate(route, connected) {

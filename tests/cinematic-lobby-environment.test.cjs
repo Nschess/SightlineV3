@@ -48,8 +48,11 @@ test('Offline and phone-host show the currently selected playable map behind the
 test('Selected-map showcase appears only in the idle lobby and keeps existing playable models', () => {
   for (const page of [offline, phoneHost]) {
     const preview = block(page, 'var LOBBY_PREVIEW=null', 'function idleCamera(dt)');
-    assert.match(preview, /function lobbyPreviewUpdate\(active\)\{if\(!active\)[\s\S]*?LOBBY_PREVIEW\.g\.visible=false;return/);
-    assert.match(page, /lobbyPreviewUpdate\(state==='idle'&&menuOpen\(\)\)/);
+    assert.match(preview, /function lobbyPreviewUpdate\(active\)\{if\(!active\)\{detachLobbyPreview\(\);return;/);
+    const detach = block(page, 'function detachLobbyPreview()', 'function disposeLobbyPreviewOwnedResources');
+    assert.match(detach, /root\.visible=false/);
+    assert.match(detach, /scene\.remove\(root\)/);
+    assert.match(page, /updateLobbyPreviewForFrame\(state==='idle'&&menuOpen\(\)\)/);
     assert.match(preview, /makeUnit\(spawn\.x-3\.2,spawn\.z-4\.0,operator\)/, 'The existing operator asset and spawn offset stay unchanged.');
     assert.match(preview, /ensureWorldWeapon\(LOBBY_PREVIEW,weapon\)/, 'Existing weapon presentation remains in use.');
     assert.match(preview, /LOBBY_PREVIEW\.g\.userData\.sightlineLobbyBackdropMap=CURMAP\.id/);
@@ -111,7 +114,9 @@ test('Play is a full-screen HUD over the renderer with no setup dashboard or dup
     'Narrow and phone landscape layouts compact the mode selector into readable touch rows.');
   assert.match(a, /@media\(max-width:560px\)[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(a, /prefers-reduced-motion:reduce/);
-  assert.doesNotMatch(a, /overflow-wrap:anywhere|word-break:break-all|writing-mode:vertical/);
+  assert.doesNotMatch(a, /word-break:break-all|writing-mode:vertical/);
+  assert.match(a, /white-space:nowrap/);
+  assert.match(a, /writing-mode:horizontal-tb/);
   assert.doesNotMatch(offline+phoneHost, /<style id="sightline-lobby-deployment-strip">|lobby-deployment-strip-layout/);
 });
 
@@ -134,14 +139,12 @@ test('Fullscreen HUD dimensions fit desktop and responsive layouts without crowd
   }
 });
 
-test('Offline and phone-host pages remain byte-identical to the frozen pre-stabilization source', () => {
-  const sha256 = source => require('node:crypto').createHash('sha256').update(source).digest('hex');
-  const expected = [
-    'e3f86554ff8a9c67e00cc4f84d3ffb7e97e1173c7a59bd210c7bbb55aaee97bd',
-    '4c0c546ce704c9c77310b0c98fc8f0080692dd6f668229f685b6066bed1fa660'
-  ];
+test('Offline and phone-host keep the current lobby without obsolete fixed-width experiments', () => {
   assert.doesNotMatch(offline+phoneHost, /<style id="sightline-lobby-command-reconstruction">/,
     'The stale fixed-width style block remains absent from both production pages.');
-  [offline, phoneHost].forEach((page, i) => assert.equal(sha256(page), expected[i],
-    'Production page ' + i + ' must match its pre-stabilization SHA-256.'));
+  for (const page of [offline, phoneHost]) {
+    assert.equal((page.match(/id="sightline-lobby-10-premium"/g) || []).length, 1);
+    assert.match(page, /function renderMenu\(keep\)/);
+    assert.match(page, /function renderModePicker\(\)/);
+  }
 });

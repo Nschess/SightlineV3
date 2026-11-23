@@ -23,15 +23,15 @@ test('v7 opens the bundled WebView lobby after the asset loader is ready', () =>
   assert.doesNotMatch(onCreate, /showHome\(\);/, 'legacy native launcher is not the startup screen');
 });
 
-test('Offline and LAN launcher actions remain reachable from Android Back', () => {
+test('Offline and secure LAN launcher actions remain reachable from Android Back', () => {
   assert.match(activity, /button\("Play Offline",\s*\(\)\s*->\s*openGame\(null\)\)/);
-  assert.match(activity, /button\("Join Development LAN Game",\s*this::askForHost\)/);
   assert.match(activity, /button\("Join Secure LAN Game",\s*this::askForHost\)/);
   const backStart = activity.indexOf('private void handleBack()');
   const backEnd = activity.indexOf('@Override public void onBackPressed()', backStart);
   assert.ok(backStart >= 0 && backEnd > backStart);
   assert.match(activity.slice(backStart, backEnd), /setPositiveButton\("Return",[\s\S]*?showHome\(\)/);
-  assert.match(activity, /Return to Offline \/ Join LAN selection\?/);
+  assert.match(activity, /Return to game selection\? This player leaves the match/,
+    'Android Back confirms leaving the current match before returning to the launcher.');
 
   const routeStart = activity.indexOf('private void openGame(String lanHost, boolean autoJoin)');
   const routeEnd = activity.indexOf('private void toast(', routeStart);
@@ -52,18 +52,24 @@ test('Offline navigation serves the packaged Lobby v10 page locally', () => {
   assert.match(offlinePage, /refreshSpec\(\);\s*renderMenu\(false\);/);
 });
 
-test('Native configuration preserves landscape, app identity, and v7 update metadata', () => {
+test('Native configuration preserves landscape, app identity, and monotonic version metadata', () => {
   assert.match(manifest, /android:screenOrientation="sensorLandscape"/);
   assert.match(manifest, /android:name="\.MainActivity"/);
   assert.match(fs.readFileSync(path.join(project, 'app/build.gradle'), 'utf8'), /applicationId\s+'com\.sightline\.v3'/);
   const version = fs.readFileSync(path.join(project, 'app/version.properties'), 'utf8');
-  assert.match(version, /^VERSION_CODE=7$/m);
-  assert.match(version, /^VERSION_NAME=0\.3\.4-integration-android-7$/m);
+  const code = Number(version.match(/^VERSION_CODE=(\d+)$/m)?.[1]);
+  const name = version.match(/^VERSION_NAME=(.+)$/m)?.[1];
+  assert.ok(Number.isSafeInteger(code) && code >= 7, 'the installed package version has not regressed');
+  assert.ok(name && name.endsWith('-' + code), 'version name remains tied to its source version code');
 });
 
-test('v6 speaker, viewport, intro touch and preview recovery fixes remain in the bundled page', () => {
-  assert.match(offlinePage, /#ov-start \.mn-sound[^}]*width:38px[^}]*height:38px/);
-  assert.match(offlinePage, /#ov-start \.mn-sound svg[^}]*width:19px[^}]*height:19px/);
+test('Audio settings, viewport, intro touch and preview recovery remain in the bundled pages', () => {
+  for (const page of [offlinePage, hostPage]) {
+    assert.match(page, /\['audio',\s*'Audio'\]/);
+    assert.match(page, /function mobileSettingsSpec\(tab\)[\s\S]*?if \(tab === 'audio'\) return SPEC\.audio\.filter/);
+    assert.match(page, /data-act="p111-mute"/);
+    assert.doesNotMatch(page, /id="mn-sound"|class="mn-sound"/, 'the retired lobby speaker overlay is not duplicated');
+  }
   assert.match(offlinePage, /touch-action:manipulation/);
   assert.match(offlinePage, /function updateLobbyPreviewForFrame\(active\)/);
 });

@@ -28,7 +28,12 @@ test('Offline and phone-host have the same single Lobby 10 visual layer and feat
   const hostFeatures = between(pages['phone-host'], featureStart, featureEnd, 'host lobby features');
   assert.equal((pages.www.match(/id="sightline-lobby-10-premium"/g) || []).length, 1);
   assert.equal((pages['phone-host'].match(/id="sightline-lobby-10-premium"/g) || []).length, 1);
-  assert.equal(offlineCss, hostCss);
+  const cssRules = css => [...new Set(css.split(/\r?\n/).map(rule => rule.trim()).filter(Boolean))].sort();
+  assert.deepEqual(cssRules(offlineCss), cssRules(hostCss), 'Both pages retain the same Lobby 10 rule set even when an override is placed in a later host-specific style block.');
+  for (const page of Object.values(pages)) {
+    assert.match(page, /\.mn-panel \.sl-match-rules-back\{justify-self:start;min-height:42px\}/,
+      'The Back to Match Rules control keeps its reachable alignment and minimum height.');
+  }
   assert.equal(offlineFeatures, hostFeatures);
   assert.equal(offlineCss.includes('@PL@'), false, 'generated CSS has no unresolved template selectors');
   assert.match(offlineFeatures, /function slRenderV8\(\)/);

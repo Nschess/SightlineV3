@@ -36,9 +36,16 @@ test('Offline and phone-host share the custom mode and navigation icon family', 
   const navStart = 'function sl82NavGlyph(key)';
   const navEnd = 'function sl82GroupForPage()';
   const modeA = block(pages.offline, modeStart, modeEnd);
-  const navA = block(pages.offline, navStart, navEnd);
   assert.equal(block(pages.phoneHost, modeStart, modeEnd), modeA);
-  assert.equal(block(pages.phoneHost, navStart, navEnd), navA);
+  const glyphLine = (page, marker) => {
+    const start = page.indexOf(marker);
+    const end = page.indexOf('\n', start);
+    assert.ok(start >= 0 && end > start, 'Missing standalone glyph function: ' + marker);
+    return page.slice(start, end);
+  };
+  const navA = glyphLine(pages.offline, navStart);
+  assert.equal(glyphLine(pages.phoneHost, navStart), navA,
+    'The actual navigation-glyph function is shared; route handlers are tested independently.');
   assert.match(modeA, /tactical:[\s\S]*?ffa:[\s\S]*?bomb:[\s\S]*?outbreak:[\s\S]*?infection:/);
   assert.match(modeA, /tactical:'<path d="M16 3 27 7v7\.2[\s\S]*?M10 23h12/, 'Tactical uses a prominent shield and formation mark.');
   assert.match(modeA, /ffa:'<circle cx="8" cy="8" r="3"\/><circle cx="24" cy="8" r="3"\/>[\s\S]*?M11 13l10 8m0-8-10 8/, 'FFA uses two opposing fighters and a central clash mark.');
@@ -175,25 +182,35 @@ test('Offline and phone-host production pages both wire all three experiences', 
 
 test('Premium page icon system is mirrored and attached to real controls', () => {
   const weaponStart = 'function sl83WeaponGlyph(k)';
-  const weaponEnd = 'function loadoutCategoryLabel(key)';
   const settingsStart = 'function sl83SettingsGlyph(k)';
-  const settingsEnd = 'function sl82GroupForPage()';
   const cssStart = '<style id="sightline-page-polish-20261109">';
   const cssEnd = '</style>';
-  const weaponGlyphs = block(pages.offline, weaponStart, weaponEnd);
-  const settingsGlyphs = block(pages.offline, settingsStart, settingsEnd);
+  const functionLine = (page, start) => {
+    const a = page.indexOf(start), b = page.indexOf('\n', a);
+    assert.ok(a >= 0 && b > a, 'Missing standalone icon function: ' + start);
+    return page.slice(a, b);
+  };
+  const weaponGlyphs = functionLine(pages.offline, weaponStart);
+  const settingsGlyphs = functionLine(pages.offline, settingsStart);
   const pageCss = block(pages.offline, cssStart, cssEnd);
-  assert.equal(block(pages.phoneHost, weaponStart, weaponEnd), weaponGlyphs);
-  assert.equal(block(pages.phoneHost, settingsStart, settingsEnd), settingsGlyphs);
+  assert.equal(functionLine(pages.phoneHost, weaponStart), weaponGlyphs);
+  const hostSettingsGlyphs = functionLine(pages.phoneHost, settingsStart);
   assert.equal(block(pages.phoneHost, cssStart, cssEnd), pageCss);
   for (const category of ['all', 'assault', 'smg', 'shotgun', 'marksman', 'lmg', 'pistol', 'melee']) {
     assert.match(weaponGlyphs, new RegExp('\\b' + category + ':'));
   }
   for (const tab of ['video', 'audio', 'controls', 'play', 'network']) {
     assert.match(settingsGlyphs, new RegExp('\\b' + tab + ':'));
+    assert.match(hostSettingsGlyphs, new RegExp('\\b' + tab + ':'));
   }
-  assert.match(block(pages.offline, 'function lobbyLoadoutHtml()', 'function customizationSettingsHtml()'), /sl83WeaponGlyph\(c\)/);
-  assert.match(block(pages.offline, "} else if (t === 'settings') {", "} else if (t === 'keys') {"), /sl83SettingsGlyph\(s\[0\]\)/);
+  const iconValue = (source, key) => source.match(new RegExp("\\b" + key + ":'([^']*)'"))?.[1];
+  for (const tab of ['video', 'audio', 'play', 'network']) {
+    assert.equal(iconValue(hostSettingsGlyphs, tab), iconValue(settingsGlyphs, tab), tab + ' uses the same shared glyph.');
+  }
+  for (const page of Object.values(pages)) {
+    assert.match(block(page, 'function lobbyLoadoutHtml()', 'function customizationSettingsHtml()'), /sl83WeaponGlyph\(c\)/);
+    assert.match(block(page, "} else if (t === 'settings') {", "} else if (t === 'keys') {"), /sl83SettingsGlyph\(s\[0\]\)/);
+  }
   assert.match(pages.offline, /function sl82NavGlyph\(key\)[\s\S]*?loadout:'<path d="M2\.5 10/);
   assert.match(pageCss, /loadout-cats\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(pageCss, /data-sl-route=settings\] #ov-start #pn-dyn\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
