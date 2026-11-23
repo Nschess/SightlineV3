@@ -33,8 +33,12 @@ assert.match(phoneSource, /if \(op\.zombie\).*buildZombie/s,
   "Claude's original builder retains its Hollowed construction path");
 assert.match(phoneIndex, /armRAnchor\?new THREE\.Vector3\(\)\.fromArray/,
   'arm pivots are created once per actor from Claude geometry metadata');
-assert.match(phoneIndex, /pose\(u\.armR,u\.armRShoulder\|\|WORLD_RIGHT_SHOULDER/,
-  'existing weapon pose system continues to drive the restored arms');
+assert.match(phoneIndex, /function poseWorldArmSegment\(arm,shoulder,defaultDir,dst\)/,
+  'shared world-arm helper preserves the existing weapon alignment path');
+assert.match(phoneIndex, /poseWorldArmSegment\(u\.armR,u\.armRShoulder\|\|WORLD_RIGHT_SHOULDER/,
+  'third-person weapon poses continue to drive the restored right arm');
+assert.match(phoneIndex, /poseWorldArmSegment\(u\.armL,u\.armLShoulder\|\|WORLD_LEFT_SHOULDER/,
+  'third-person weapon poses continue to drive the restored left arm');
 const server = fs.readFileSync(path.join(assets, 'phone-host', 'server.js'), 'utf8');
 assert.match(server, /'\/character-realism-v12\.js':\['character-realism-v12\.js'/,
   'the actual LAN host must serve the character builder instead of falling back');

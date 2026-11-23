@@ -232,6 +232,59 @@ test('capped walking keeps movement, combat, camera and LAN input on the accepte
   }
 });
 
+test('offline rendering skips transform writes for stationary bots and preserves moving interpolation', () => {
+  for (const tree of trees) {
+    const page = fs.readFileSync(path.join(root, assetRoot, tree, 'index.html'), 'utf8');
+    const render = page.match(/function renderOfflineBots\(alpha\) \{[\s\S]*?\n\}/);
+    const restore = page.match(/function restoreOfflineBots\(\) \{[\s\S]*?\n\}/);
+    assert.ok(render && restore, tree + ' offline bot pose functions');
+
+    function makeBot(x, y, z, yaw, previous) {
+      const writes = { position: 0, positionSet: 0, yaw: 0 };
+      const pose = { _x: x, _y: y, _z: z };
+      for (const key of ['x', 'y', 'z']) Object.defineProperty(pose, key, {
+        get() { return pose['_' + key]; },
+        set(value) { writes.position++; pose['_' + key] = value; }
+      });
+      pose.set = (nextX, nextY, nextZ) => {
+        writes.positionSet++;
+        pose._x = nextX; pose._y = nextY; pose._z = nextZ;
+      };
+      let rotationY = yaw;
+      const rotation = {};
+      Object.defineProperty(rotation, 'y', {
+        get() { return rotationY; },
+        set(value) { writes.yaw++; rotationY = value; }
+      });
+      return {
+        alive: true, x, y, z, yaw,
+        _visPrevX: previous.x, _visPrevY: previous.y,
+        _visPrevZ: previous.z, _visPrevYaw: previous.yaw,
+        g: { position: pose, rotation }, writes,
+        renderedPose: () => ({ x: pose.x, y: pose.y, z: pose.z, yaw: rotation.y })
+      };
+    }
+
+    const stationary = makeBot(4, 0, -3, 0.25, { x: 4, y: 0, z: -3, yaw: 0.25 });
+    const moving = makeBot(10, 2, 5, 1, { x: 0, y: 0, z: 1, yaw: 0 });
+    const ctx = vm.createContext({ MP: { on: false }, G: { fpsCap: 60 }, units: [stationary, moving],
+      Math, Number });
+    vm.runInContext(render[0], ctx);
+    vm.runInContext(restore[0], ctx);
+
+    assert.equal(ctx.renderOfflineBots(0.5), true, tree + ' high-refresh offline interpolation enabled');
+    const interpolated = moving.renderedPose();
+    assert.deepEqual(interpolated, { x: 5, y: 1, z: 3, yaw: 0.5 }, tree + ' moving pose interpolates');
+    assert.deepEqual(stationary.writes, { position: 0, positionSet: 0, yaw: 0 },
+      tree + ' stationary pose avoids redundant transform writes');
+
+    ctx.restoreOfflineBots();
+    assert.deepEqual(moving.renderedPose(), { x: 10, y: 2, z: 5, yaw: 1 }, tree + ' moving pose restores authoritative state');
+    assert.deepEqual(stationary.writes, { position: 0, positionSet: 0, yaw: 0 },
+      tree + ' restoration also skips stationary pose');
+  }
+});
+
 test('walking across radar cells keeps map scans off the render path and preserves the radar view', () => {
   for (const tree of trees) {
     const page = fs.readFileSync(path.join(root, assetRoot, tree, 'index.html'), 'utf8');

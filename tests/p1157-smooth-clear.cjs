@@ -20,7 +20,7 @@ const code=html.slice(a,b);
 function bench(hz,cap,mp,secs=4,roster=1){
   const makeBot=()=>({x:0,y:0,z:0,yaw:0,alive:true,g:{position:{x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z}},rotation:{y:0}}});
   const units=Array.from({length:roster},makeBot),bot=units[0];
-  const ctx={Math,Number,performance:{now:()=>0},units,MP:{on:mp},G:{fpsCap:cap},calls:0,elapsed:0,updateBots(dt){ctx.calls++;ctx.elapsed+=dt;bot.x+=10*dt;bot.yaw+=dt;bot.g.position.x=bot.x;bot.g.rotation.y=bot.yaw;}};
+  const ctx={Math,Number,performance:{now:()=>0},canvas:{addEventListener(){}},units,MP:{on:mp},G:{fpsCap:cap},calls:0,elapsed:0,updateBots(dt){ctx.calls++;ctx.elapsed+=dt;bot.x+=10*dt;bot.yaw+=dt;bot.g.position.x=bot.x;bot.g.rotation.y=bot.yaw;}};
   vm.createContext(ctx);vm.runInContext(code,ctx);
   for(let i=0;i<hz*secs;i++)ctx.runOfflineBots(1/hz);
   return {ctx,bot,calls:ctx.calls,time:ctx.elapsed};
