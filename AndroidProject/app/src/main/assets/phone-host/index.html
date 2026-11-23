@@ -14510,6 +14510,36 @@ if (document.querySelector('meta[name="sightline-route"]')?.content === 'lan-hos
 }
 
 /* ---------- main update ---------- */
+function syncReticlePresentation(node, baseClass, weaponKey, active, style) {
+  var state = node.__sightlineReticleState;
+  if (!state) state = node.__sightlineReticleState = { baseClass: null, legendary: false, weaponClass: '', reticle: null, border: null, hasReticle: false, hasBorder: false };
+  if (state.baseClass !== baseClass) {
+    node.className = baseClass;
+    state.baseClass = baseClass;
+    state.legendary = false;
+    state.weaponClass = '';
+  }
+  var nextLegendary = !!active, nextWeaponClass = 'legendary-' + weaponKey;
+  if (state.legendary !== nextLegendary) {
+    node.classList.toggle('legendary-reticle', nextLegendary);
+    state.legendary = nextLegendary;
+  }
+  var wantedWeaponClass = nextLegendary ? nextWeaponClass : '';
+  if (state.weaponClass !== wantedWeaponClass) {
+    if (state.weaponClass) node.classList.toggle(state.weaponClass, false);
+    if (wantedWeaponClass) node.classList.toggle(wantedWeaponClass, true);
+    state.weaponClass = wantedWeaponClass;
+  }
+  if (style) {
+    if (!state.hasReticle || state.reticle !== style.reticle) node.style.setProperty('--legend-reticle', style.reticle);
+    if (!state.hasBorder || state.border !== style.reticleBorder) node.style.setProperty('--legend-reticle-border', style.reticleBorder);
+    state.reticle = style.reticle; state.border = style.reticleBorder; state.hasReticle = state.hasBorder = true;
+  } else {
+    if (state.hasReticle) node.style.removeProperty('--legend-reticle');
+    if (state.hasBorder) node.style.removeProperty('--legend-reticle-border');
+    state.reticle = state.border = null; state.hasReticle = state.hasBorder = false;
+  }
+}
 function updatePlayer(dt) {
   var alive = P.alive && state === 'live' && !(MP.on && MP.menu);
   if (!alive) crouchTog = false;
@@ -14683,13 +14713,10 @@ function updatePlayer(dt) {
   el.scope.classList.toggle('legendary-scope', legendaryScope);
   if (legendaryScope) el.scope.style.setProperty('--legend-ads', String(Math.min(1, adsT)));
   el.ret.hidden = !(adsT > 0.90 && !w.scope && !w.melee && (!SightlineOptics.has(cur)||SightlineOptics.current(cur)!=='iron') && state === 'live' && P.alive);
-  el.ret.className=SightlineOptics.has(cur)?(SightlineOptics.current(cur)==='holo'?'holo':SightlineOptics.current(cur)==='iron'?'iron':'optic'):(/holo|prismatic/i.test(w.sight)?'holo':/optic|reflex/i.test(w.sight)?'optic':'iron');
+  var reticleBaseClass=SightlineOptics.has(cur)?(SightlineOptics.current(cur)==='holo'?'holo':SightlineOptics.current(cur)==='iron'?'iron':'optic'):(/holo|prismatic/i.test(w.sight)?'holo':/optic|reflex/i.test(w.sight)?'optic':'iron');
   var legendaryAds=cur==='rook117'?null:selectedLegendaryFinish(cur);
   var isLegendaryReticle=!!(legendaryAds&&adsT>.90&&el.ret.hidden===false);
-  el.ret.classList.toggle('legendary-reticle',isLegendaryReticle);
-  el.ret.classList.toggle('legendary-'+cur,isLegendaryReticle);
-  if(legendaryAds){el.ret.style.setProperty('--legend-reticle',legendaryAds.reticle);el.ret.style.setProperty('--legend-reticle-border',legendaryAds.reticleBorder);}
-  else{el.ret.style.removeProperty('--legend-reticle');el.ret.style.removeProperty('--legend-reticle-border');}
+  syncReticlePresentation(el.ret,reticleBaseClass,cur,isLegendaryReticle,legendaryAds);
   /* camera */
   var eyeY = P.y + 1.65 - P.crouch * 0.5 - P.prone * 0.7 +Math.sin(P.bob * 2) * 0.025 * speedFrac * vb * (1 - adsT);
   if (!P.alive) { var d = Math.min(1, (3 - endT) * 2); eyeY = P.y + 1.65 - d * 1.3; camera.rotation.z = d * 0.9; } else camera.rotation.z = sliding ? 0.05 * Math.min(1, slideT / 0.3) : 0;

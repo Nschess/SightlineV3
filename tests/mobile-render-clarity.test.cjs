@@ -12,6 +12,53 @@ function section(page, start, end) {
   assert.ok(a >= 0 && b > a, start);
   return page.slice(a,b).replace(/\r\n/g,'\n');
 }
+test('reticle presentation avoids redundant per-frame DOM mutations', () => {
+  const helper = section(pages[0], 'function syncReticlePresentation(', 'function updatePlayer(dt)');
+  assert.equal(helper, section(pages[1], 'function syncReticlePresentation(', 'function updatePlayer(dt)'), 'Android reticle helpers stay synchronized');
+  const update = section(pages[0], 'function updatePlayer(dt)', 'var LOBBY_PREVIEW=');
+  assert.match(update, /syncReticlePresentation\(el\.ret,\s*reticleBaseClass,\s*cur,\s*isLegendaryReticle,\s*legendaryAds\)/);
+  assert.doesNotMatch(update, /el\.ret\.className\s*=|el\.ret\.classList\.toggle|el\.ret\.style\.(?:setProperty|removeProperty)/);
+
+  const writes = { className: 0, toggles: 0, styleSet: 0, styleRemove: 0 };
+  const classes = new Set();
+  const values = new Map();
+  const reticle = {};
+  Object.defineProperty(reticle, 'className', {
+    get() { return Array.from(classes).join(' '); },
+    set(value) { writes.className++; classes.clear(); String(value).split(/\s+/).filter(Boolean).forEach(name => classes.add(name)); }
+  });
+  reticle.classList = { toggle(name, force) { writes.toggles++; if (force) classes.add(name); else classes.delete(name); } };
+  reticle.style = {
+    setProperty(name, value) { writes.styleSet++; values.set(name, String(value)); },
+    removeProperty(name) { writes.styleRemove++; values.delete(name); }
+  };
+  const context = vm.createContext({});
+  vm.runInContext(helper + '\nthis.syncReticlePresentation = syncReticlePresentation;', context);
+
+  context.syncReticlePresentation(reticle, 'optic', 'carbine', false, null);
+  const unchanged = { ...writes };
+  context.syncReticlePresentation(reticle, 'optic', 'carbine', false, null);
+  assert.deepEqual(writes, unchanged, 'stable non-legendary state causes no repeat DOM mutations');
+
+  const finish = { reticle: '#b8f1ff', reticleBorder: '#203f50' };
+  context.syncReticlePresentation(reticle, 'optic', 'carbine', true, finish);
+  assert.ok(classes.has('optic') && classes.has('legendary-reticle') && classes.has('legendary-carbine'));
+  assert.equal(values.get('--legend-reticle'), finish.reticle);
+  const active = { ...writes };
+  context.syncReticlePresentation(reticle, 'optic', 'carbine', true, finish);
+  assert.deepEqual(writes, active, 'stable legendary reticle state does not rewrite classes or CSS variables');
+
+  context.syncReticlePresentation(reticle, 'holo', 'scatter', true, finish);
+  assert.ok(!classes.has('optic') && !classes.has('legendary-carbine'));
+  assert.ok(classes.has('holo') && classes.has('legendary-reticle') && classes.has('legendary-scatter'));
+  context.syncReticlePresentation(reticle, 'holo', 'scatter', false, null);
+  assert.ok(!classes.has('legendary-reticle') && !classes.has('legendary-scatter'));
+  assert.ok(!values.has('--legend-reticle') && !values.has('--legend-reticle-border'));
+  const cleared = { ...writes };
+  context.syncReticlePresentation(reticle, 'holo', 'scatter', false, null);
+  assert.deepEqual(writes, cleared, 'cleared state remains mutation-free on following frames');
+});
+
 test('Both clients share the bounded mobile policy, presets and drawing buffer resize', () => {
   const atlas = tree => readFileSync(path.join(assets,tree,'character-realism-v12.js'));
   assert.deepEqual(atlas('www'),atlas('phone-host'));
