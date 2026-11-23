@@ -25,14 +25,30 @@
     for (const key of Object.keys(BOMB_DEFAULTS)) out[key] = input && input[key] !== undefined ? clampSetting(key, input[key]) : BOMB_DEFAULTS[key];
     return out;
   }
-  function resolveBombSites(nav, area) {
+  function bombAttackTeamForRound(round, bestOf, openingTeam) {
+    const opening = openingTeam === 1 ? 1 : 0;
+    const total = Number.isFinite(Number(bestOf)) ? Math.max(1, Math.floor(Number(bestOf))) : BOMB_DEFAULTS.bestOf;
+    return round > Math.floor(total / 2) ? 1 - opening : opening;
+  }
+  function resolveBombSites(nav, area, siteAnchors) {
     if (!nav || !Array.isArray(nav.nodes) || !area || ![area.x0, area.x1, area.z0, area.z1].every(Number.isFinite)) return null;
     const width = area.x1 - area.x0, depth = area.z1 - area.z0;
     if (width < 24 || depth < 24) return null;
-    const anchors = [
+    const anchors = siteAnchors == null ? [
       { id: 'A', x: area.x0 + width * 0.28, z: area.z0 + depth * 0.48 },
       { id: 'B', x: area.x0 + width * 0.72, z: area.z0 + depth * 0.52 }
+    ] : [
+      siteAnchors.A && { id: 'A', x: siteAnchors.A.x, z: siteAnchors.A.z },
+      siteAnchors.B && { id: 'B', x: siteAnchors.B.x, z: siteAnchors.B.z }
     ];
+    if (!Array.isArray(anchors) || anchors.length !== 2) return null;
+    const minimumSeparation = Math.max(12, Math.min(30, width * 0.22));
+    for (let i = 0; i < 2; i++) {
+      const anchor = anchors[i], expectedId = i === 0 ? 'A' : 'B';
+      if (!anchor || anchor.id !== expectedId || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.z) ||
+          anchor.x <= area.x0 + 1 || anchor.x >= area.x1 - 1 || anchor.z <= area.z0 + 1 || anchor.z >= area.z1 - 1) return null;
+    }
+    if (Math.hypot(anchors[0].x - anchors[1].x, anchors[0].z - anchors[1].z) < minimumSeparation) return null;
     const candidates = [[], []], reachable = nav.reachable;
     for (let i = 0; i < nav.nodes.length; i++) {
       const p = nav.nodes[i];
@@ -45,7 +61,6 @@
     }
     for (const list of candidates) list.sort((a, b) => a.d - b.d || a.id - b.id);
     if (!candidates[0].length || !candidates[1].length) return null;
-    const minimumSeparation = Math.max(12, Math.min(30, width * 0.22));
     const limit = Math.min(320, candidates[0].length, candidates[1].length);
     let best = null;
     for (let i = 0; i < limit; i++) for (let j = 0; j < limit; j++) {
@@ -148,5 +163,5 @@
     state.scores.forEach((score, id) => { if (score > best) { best = score; winnerId = id; tied = false; } else if (score === best) tied = true; });
     return tied ? null : winnerId;
   }
-  return { BOMB_DEFAULTS, BOMB_LIMITS, FFA_DEFAULTS, infectionPatientZeroCount, settings, resolveBombSites, createBombRound, beginUse, cancelUse, dropBomb, pickupBomb, advance, bombWinner, createFFA, recordFFAElimination, ffaTimedWinner };
+  return { BOMB_DEFAULTS, BOMB_LIMITS, FFA_DEFAULTS, infectionPatientZeroCount, settings, bombAttackTeamForRound, resolveBombSites, createBombRound, beginUse, cancelUse, dropBomb, pickupBomb, advance, bombWinner, createFFA, recordFFAElimination, ffaTimedWinner };
 });

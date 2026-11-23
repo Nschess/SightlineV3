@@ -50,18 +50,24 @@ test('Offline menu exposes all five modes and routes FFA/Bomb through the real s
   assert.match(html, /bombAttackTeamForSoloRound\(M\.round\)===0\?'Attack · carry the bomb to A\/B, plant and defend it\.'\:'Defend · stop the plant, eliminate attackers or defuse\.'/,
     'The current round HUD gives the player an attacker or defender objective prompt.');
   assert.match(html, /var MPKEY = '[^']+', TEAMKEY = \['blue', 'red'\]/, 'network team 0 is Blue and team 1 is Red');
-  assert.match(html, /function bombAttackTeamForSoloRound\(round\) \{ return round>Math\.floor\(R\.bombBestOf\/2\)\?1:0; \}/);
-  assert.match(html, /19 arenas[\s\S]*5 solo modes/);
+  assert.match(html, /function beginSoloBombMatch\(\) \{[\s\S]*SOLO_BOMB\.openingTeam = SOLO_BOMB\.nextOpeningTeam === 1 \? 1 : 0;[\s\S]*SOLO_BOMB\.matchStartConfirmed = false;/);
+  assert.match(html, /function confirmSoloBombMatchStart\(\) \{[\s\S]*SOLO_BOMB\.state\.round !== 1[\s\S]*SOLO_BOMB\.nextOpeningTeam = 1 - SOLO_BOMB\.openingTeam;/);
+  assert.match(html, /function bombAttackTeamForSoloRound\(round\) \{ return SightlineModeRules\.bombAttackTeamForRound\(round,R\.bombBestOf,SOLO_BOMB\.openingTeam\); \}/);
+  assert.match(html, /if\(R\.mode==='bomb'\)beginSoloBombMatch\(\);/,
+    'site validation selects an opener without consuming the next session side');
+  assert.match(html, /if\(bombMode&&M\.round===1\)confirmSoloBombMatchStart\(\);/,
+    'only a successful first Bomb round consumes the selected opener');
+  assert.match(html, /22 arenas[\s\S]*5 solo modes/);
 });
 
-test('all 19 selectable maps validate Offline and LAN geometry, safe spawns, A/B sites, and routes', () => {
+test('all 22 selectable maps validate Offline and LAN geometry, safe spawns, A/B sites, and routes', () => {
   const mapStart = html.indexOf('var MAPS = [');
   const mapEnd = html.indexOf('var CURMAP =', mapStart);
   assert.ok(mapStart >= 0 && mapEnd > mapStart);
   const offlineMapSource = html.slice(mapStart, mapEnd);
   const offlineIds = [...offlineMapSource.matchAll(/\bid\s*:\s*['"]([^'"]+)['"]/g)].map(m => m[1]);
   assert.deepEqual([...new Set(offlineIds)].sort(), Object.keys(MAPS).sort(), 'Offline map picker and phone-host registry must offer the same set');
-  assert.equal(offlineIds.length, 19);
+  assert.equal(offlineIds.length, 22);
   // Build the Offline map definitions and navigation exactly from the shipped
   // page's map constructors, O(), autoObst(), and its buildNav() collision
   // rectangles. This catches Offline-only geometry drift hidden by ID parity.
@@ -71,7 +77,7 @@ test('all 19 selectable maps validate Offline and LAN geometry, safe spawns, A/B
   const offline = vm.createContext({ Math, Array, Object, Number, Uint8Array, Float32Array, Map, Set });
   vm.runInContext(html.slice(mapDefsStart, mapDefsEnd), offline);
   vm.runInContext(html.slice(autoStart, autoEnd), offline);
-  assert.equal(offline.MAPS.length, 19, 'actual Offline map constructors must produce 19 maps');
+  assert.equal(offline.MAPS.length, 22, 'actual Offline map constructors must produce 22 maps');
   const offlineById = new Map(offline.MAPS.map(map => [map.id, map]));
   for (const id of Object.keys(MAPS)) {
     const map = offlineById.get(id);

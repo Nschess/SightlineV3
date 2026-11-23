@@ -259,7 +259,7 @@ const BOTCFG = { mode: 'add', balance: false, t0: Math.round(opt('bots', 0, 0, 3
 const G = { phase: 'lobby', mode: 'versus', auto: true, map: LOBBY_DEFAULTS.map, rounds: LOBBY_DEFAULTS.rounds, time: LOBBY_DEFAULTS.time, kills: Deathmatch.SCORE_LIMIT, round: 0, score: [0, 0], phaseEnd: 0, liveStart: 0, lastWin: -1 };
 const DM = { respawns: new Map() };
 const FFA = { match: null, respawns: new Map() };
-const BOMB = { settings: ModeRules.settings(), sites: null, state: null, supportMap: '', unsupportedReason: '' };
+const BOMB = { settings: ModeRules.settings(), sites: null, state: null, supportMap: '', unsupportedReason: '', openingTeam: 0, nextOpeningTeam: 0, matchStartConfirmed: false };
 const isDeathmatch = () => G.mode === 'deathmatch';
 const isFFA = () => G.mode === 'ffa';
 const isBomb = () => G.mode === 'bomb';
@@ -579,7 +579,17 @@ function spawnPoint(m, team, taken) {
 /* ---------------- rounds ---------------- */
 function phaseMsg(extra) { return Object.assign({ t: 'ph', ph: G.phase, round: G.round, ms: Math.max(0, G.phaseEnd - now()), score: G.score, rounds: G.rounds, time: G.time, kills: G.kills,
   attackTeam: isBomb() ? (BOMB.state ? BOMB.state.attackTeam : bombAttackTeamForRound(G.round || 1)) : undefined, objective: isBomb() ? bombStateMessage() : undefined }, extra || {}); }
-function bombAttackTeamForRound(round) { return round > Math.floor(BOMB.settings.bestOf / 2) ? 1 : 0; }
+function beginBombMatch() {
+  BOMB.openingTeam = BOMB.nextOpeningTeam === 1 ? 1 : 0;
+  BOMB.matchStartConfirmed = false;
+}
+function confirmBombMatchStart() {
+  if (BOMB.matchStartConfirmed || !BOMB.state || BOMB.state.round !== 1) return false;
+  BOMB.nextOpeningTeam = 1 - BOMB.openingTeam;
+  BOMB.matchStartConfirmed = true;
+  return true;
+}
+function bombAttackTeamForRound(round) { return ModeRules.bombAttackTeamForRound(round, BOMB.settings.bestOf, BOMB.openingTeam); }
 function bombStateMessage() {
   const s = BOMB.state;
   if (!s) return { phase: 'idle', settings: BOMB.settings, sites: BOMB.sites, unsupportedReason: BOMB.unsupportedReason };
@@ -595,7 +605,7 @@ function bombStateMessage() {
 function bombStateBroadcast() { if (isBomb()) bcast({t:'objective', objective:bombStateMessage()}); }
 function prepareBombSites() {
   BOMB.sites=null; BOMB.supportMap=G.map; BOMB.unsupportedReason='';
-  try { BOMB.sites=ModeRules.resolveBombSites(buildNav(mapData()),mapData().area); }
+  try { const map=mapData(); BOMB.sites=ModeRules.resolveBombSites(buildNav(map),map.area,map.bombSites); }
   catch (e) { BOMB.sites=null; BOMB.unsupportedReason='Map navigation data is invalid'; }
   if (!BOMB.sites) BOMB.unsupportedReason=BOMB.unsupportedReason||'This map has no validated pair of reachable bomb sites';
   else BOMB.unsupportedReason='';
@@ -685,7 +695,7 @@ function startRound() {
   bcast(phaseMsg()); bcast(scoreMsg()); log('round', G.round, 'buy phase');
 }
 function goLive() {
-  G.phase = 'live'; G.liveStart = now(); G.phaseEnd = now() + (isCoop() ? 3600 : isBomb() ? BOMB.settings.roundSeconds : G.time) * 1000; bcast(phaseMsg());
+  G.phase = 'live'; if (isBomb() && G.round === 1) confirmBombMatchStart(); G.liveStart = now(); G.phaseEnd = now() + (isCoop() ? 3600 : isBomb() ? BOMB.settings.roundSeconds : G.time) * 1000; bcast(phaseMsg());
   resetLiveTimingDiagnostics();
   if (isCoop()) { startWave(1); }
   if (isInfection()) {
@@ -699,6 +709,7 @@ function goLive() {
 function alive(t) { let n = 0; players.forEach(p => { if (!p.alive) return; if (isInfection() ? (!!p.infected === (t === 1)) : p.team === t) n++; }); return n; }
 function endRound(win, why) {
   if (G.phase !== 'live') return;
+  if (isBomb() && BOMB.state && BOMB.state.use) ModeRules.cancelUse(BOMB.state);
   G.phase = 'roundend'; G.phaseEnd = now() + ROUNDEND_SECS * 1000; G.lastWin = win;
   if (win >= 0) G.score[win]++;
   players.forEach(p => {
@@ -720,6 +731,7 @@ function checkElimination() {
 }
 function endMatch(why) {
   if (G.phase === 'matchend') return;
+  if (isBomb() && BOMB.state && BOMB.state.use) ModeRules.cancelUse(BOMB.state);
   DM.respawns.clear(); FFA.respawns.clear();
   const ffaWinnerId=isFFA()&&FFA.match?(FFA.match.winnerId!=null?FFA.match.winnerId:ModeRules.ffaTimedWinner(FFA.match)):null;
   const win = isFFA() ? (ffaWinnerId == null ? -1 : ffaWinnerId) : G.score[0] > G.score[1] ? 0 : G.score[1] > G.score[0] ? 1 : -1;
@@ -734,6 +746,7 @@ function startMatch() {
   if(isBomb()){
     BOMB.settings=ModeRules.settings(BOMB.settings);G.rounds=Math.ceil(BOMB.settings.bestOf/2);G.time=BOMB.settings.roundSeconds;
     if(!prepareBombSites()){G.phase='lobby';pushLobby();return false;}
+    beginBombMatch();
   }
   syncBots(true);
   if (groupMode()) { let i = 0, counts=[0,0]; players.forEach(p => { if (p.bot && Number.isInteger(p.homeTeam)) p.team=p.homeTeam; else p.team=counts[0]<=counts[1]?0:1; counts[p.team]++; p.infected=false; p.op = (i++) % 17; }); obReset(); pushLobby(); }
@@ -785,7 +798,7 @@ function checkForfeit() {
   if (G.phase === 'lobby' || G.phase === 'matchend' || isCoop()) return;
   if (!teamsOk()) { G.score = G.score.slice(); endMatchForfeit(); }
 }
-function endMatchForfeit() { G.phase = 'matchend'; G.phaseEnd = now() + 5000; bcast(phaseMsg({ win: -1, why: 'A team left the match' })); }
+function endMatchForfeit() { if (isBomb() && BOMB.state && BOMB.state.use) ModeRules.cancelUse(BOMB.state); G.phase = 'matchend'; G.phaseEnd = now() + 5000; bcast(phaseMsg({ win: -1, why: 'A team left the match' })); }
 
 
 /* ---------------- co-op outbreak: everyone against the Hollowed ---------------- */

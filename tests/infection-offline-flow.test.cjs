@@ -190,7 +190,7 @@ for (const client of ['www', 'phone-host']) {
     const ctx=vm.createContext({
       owned:{pistol:true,knife:true},cur:'pistol',P:{alive:true,hp:100,armor:0},M:{money:2500,you:0,bots:0},
       CFG:{startMoney:800,maxMoney:16000,winBonus:250,lossBonus:150},guns:{pistol:{visible:true},knife:{visible:false}},
-      MP:{on:false},scoped:true,reloading:.5,zoomLvl:2,ammo:{},
+      MP:{on:false},SOLO_BOMB:{state:null},scoped:true,reloading:.5,zoomLvl:2,ammo:{},
       applySelectedFirstPersonAppearance(){refreshed++;},updateHud(){hud++;},fillAmmo(){},
       state:'live',SOLO_INF:{on:true,chosen:true,playerInfected:false,playerRespawnT:0,playerDown:false},
       el:{hud:{}},endT:0,endWon:false,showMsg(){},$(){return{hidden:true};},hideOverlays(){},resetNades(){}
@@ -337,7 +337,7 @@ for (const client of ['www', 'phone-host']) {
     assert.equal(messages,1,'spectator mode remains for a genuine noninfected downed player');
     const rollover=vm.createContext({
       R:{mode:'infection'},
-      state:'live',SOLO_INF:{on:true,chosen:true,playerInfected:false},
+      state:'live',SOLO_INF:{on:true,chosen:true,playerInfected:false},SOLO_BOMB:{state:null},
       soloInfectionPlayer(){return false;},P:{alive:true},M:{you:0,bots:0,money:2000},
       CFG:{startMoney:800,maxMoney:16000,winBonus:250,lossBonus:150},owned:{pistol:true,knife:true},cur:'pistol',
       reloading:0,scoped:false,fireHeld:false,fillAmmo(){},applySelectedFirstPersonAppearance(){},
