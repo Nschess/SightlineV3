@@ -14340,7 +14340,7 @@ function mpScanLanHosts(manual) {
   MP_LAN_DISCOVERY.busy=true;MP_LAN_DISCOVERY.error='';mpDrawLanHosts();
   var abort=new AbortController(),timeout=setTimeout(function(){abort.abort();},3500);MP_LAN_DISCOVERY.abort=abort;
   function accept(host){
-    if(generation!==MP_LAN_DISCOVERY.generation||!host||!host.verified||!mpLanPrivateIp(host.address)||host.port!==8080||host.protocol!==2||host.transport!=='dev'||!host.id)return;
+    if(generation!==MP_LAN_DISCOVERY.generation||!host||host.verified!==true||!mpLanPrivateIp(host.address)||host.port!==8080||host.protocol!==2||host.transport!=='dev'||!host.id)return;
     host.lastSeen=Date.now();var index=MP_LAN_DISCOVERY.hosts.findIndex(function(x){return x.id===host.id;});
     if(index<0)MP_LAN_DISCOVERY.hosts.push(host);else MP_LAN_DISCOVERY.hosts[index]=host;
     mpDrawLanHosts();
@@ -16402,6 +16402,81 @@ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav .mn-s
 html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn input[type=range] { min-height:44px; }
 
 .mn-panel .sl-match-rules-back{justify-self:start;min-height:42px}
+
+html body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail{grid-template-columns:auto minmax(0,1fr) auto!important}
+html body.sl-lobby-screen[data-sl-route] #ov-start .mn-tab:active,html body.sl-lobby-screen[data-sl-route] #ov-start .mn-subtab:active{transform:scale(.96)}
+@media (orientation:landscape) and (max-height:600px) {
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-rail { display:grid!important; grid-row:1!important; grid-column:1!important; inset:0 0 auto 0!important; grid-template-columns:minmax(0,1fr)!important; gap:4px!important; padding:0 max(6px,env(safe-area-inset-right,0px)) 0 max(6px,env(safe-area-inset-left,0px))!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav { grid-column:1!important; display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; width:100%; min-width:0; overflow:visible!important; gap:3px!important; padding:0!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab { min-width:0; min-height:44px!important; padding:0 3px!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-brand { display:none!important; }
+}
+.sl-lan-setup-nav { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:8px 0; }
+.sl-lan-setup-nav > span { flex:1 0 100%; }
+html.touch-device #pn-dyn:has(.sl-lan-setup-nav) :is(button,summary,.mp-in) { min-height:44px; }
+/* Keep the mobile lobby inside the safe area and leave each subtab reachable. */
+html.touch-device body.sl-lobby-screen[data-sl-route=play] #ov-start #mn-context { display:block!important; padding-block:4px!important; }
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-main {
+  padding-left:max(12px,env(safe-area-inset-left,0px))!important;
+  padding-right:max(12px,env(safe-area-inset-right,0px))!important;
+  padding-bottom:max(12px,env(safe-area-inset-bottom,0px))!important;
+}
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-context-row { min-width:0; }
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav {
+  flex:0 1 auto; min-width:0; max-width:100%; overflow-x:auto; justify-content:flex-start;
+}
+html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #mn-subnav .mn-subtab { flex:none; min-height:44px!important; }
+html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn input[type=range] { min-height:44px; }
+
+/* Landscape touch navigation and compact match-rule layout. */
+@media (orientation:landscape) and (max-height:600px) {
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start .mn-nav .mn-tab .nm { font-size:clamp(9px,1.6vw,13px)!important; letter-spacing:.02em!important; white-space:nowrap; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn:not([hidden]) { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:max-content!important; gap:6px 10px; align-content:start; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > :not(.srow) { grid-column:1/-1; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .sl-mobile-rule-group { margin:4px 0 0; padding:4px 0; font:700 12px/1.2 system-ui,sans-serif; color:#bcd8ce; border-bottom:1px solid rgba(205,224,215,.18); }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .sl-match-rules-back { position:sticky!important; top:0; z-index:9; justify-self:start; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .sl-match-rules-back { display:inline-flex; align-items:center; gap:6px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn .sl-back-icon { width:18px; height:18px; flex:none; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .srow { display:flex!important; flex-direction:column; align-items:stretch; min-width:0; min-height:max-content!important; margin:0; padding:7px 8px; gap:5px; box-sizing:border-box; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .srow > .lb { display:block; min-width:0; overflow-wrap:anywhere; line-height:1.25; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .srow > .seg { display:flex; flex-wrap:wrap; width:100%; min-width:0; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn > .srow > .rule-select { width:100%; min-height:44px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn .srow .lb small { display:block; font-size:10px; line-height:1.2; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn .seg { gap:4px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn .seg button { min-height:40px; flex:1 1 48px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=rules] #ov-start #pn-dyn .ops-bomb-plan { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start .sl-mobile-settings-back { min-height:44px; margin-bottom:6px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #sl-mobile-settings-header { display:flex; align-items:center; gap:12px; flex:0 0 auto; min-height:44px; padding:0 12px; background:rgba(5,14,17,.97); color:#eff6f2; z-index:10; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #sl-mobile-settings-header button { display:inline-flex; align-items:center; gap:6px; min-height:40px; padding:0 10px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route] #ov-start #sl-mobile-settings-header svg { width:18px; height:18px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .pn-h { display:none!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn .subtabs { display:flex!important; flex-wrap:nowrap!important; overflow-x:auto; gap:4px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn .subtabs button { flex:1 0 98px; min-height:44px; }
+ /* Local SVG chevrons keep native selection and details behavior intact. */
+ html.touch-device body.sl-lobby-screen #ov-start #pn-dyn select {
+   appearance:none; -webkit-appearance:none; box-sizing:border-box; padding-inline-end:34px;
+   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d8e9e3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+   background-repeat:no-repeat; background-position:right 10px center; background-size:18px 18px;
+ }
+ html.touch-device body.sl-lobby-screen #ov-start #pn-dyn details > summary { list-style:none; position:relative; padding-inline-end:30px; }
+ html.touch-device body.sl-lobby-screen #ov-start #pn-dyn details > summary::-webkit-details-marker { display:none; }
+ html.touch-device body.sl-lobby-screen #ov-start #pn-dyn details > summary::after {
+   content:""; position:absolute; right:7px; top:50%; width:18px; height:18px; transform:translateY(-50%);
+   background:center / 18px 18px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d8e9e3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+   pointer-events:none;
+ }
+ html.touch-device body.sl-lobby-screen #ov-start #pn-dyn details[open] > summary::after { transform:translateY(-50%) rotate(180deg); }
+}
+@media (orientation:landscape) and (max-height:600px) and (min-width:640px) {
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn:not([hidden]) { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; grid-auto-rows:max-content!important; align-content:start; gap:6px 10px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > :not(.srow), html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .srow.wide { grid-column:1/-1!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .srow { display:flex!important; flex-direction:column; align-items:stretch; min-width:0; min-height:max-content!important; gap:5px; padding:7px 8px!important; margin:0!important; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .srow > .lb, html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .srow > label { min-width:0; line-height:1.25; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .srow .seg { display:flex; flex-wrap:wrap; min-width:0; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .srow .seg button { flex:1 1 65px; min-height:44px; }
+ html.touch-device body.sl-lobby-screen[data-sl-route=settings] #ov-start #pn-dyn > .srow input[type=range] { width:100%; max-width:100%; }
+}
 /* DEV24.2: full-height touch console with a separate scroll area and action bar. */
 html.touch-device body.sl-mobile-console-open[data-sl-route] #ov-start .mn-main {
   display:flex!important; flex-direction:column; overflow:hidden!important; min-height:0;

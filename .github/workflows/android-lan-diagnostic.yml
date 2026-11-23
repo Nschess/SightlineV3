@@ -1,12 +1,23 @@
-name: Android LAN diagnostic APK
+name: Sightline acceptance diagnostic APK
 
 on:
   push:
     branches:
       - codex/sightline-dev19-mobile-polish
       - codex/sightline-p0-emergency-recovery
+      - codex/sightline-integration
+      - codex/sightline-recovery-integration
     paths:
       - '.github/workflows/android-lan-diagnostic.yml'
+      - 'AndroidProject/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'SIGHTLINE.bat'
+      - 'START-HOST.bat'
+      - 'AGENTS.md'
+      - 'docs/DEV20-LAN-ACCEPTANCE.md'
+      - 'docs/DEV24-DEVICE-ACCEPTANCE.md'
+      - 'docs/ANDROID-DEVICE-FPS.md'
   workflow_dispatch:
 
 permissions:
@@ -18,7 +29,7 @@ concurrency:
 
 jobs:
   diagnostic-apk:
-    if: github.repository == 'Nschess/SightlineV3' && (github.ref == 'refs/heads/codex/sightline-dev19-mobile-polish' || github.ref == 'refs/heads/codex/sightline-p0-emergency-recovery')
+    if: github.repository == 'Nschess/SightlineV3' && (github.ref == 'refs/heads/codex/sightline-dev19-mobile-polish' || github.ref == 'refs/heads/codex/sightline-p0-emergency-recovery' || github.ref == 'refs/heads/codex/sightline-integration' || github.ref == 'refs/heads/codex/sightline-recovery-integration')
     runs-on: windows-latest
     timeout-minutes: 50
     env:
@@ -42,7 +53,7 @@ jobs:
         env:
           SIGHTLINE_MOVEMENT_REFERENCE: 24c9034ae5f1a92e90491d5c9a7aa4b37b9acb6a
         run: |
-          node --test tests/mobile-movement-reference.test.cjs tests/mobile-movement-bootstrap.test.cjs tests/mobile-render-clarity.test.cjs tests/android-refresh-lifecycle.test.cjs tests/phase3-outbreak-integration.test.cjs tests/lobby10-match-rules-back.test.mjs tests/mobile-hud-interruptions.test.cjs tests/mobile-smart-setup.test.cjs
+          node --test tests/mobile-movement-reference.test.cjs tests/mobile-movement-bootstrap.test.cjs tests/mobile-render-clarity.test.cjs tests/android-refresh-lifecycle.test.cjs tests/phase3-outbreak-integration.test.cjs tests/lobby10-match-rules-back.test.mjs tests/mobile-hud-interruptions.test.cjs tests/mobile-smart-setup.test.cjs tests/lan-discovery-integration.test.cjs
           exit $LASTEXITCODE
 
       - name: Set up JDK 17
@@ -109,13 +120,14 @@ jobs:
           $certFile = Join-Path $env:RUNNER_TEMP 'sightline-diagnostic.cer'
           Push-Location AndroidProject
           try {
+            if ($env:GITHUB_RUN_NUMBER -notmatch '^[1-9][0-9]{0,8}$') { throw 'A positive GitHub Actions run number is required for a unique diagnostic version.' }
             [IO.File]::WriteAllBytes($env:SIGHTLINE_DIAGNOSTIC_KEYSTORE_PATH, [Convert]::FromBase64String($env:SIGHTLINE_DIAGNOSTIC_KEYSTORE_B64))
             Remove-Item Env:SIGHTLINE_DIAGNOSTIC_KEYSTORE_B64
             & keytool -exportcert -alias sightline-diagnostic -keystore $env:SIGHTLINE_DIAGNOSTIC_KEYSTORE_PATH -storepass:env SIGHTLINE_DIAGNOSTIC_KEYSTORE_PASSWORD -file $certFile
             if ($LASTEXITCODE -ne 0 -or (Get-FileHash -LiteralPath $certFile).Hash -ne $env:SIGHTLINE_DIAGNOSTIC_CERT_SHA256) {
               throw 'Provided diagnostic keystore does not match the pinned certificate.'
             }
-            & .\gradlew.bat --no-daemon --stacktrace -PenableLanHost=true "-PphoneNodeSdkRoot=$env:SIGHTLINE_PHONE_NODE_SDK" :app:assembleDiagnostic
+            & .\gradlew.bat --no-daemon --stacktrace -PenableLanHost=true "-PphoneNodeSdkRoot=$env:SIGHTLINE_PHONE_NODE_SDK" "-PsightlineDiagnosticRunNumber=$env:GITHUB_RUN_NUMBER" :app:assembleDiagnostic
             if ($LASTEXITCODE -ne 0) { throw "Gradle diagnostic build failed with exit code $LASTEXITCODE." }
           } finally {
             Pop-Location
@@ -152,7 +164,8 @@ jobs:
           $sourceCommit = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0 -or $sourceCommit -ne $env:GITHUB_SHA) { throw 'Runner checkout differs from the workflow commit.' }
           $versionCode = [regex]::Match($badging, "versionCode='(\d+)'").Groups[1].Value
-          if ([int]$versionCode -le 24 -or $badging -notmatch "versionName='[^']+-p0-emergency-recovery'") { throw 'Expected an update-compatible P0 emergency recovery diagnostic version.' }
+          $expectedVersionCode = 100000 + [int64]$env:GITHUB_RUN_NUMBER
+          if ([int64]$versionCode -ne $expectedVersionCode -or $badging -notmatch "versionName='[^']+-diagnostic-$env:GITHUB_RUN_NUMBER'") { throw 'Diagnostic APK version does not match this unique workflow run.' }
           $hostRoot = Join-Path $env:GITHUB_WORKSPACE 'AndroidProject/app/src/main/assets/phone-host'
           $hostPaths = Get-Content -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') | ForEach-Object { $_.Substring(66) }
           $archive = [IO.Compression.ZipFile]::OpenRead($apks[0].FullName)
@@ -199,7 +212,8 @@ jobs:
             }
           } finally { $archive.Dispose() }
           $deliverables = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'sightline-acceptance')
-          Copy-Item -LiteralPath $apks[0].FullName -Destination (Join-Path $deliverables.FullName 'sightline-p0-emergency-recovery.apk')
+          $apkName = "sightline-diagnostic-$env:GITHUB_RUN_NUMBER.apk"
+          Copy-Item -LiteralPath $apks[0].FullName -Destination (Join-Path $deliverables.FullName $apkName)
           $hostBundle = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'index.html') -Algorithm SHA256).Hash.ToLowerInvariant()
           $hostInventory = (Get-FileHash -LiteralPath (Join-Path $hostRoot 'SHA256SUMS') -Algorithm SHA256).Hash.ToLowerInvariant()
           $windowsArtifact = 'sightline-windows-host.zip'
@@ -212,7 +226,7 @@ jobs:
             'variant=diagnostic'
             'package=com.sightline.v3.diagnostic.acceptance'
             "version_code=$versionCode"
-            'apk=sightline-p0-emergency-recovery.apk'
+            "apk=$apkName"
             "sha256=$sha256"
             "signing_certificate_sha256=$signerHash"
             'dev24_0_installation=side-by-side'
@@ -234,13 +248,13 @@ jobs:
           Copy-Item -LiteralPath 'docs/DEV24-DEVICE-ACCEPTANCE.md' -Destination (Join-Path $deliverables.FullName 'DEVICE-ACCEPTANCE.md')
           Copy-Item -LiteralPath 'docs/ANDROID-DEVICE-FPS.md','tools/diagnostic-storage-transfer.js' -Destination $deliverables.FullName
           $instructions = @(
-            '# Sightline V3 P0 emergency gameplay recovery diagnostic'
+            '# Sightline V3 private acceptance diagnostic'
             ''
-            'Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile sightline-p0-emergency-recovery.apk SHA256'
+            ('Compare the downloaded APK hash with diagnostic-build.txt. In Windows CMD, run: certutil -hashfile ' + $apkName + ' SHA256')
             ''
             'Leave DEV24.0 installed. It uses a separate package and its data is independent.'
             'Use a separate compatible phone to keep the prior Sightline Acceptance APK installed exactly as it is. Keep the previous artifact for comparison.'
-            'For an in-place update on the same phone, confirm the Sightline Acceptance update prompt or run adb install -r sightline-p0-emergency-recovery.apk using an already authorized connection. Android replaces the installed Sightline Acceptance APK and retains its app data. Never uninstall either app or clear app data.'
+            ('For an in-place update on the same phone, confirm the Sightline Acceptance update prompt or run adb install -r ' + $apkName + ' using an already authorized connection. Android replaces the installed Sightline Acceptance APK and retains its app data. Never uninstall either app or clear app data.')
             'See MIGRATION.md for optional transfer of offline settings and records.'
             ''
             'Follow DEVICE-ACCEPTANCE.md for the physical-device checks and Windows CMD commands.'
@@ -258,7 +272,7 @@ jobs:
       - name: Upload private diagnostic artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: sightline-p0-emergency-recovery-${{ github.sha }}
+          name: sightline-diagnostic-${{ github.run_number }}-${{ github.sha }}
           path: ${{ runner.temp }}/sightline-acceptance/*
           if-no-files-found: error
           retention-days: 14

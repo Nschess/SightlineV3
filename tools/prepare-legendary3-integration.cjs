@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const EXPECTED_AGENTS_SHA256 = 'df2b6d279699d465d7807dab9affce7e3428723e138e6870e5ffc7750ae765b2';
+const EXPECTED_AGENTS_SHA256 = 'c17d8be59c6930f5e2e68ee46b27ad02fcb48d3525d50c3cbce35a1172eadafb';
 const ASSET_PREFIX = 'AndroidProject/app/src/main/assets/';
 const digest = buffer => crypto.createHash('sha256').update(buffer).digest('hex');
 const fileSha = file => digest(fs.readFileSync(file));

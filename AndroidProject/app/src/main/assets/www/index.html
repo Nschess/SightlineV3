@@ -14590,7 +14590,7 @@ function mpScanLanHosts(manual) {
   MP_LAN_DISCOVERY.busy=true;MP_LAN_DISCOVERY.error='';mpDrawLanHosts();
   var abort=new AbortController(),timeout=setTimeout(function(){abort.abort();},3500);MP_LAN_DISCOVERY.abort=abort;
   function accept(host){
-    if(generation!==MP_LAN_DISCOVERY.generation||!host||!host.verified||!mpLanPrivateIp(host.address)||host.port!==8080||host.protocol!==2||host.transport!=='dev'||!host.id)return;
+    if(generation!==MP_LAN_DISCOVERY.generation||!host||host.verified!==true||!mpLanPrivateIp(host.address)||host.port!==8080||host.protocol!==2||host.transport!=='dev'||!host.id)return;
     host.lastSeen=Date.now();var index=MP_LAN_DISCOVERY.hosts.findIndex(function(x){return x.id===host.id;});
     if(index<0)MP_LAN_DISCOVERY.hosts.push(host);else MP_LAN_DISCOVERY.hosts[index]=host;
     mpDrawLanHosts();

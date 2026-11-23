@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\tools\package-candidate.ps1" -VerifyOnly
+powershell -NoProfile -File "%~dp0..\tools\package-candidate.ps1" -VerifyOnly
 if errorlevel 1 (
   echo Android debug build blocked: refresh and verify the candidate source manifest first.
   exit /b 2

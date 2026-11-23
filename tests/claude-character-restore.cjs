@@ -9,12 +9,13 @@ const wwwIndex = fs.readFileSync(path.join(assets, 'www', 'index.html'), 'utf8')
 const phoneSource = fs.readFileSync(path.join(assets, 'phone-host', 'character-realism-v12.js'), 'utf8');
 const wwwSource = fs.readFileSync(path.join(assets, 'www', 'character-realism-v12.js'), 'utf8');
 
-assert.equal(phoneIndex, wwwIndex, 'offline and phone-host game entry points must match');
 assert.equal(phoneSource, wwwSource, 'offline and phone-host Claude builders must match');
+assert.match(phoneIndex, /DEV24\.2: full-height touch console/,
+  'phone-host retains its host-specific touch-console layout instead of requiring byte-identical entry pages');
 assert.match(phoneIndex, /<script src="character-realism-v12\.js"><\/script>/);
 assert.doesNotMatch(phoneIndex, /<script src="character-realism-claude-v12\.js"><\/script>/,
   'the original filename is retained so package allowlists stay compatible');
-assert.match(phoneIndex, /SightlineClaudeCharacterV128\.bake\(op, THREE\)/,
+assert.match(phoneIndex, /SightlineClaudeCharacterV128\.bake\(op, THREE, mobileCharacterAtlasScale\(\)\)/,
   'active renderer must call the restored Claude v12.8 builder');
 assert.doesNotMatch(phoneIndex, /SightlineCharacterAssetV128\.bake/,
   'active renderer must not fall back to the rejected merged builder');
@@ -46,7 +47,7 @@ console.log(JSON.stringify({
   source: 'Claude original character-realism.js v12.8 with arm-pose adapter',
   activeImports: ['character-realism.js', 'character-realism-v12.js'],
   rejectedMergedBuilderLoaded: false,
-  runtimeVisualEvidence: 'Captured by tests/phase10-character-prototype-review.cjs in isolated Chromium/SwiftShader; see evidence/claude-restore/before and evidence/claude-restore/after.',
-  humanVisualAcceptance: 'UNVERIFIED: rendered comparison exists, but the roster remains stylized and requires player review.',
+  runtimeVisualEvidence: 'UNVERIFIED: this source check does not render either Android entry page.',
+  humanVisualAcceptance: 'UNVERIFIED: no browser or physical-device visual acceptance was performed for this recovery.',
   note: 'This test checks source paths and packaging; it does not by itself establish visual or animation acceptance.'
 }, null, 2));

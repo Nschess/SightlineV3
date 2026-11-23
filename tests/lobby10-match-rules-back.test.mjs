@@ -10,6 +10,21 @@ const assetRoot = path.join(root, 'AndroidProject/app/src/main/assets');
 const pages = Object.fromEntries(['www', 'phone-host'].map(name => [name,
   fs.readFileSync(path.join(assetRoot, name, 'index.html'), 'utf8')]));
 
+function lobby10ResponsiveSegment(page) {
+  const id = page.indexOf('id="sightline-lobby-10-premium"');
+  const styleStart = page.lastIndexOf('<style', id);
+  const styleEnd = page.indexOf('</style>', id);
+  const marker = '.mn-panel .sl-match-rules-back{justify-self:start;min-height:42px}';
+  const markerAt = page.indexOf(marker, styleStart);
+  assert.ok(id >= 0 && styleStart >= 0 && styleEnd > id && markerAt >= 0 && markerAt < styleEnd,
+    'Lobby 10 responsive style boundaries exist');
+  const responsiveStart = markerAt + marker.length;
+  const consoleMarker = '/* DEV24.2: full-height touch console with a separate scroll area and action bar. */';
+  const consoleAt = page.indexOf(consoleMarker, responsiveStart);
+  assert.ok(consoleAt > responsiveStart && consoleAt < styleEnd, 'phone-host console follows the shared responsive section');
+  return { segment: page.slice(responsiveStart, consoleAt), console: page.slice(consoleAt, styleEnd) };
+}
+
 function routeHarness(page, { host = false, connected = false } = {}) {
   const start = page.indexOf('function sl82ReturnFromRules(){');
   const end = page.indexOf("$('#mn-nav').addEventListener('click'", start);
@@ -48,6 +63,19 @@ test('Offline Rules has an accessible Back control and routes directly to setup'
     assert.equal(JSON.stringify({ mode: context.R.mode, map: context.CURMAP.id, rules: context.R }), beforeRules,
       `${name}: mode, map and edited rules are unchanged`);
   }
+});
+
+test('phone-host restores Offline responsive lobby rules before its host-only touch console', () => {
+  const normalize = text => text.replace(/\r\n/g, '\n');
+  const offline = lobby10ResponsiveSegment(pages.www);
+  const phone = lobby10ResponsiveSegment(pages['phone-host']);
+  assert.equal(normalize(phone.segment), normalize(offline.segment),
+    'phone-host carries the exact Offline responsive lobby/settings rules before console overrides');
+  assert.match(phone.console, /\.sl-mobile-console-tabs/,
+    'phone-host-specific console navigation remains present');
+  assert.match(offline.segment, /#sl-mobile-settings-header/);
+  assert.match(offline.segment, /data-sl-route=rules[^\n]+#pn-dyn:not\(\[hidden\]\)/);
+  assert.match(offline.segment, /#mn-subnav \.mn-subtab/);
 });
 
 test('Host Rules Back returns to the appropriate host setup route', () => {
