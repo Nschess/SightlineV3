@@ -709,6 +709,7 @@ function goLive() {
 function alive(t) { let n = 0; players.forEach(p => { if (!p.alive) return; if (isInfection() ? (!!p.infected === (t === 1)) : p.team === t) n++; }); return n; }
 function endRound(win, why) {
   if (G.phase !== 'live') return;
+  if (isBomb() && BOMB.state && BOMB.state.use) ModeRules.cancelUse(BOMB.state);
   G.phase = 'roundend'; G.phaseEnd = now() + ROUNDEND_SECS * 1000; G.lastWin = win;
   if (win >= 0) G.score[win]++;
   players.forEach(p => {
@@ -730,6 +731,7 @@ function checkElimination() {
 }
 function endMatch(why) {
   if (G.phase === 'matchend') return;
+  if (isBomb() && BOMB.state && BOMB.state.use) ModeRules.cancelUse(BOMB.state);
   DM.respawns.clear(); FFA.respawns.clear();
   const ffaWinnerId=isFFA()&&FFA.match?(FFA.match.winnerId!=null?FFA.match.winnerId:ModeRules.ffaTimedWinner(FFA.match)):null;
   const win = isFFA() ? (ffaWinnerId == null ? -1 : ffaWinnerId) : G.score[0] > G.score[1] ? 0 : G.score[1] > G.score[0] ? 1 : -1;
@@ -796,7 +798,7 @@ function checkForfeit() {
   if (G.phase === 'lobby' || G.phase === 'matchend' || isCoop()) return;
   if (!teamsOk()) { G.score = G.score.slice(); endMatchForfeit(); }
 }
-function endMatchForfeit() { G.phase = 'matchend'; G.phaseEnd = now() + 5000; bcast(phaseMsg({ win: -1, why: 'A team left the match' })); }
+function endMatchForfeit() { if (isBomb() && BOMB.state && BOMB.state.use) ModeRules.cancelUse(BOMB.state); G.phase = 'matchend'; G.phaseEnd = now() + 5000; bcast(phaseMsg({ win: -1, why: 'A team left the match' })); }
 
 
 /* ---------------- co-op outbreak: everyone against the Hollowed ---------------- */

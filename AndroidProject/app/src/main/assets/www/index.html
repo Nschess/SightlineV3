@@ -11670,6 +11670,7 @@ function beginRound() {
 }
 function endRound(won, why) {
   if (state !== 'live') return;
+  if(R.mode==='bomb'&&SOLO_BOMB.state&&SOLO_BOMB.state.use)SightlineModeRules.cancelUse(SOLO_BOMB.state);
   var endingSoloInfection=SOLO_INF.on, endingInfected=soloInfectionPlayer();
   if(endingSoloInfection){
     SOLO_INF.on=false;SOLO_INF.playerInfected=false;SOLO_INF.playerRespawnT=0;SOLO_INF.playerDown=false;
@@ -11688,6 +11689,7 @@ function finishRoundEnd() {
 }
 function endMatch() {
   if (beginnerRun) { finishBeginnerOperation(); return; }
+  if(R.mode==='bomb'&&SOLO_BOMB.state&&SOLO_BOMB.state.use)SightlineModeRules.cancelUse(SOLO_BOMB.state);
   state = 'matchend'; exitLock();
   el.hud.hidden = true; $('#touch').hidden = true; el.scope.hidden = true;
   resetTouchMotion();
