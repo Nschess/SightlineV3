@@ -653,6 +653,40 @@ function paintCloth(g, kind, cols, rnd) {
   g.restore();
 }
 
+/* Low-contrast faction weave, painted into the existing cloth atlas region.
+   The marks are original Sightline motifs and add no texture or material. */
+function paintFactionWeave(g, D) {
+  if (!D || (!D.zombie && (!D.op || (D.op.team !== 'blue' && D.op.team !== 'red')))) return;
+  g.save(); g.beginPath(); g.rect(0, 0, 128, 128); g.clip();
+  g.lineCap = 'square'; g.lineJoin = 'bevel';
+  if (D.zombie) {
+    var state = (D.seed || 1) >>> 0;
+    function nextMark() { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state / 4294967296; }
+    g.strokeStyle = css(mixc(D.bloom || [.28, 1, .78], D.skin || [.2, .1, .1], .58), .20); g.lineWidth = 1.2;
+    for (var branch = 0; branch < 7; branch++) {
+      var x = 8 + branch * 18 + nextMark() * 5, y = 8 + nextMark() * 100, drift = (nextMark() - .5) * 8;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + drift, y + 9); g.lineTo(x + drift - 3, y + 17); g.lineTo(x + drift + 2, y + 27); g.stroke();
+      g.beginPath(); g.moveTo(x + drift - 3, y + 17); g.lineTo(x + drift - 8, y + 21); g.stroke();
+    }
+  } else if (D.op.team === 'blue') {
+    g.strokeStyle = css(mixc(D.uni[2] || D.teamCol, D.teamCol, .28), .16); g.lineWidth = 1.35;
+    for (var row = 10; row < 128; row += 32) {
+      g.beginPath(); g.moveTo(8, row + 5); g.lineTo(23, row + 5); g.lineTo(28, row); g.lineTo(46, row); g.stroke();
+      g.beginPath(); g.moveTo(70, row + 9); g.lineTo(86, row + 9); g.lineTo(91, row + 4); g.lineTo(116, row + 4); g.stroke();
+    }
+  } else {
+    g.strokeStyle = css(mixc(D.uni[2] || D.teamCol, D.teamCol, .24), .15); g.lineWidth = 1.45;
+    for (var row2 = 7; row2 < 128; row2 += 30) {
+      for (var col = -1; col < 4; col++) {
+        var sx = col * 34 + (row2 % 2 ? 4 : 18);
+        g.beginPath(); g.moveTo(sx, row2); g.lineTo(sx + 7, row2 + 8); g.lineTo(sx + 16, row2 + 8); g.stroke();
+        g.beginPath(); g.moveTo(sx + 21, row2 + 2); g.lineTo(sx + 28, row2 + 10); g.stroke();
+      }
+    }
+  }
+  g.restore();
+}
+
 function paintGrain(g, rnd) { // nylon / leather / webbing
   g.save(); g.translate(0, 128); g.beginPath(); g.rect(0, 0, 128, 64); g.clip();
   g.fillStyle = 'rgb(226,226,226)'; g.fillRect(0, 0, 128, 64);
@@ -783,7 +817,7 @@ function paintAtlas(D, doc, scale) {
   var c = doc.createElement('canvas'); SC = scale; c.width = c.height = ATL * SC; var g = c.getContext('2d');
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, ATL * SC, ATL * SC); g.setTransform(SC, 0, 0, SC, 0, 0);
   var rnd = RNG(D.seed ^ 0x9E3779B9);
-  paintCloth(g, D.camo, D.uni, rnd);
+  paintCloth(g, D.camo, D.uni, rnd); paintFactionWeave(g, D);
   g.setTransform(SC, 0, 0, SC, 0, 0); paintGrain(g, rnd); g.setTransform(SC, 0, 0, SC, 0, 0); paintHair(g, rnd); g.setTransform(SC, 0, 0, SC, 0, 0); paintKnit(g, rnd); g.setTransform(SC, 0, 0, SC, 0, 0); paintMetal(g, rnd); g.setTransform(SC, 0, 0, SC, 0, 0); paintMolle(g, rnd);
   g.setTransform(SC, 0, 0, SC, 0, 0); g.fillStyle = '#fff'; g.fillRect(128, 128, 16, 16);
   g.setTransform(SC, 0, 0, SC, 0, 0); paintFace(g, D, rnd);
@@ -1007,6 +1041,13 @@ function buildHeadgear(mb, D, Hd, q, ctx) {
     var fp = Hd.surf(0, .62, -.78, .03);
     if (D.ex.nvg || v !== 'pasgt') mb.box([0, fp[1], fp[2] - .003], [.052, .034, .028], { taper: [.85, .8], col: K(mulc(gearC, .75), K_GRAIN), uv: uvPlanar('grain'), tag: 'mount' });
     [-1, 1].forEach(function (s) { var rp = Hd.surf(s, .35, .02, .03); mb.box([rp[0] + s * .002, rp[1], rp[2]], [.014, .02, .1], { col: K([.17, .18, .17], K_METAL), uv: uvPlanar('grain'), tag: 'rail' }); });
+    if (D.op && D.op.team === 'blue') [-1, 1].forEach(function (s) {
+      var rail = [
+        Hd.surf(s * .24, .64, -.70, .029), Hd.surf(s * .34, .84, -.46, .029),
+        Hd.surf(s * .38, .93, -.12, .029), Hd.surf(s * .34, .82, .44, .029)
+      ];
+      mb.tube(rail, rail.map(function () { return [.0048, .0038]; }), { segs: QS(4, 6, q), capBot: 0, capTop: 0, col: K(mixc(hcol, D.teamCol, .14), K_METAL), uv: uvPlanar('grain'), tag: 'tidewatchCrownRail', ao: function () { return 1; } });
+    });
     // helmet band (elastic) around the dome
     var bandN = 8, bandPts = []; for (var bi = 0; bi <= bandN; bi++) { var ba = bi / bandN * TAU, dd = Hd.dir(ba, .52), pp = Hd.pt(dd[0], dd[1], dd[2]), rr = norm3(sub3(pp, C)); bandPts.push(add3(pp, mul3(rr, cfg.th + .004))); }
     mb.tube(bandPts, bandPts.map(function () { return [.0042, .0045]; }), { segs: 3, col: K(mulc(gearC, .55), K_GRAIN), uv: uvPlanar('grain'), tag: 'band', ao: function () { return 1; }, capBot: 0, capTop: 0 });
@@ -1173,7 +1214,14 @@ function buildBody(D, q, Hd) {
     mb.box([0, 1.2, .122], [.2, .22, .02], { col: vcol, uv: uvPlanar('grain'), tag: 'panel' });
   }
   // team identity: hook-and-loop chest patch
-  mb.box([.08, 1.395, vk === 'light' ? -.14 : -.176], [.052, .03, .004], { col: K(D.teamCol, .95), tag: 'patch' });
+  var patchZ = vk === 'light' ? -.14 : -.176;
+  mb.box([.08, 1.395, patchZ], [.052, .03, .004], { col: K(D.teamCol, .95), tag: 'patch' });
+  if (D.op && D.op.team === 'blue') {
+    [-.006, 0, .006].forEach(function (dy, i) { mb.box([.08, 1.395 + dy, patchZ - .0028], [.025 - i * .004, .0017, .0015], { col: K(mixc(D.teamCol, [1, 1, 1], .48), .95), tag: 'tidewatchInsigniaMark' }); });
+  } else if (D.op && D.op.team === 'red') {
+    mb.box([.075, 1.395, patchZ - .0028], [.0032, .016, .0015], { rot: [0, 0, -.42], col: K(mixc(D.teamCol, [.72, .58, .42], .38), .95), tag: 'cinderPactInsigniaMark' });
+    mb.box([.086, 1.395, patchZ - .0028], [.0032, .012, .0015], { rot: [0, 0, .42], col: K(mixc(D.teamCol, [.72, .58, .42], .38), .95), tag: 'cinderPactInsigniaMark' });
+  }
   if (D.ex.rank) { mb.box([-.085, 1.395, -.177], [.045, .026, .004], { col: K([.78, .68, .3], .95), tag: 'rank' }); mb.box([-.085, 1.395, -.1795], [.03, .004, .002], { col: dk, tag: 'rank' }); }
   if (D.ex.binos && D.id === 'ember') {
     /* Compact paired field glasses fixed to the light chest harness; all pieces
@@ -1342,6 +1390,15 @@ function buildBody(D, q, Hd) {
     var rk = sleeveR * (b.bulk > 1.1 ? 1.08 : 1);
     var inner = [-side, 0, .2];
     mb.ellipsoid(S, [.062 * rk * (f ? .92 : 1), .06 * rk, .06 * rk], { lat: 6, lon: 9, col: cl(function () { return .96; }), uv: ucl(.28, .3, false), tag: 'shoulder' });
+    if (D.op && D.op.team === 'blue') {
+      var capCenter = add3(S, [0, .004 * rk, -.052 * rk]);
+      mb.ellipsoid(capCenter, [.053 * rk, .038 * rk, .019 * rk], { lat: QS(5, 7, q), lon: QS(6, 9, q), col: K(mixc(gear, [.24, .36, .39], .32), G), uv: uvPlanar('grain'), tag: 'tidewatchShoulderCap' });
+      mb.box(add3(S, [0, .012 * rk, -.070 * rk]), [.032 * rk, .0038 * rk, .002], { col: K(mixc(D.teamCol, [1, 1, 1], .36), .95), tag: 'tidewatchShoulderIndex' });
+    } else if (D.op && D.op.team === 'red' && side < 0) {
+      var mantleCenter = add3(S, [0, .004 * rk, -.044 * rk]);
+      mb.ellipsoid(mantleCenter, [.053 * rk, .044 * rk, .022 * rk], { lat: QS(5, 6, q), lon: QS(6, 8, q), rot: [0, 0, .1], col: K(mixc(gear, [.42, .25, .19], .3), G), uv: uvPlanar('grain'), tag: 'cinderAsymmetricShoulderMantle' });
+      mb.box(add3(S, [-.006 * rk, .017 * rk, -.065 * rk]), [.035 * rk, .004 * rk, .002], { rot: [0, 0, .1], col: K(mixc(D.teamCol, [.72, .58, .42], .42), .95), tag: 'cinderShoulderIndex' });
+    }
     var path = [S, u1, E, f1, W], radii = [[.056 * rk, .054 * rk], [.052 * rk, .05 * rk], [.047 * rk, .046 * rk], [.043 * rk, .042 * rk], [.038 * rk, .038 * rk]];
     var wobE = function (t, bb) { return 1 + .035 * gauss((t - .5) / .09) * Math.sin(bb * 3 + 1) + .018 * Math.sin(t * 17 + bb * 2); };
     if (!rolled) mb.tube(path, radii, { segs: QS(7, 9, q), seamDir: inner, col: cl(function (p) { return .88 + .12 * smooth(1.1, 1.43, p[1]); }), uv: ucl(.3, .55, true), tag: 'sleeve', wob: wobE, ao: function (p, n) { return .86 + .14 * smooth(-.6, .6, n[1] + .3); } });
@@ -1492,7 +1549,19 @@ function buildZombie(D, q) {
   var bl = { walker: 3, sprinter: 2, brute: 7, spitter: 3 }[t];
   for (var i = 0; i < bl; i++) { var ang = lerp(-.8, .8, bl > 1 ? i / (bl - 1) : .5) + (rnd() - .5) * .2, by = 1.4 - (i % 2) * .1; bloomSpike(mb, D, [Math.sin(ang) * .18 * b.sh, by, .1 + Math.cos(ang) * .03], [Math.sin(ang) * .5, .8 + rnd() * .3, .5], (big ? .26 : .17) + rnd() * .1, big ? .034 : .024); }
   if (big) { mb.ellipsoid([-.4, 1.46, -.02], [.14, .11, .13], { lat: 6, lon: 8, col: function (p) { return K(D.bloom, .55 + .25 * Math.sin(p[0] * 40 + p[1] * 30)); }, tag: 'bloom' }); for (var k2 = 0; k2 < 4; k2++) bloomSpike(mb, D, [-.4 + (rnd() - .5) * .14, 1.52 + (rnd() - .5) * .06, -.02 + (rnd() - .5) * .1], [-.8 + rnd() * .4, .8, rnd() - .5], .13 + rnd() * .1, .026); [-1, 1].forEach(function (s) { mb.box([s * .42, 1.47, -.05], [.26, .16, .24], { rot: [0, 0, s * .35], col: K([.11, .11, .1], G), tag: 'plate' }); }); }
-  if (sp) { mb.ellipsoid([0, 1.53, -.03], [.085, .07, .08], { lat: 6, lon: 9, col: function (p) { return K(D.bloom, .62 + .22 * Math.sin(p[0] * 60 + p[1] * 50)); }, tag: 'sac' }); mb.ellipsoid([0, 1.1, zf(1.1) - .01], [.15, .12, .08], { lat: 5, lon: 8, col: mulc(fleshC, 1.1), tag: 'belly' }); }
+  if (sp) {
+    mb.ellipsoid([0, 1.53, -.03], [.085, .07, .08], { lat: 6, lon: 9, col: function (p) { return K(D.bloom, .62 + .22 * Math.sin(p[0] * 60 + p[1] * 50)); }, tag: 'sac' });
+    mb.ellipsoid([0, 1.1, zf(1.1) - .01], [.15, .12, .08], { lat: 5, lon: 8, col: mulc(fleshC, 1.1), tag: 'belly' });
+    [-1, 1].forEach(function (s) {
+      mb.ellipsoid([s * .055, 1.535, -.087], [.03, .036, .024], { lat: QS(5, 6, q), lon: QS(6, 8, q), col: function (p) { return K(mixc(D.bloom, fleshC, .22), .58 + .16 * Math.max(0, p[1])); }, tag: 'hollowedSpitterThroatGland' });
+      mb.tube([[s * .05, 1.53, -.078], [s * .071, 1.504, -.064], [s * .096, 1.466, -.04]], [[.0048, .0038], [.0038, .0032], [.0018, .0018]], { segs: QS(4, 5, q), capBot: 0, capTop: 0, col: K(mixc(D.bloom, fleshC, .45), .8), tag: 'hollowedSpitterDuct', ao: function () { return 1; } });
+    });
+  }
+  if (t === 'walker') {
+    /* A single low dorsal spur sits between the shoulder blades. It is baked
+       with the torso so it follows the existing zombie lean transform. */
+    mb.tube([[0, 1.31, .098], [0, 1.365, .132], [0, 1.414, .186]], [[.012, .01], [.022, .014], [.0018, .0018]], { segs: QS(4, 5, q), capBot: 0, capTop: 0, col: function (p, n, i, j, t) { return K(mixc(boneC, D.bloom, .22), .72 + .18 * t); }, tag: 'hollowedWalkerScapularSpur', ao: function () { return 1; } });
+  }
   // lean the whole upper body about the hips
   var s0 = Math.sin(lean), c0 = Math.cos(lean), pv = .85;
   for (var vi = 0; vi < mb.count(); vi++) {
